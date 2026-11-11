@@ -641,3 +641,93 @@ describe('ERN-011: Ernährungsberatung als Terminanlass', () => {
     });
   });
 });
+
+describe('ADR-027 Punkt 3: Die Begleitung erfährt nichts von der Beratung', () => {
+  const BEGLEITUNG = 'cafecafe-cafe-4afe-8afe-0000000000e1';
+  const KONTO_BEGLEITUNG = '99999999-9999-4999-8999-0000000000e1';
+  const ERIKA_SELBST = SEED.platformAccesses.erikaBehandlung;
+  const TERMINE = 'select * from public.platform_appointments($1::uuid)';
+  const RECHNUNGEN = 'select * from public.platform_invoices($1::uuid)';
+  const RECHNUNG = 'select public.platform_invoice($1::uuid, $2::uuid) as blatt';
+  const WUENSCHE = 'select * from public.platform_appointment_requests($1::uuid)';
+  const AENDERN = `select public.request_platform_appointment_change($1::uuid, $2::uuid, 'cancel',
+    null, null, null) as id`;
+
+  beforeEach(async () => {
+    await resetDatabaseOhneTermine();
+    // Eine Begleitung zu Erikas Behandlung, mit Einwilligung zu Rechnungen.
+    await asPostgres(
+      `insert into auth.users (id, aud, role, email)
+       values ($1, 'authenticated', 'authenticated', 'bea.begleitung@patient.invalid')`,
+      [KONTO_BEGLEITUNG],
+    );
+    await asPostgres(
+      `insert into public.platform_accesses
+         (id, organization_id, relationship_kind, relationship_id, patient_id,
+          account_user_id, status, created_by, activated_at, access_kind, representative_name,
+          proof_documents, proof_recorded_by, proof_recorded_at,
+          consent_text_version, consent_recorded_by, consent_recorded_at, consent_earlier_messages,
+          finance_scope)
+       values ($1, $2, 'treatment', $3, $3, $4, 'active', $5, now(), 'companion', 'Bea Begleitung',
+               array['identity_document'], $5, now(), 'begleitung-2026-10-02b', $5, now(), false,
+               true)`,
+      [BEGLEITUNG, organizationId, patients.erika, KONTO_BEGLEITUNG, users.office],
+    );
+    for (const zugang of [BEGLEITUNG, ERIKA_SELBST]) {
+      await asPostgres(
+        `insert into public.platform_notification_settings
+           (access_id, organization_id, email_kinds, chosen_by)
+         values ($1, $2, array['appointment_reminder', 'appointment_changed', 'request_answered'], $3)
+         on conflict (access_id) do update set email_kinds = excluded.email_kinds`,
+        [zugang, organizationId, users.office],
+      );
+    }
+  }, 120_000);
+
+  async function ids(konto: string, sql: string, params: unknown[]): Promise<string[]> {
+    const { rows } = await asUser<{ id: string }>(konto, sql, params);
+    return rows.map((r) => r.id);
+  }
+
+  it('Termin, Änderungswunsch und Erinnerung: nur die Person, nicht die Begleitung', async () => {
+    const id = await beratungstermin();
+    expect(await ids(users.plattformErika, TERMINE, [ERIKA_SELBST])).toContain(id);
+    expect(await ids(KONTO_BEGLEITUNG, TERMINE, [BEGLEITUNG])).not.toContain(id);
+
+    expect(await fehler(asUser(KONTO_BEGLEITUNG, AENDERN, [BEGLEITUNG, id]))).toBe('P0002');
+    await asUserCommitted(users.plattformErika, AENDERN, [ERIKA_SELBST, id]);
+    expect(await ids(users.plattformErika, WUENSCHE, [ERIKA_SELBST])).toHaveLength(1);
+    expect(await ids(KONTO_BEGLEITUNG, WUENSCHE, [BEGLEITUNG])).toEqual([]);
+
+    await asPostgres(
+      `select app.enqueue_notification($1::uuid, 'treatment', $2::uuid, 'appointment_reminder',
+         $3::uuid, (select starts_at from public.appointments where id = $3))`,
+      [organizationId, patients.erika, id],
+    );
+    const { rows } = await asPostgres<{ access_id: string }>(
+      'select distinct access_id from public.notification_deliveries where subject_id = $1',
+      [id],
+    );
+    expect(rows).toEqual([{ access_id: ERIKA_SELBST }]);
+  });
+
+  it('eine Rechnung mit der Beratung sieht die Begleitung auch mit Rechnungsbereich nicht', async () => {
+    const id = await beratungstermin();
+    const monat = await inDenLaufendenMonat(id);
+    await abhaken(id);
+    const { rows: entwurf } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
+      patients.erika,
+      monat,
+      'therapy',
+    ]);
+    const rechnung = entwurf[0]!.id;
+    await asUserCommitted(users.office, AUSSTELLEN, [rechnung]);
+
+    expect(await ids(users.plattformErika, RECHNUNGEN, [ERIKA_SELBST])).toContain(rechnung);
+    expect(await ids(KONTO_BEGLEITUNG, RECHNUNGEN, [BEGLEITUNG])).not.toContain(rechnung);
+    const blatt = async (konto: string, zugang: string) =>
+      (await asUser<{ blatt: unknown }>(konto, RECHNUNG, [zugang, rechnung])).rows[0]!.blatt;
+    expect(await blatt(users.plattformErika, ERIKA_SELBST)).not.toBeNull();
+    expect(await blatt(KONTO_BEGLEITUNG, BEGLEITUNG)).toBeNull();
+  });
+});
