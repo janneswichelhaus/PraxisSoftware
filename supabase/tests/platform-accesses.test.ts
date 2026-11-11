@@ -584,14 +584,15 @@ describe('Plattformzugang im Loeschlauf (ADR-023 Punkt 5, ANN-189)', () => {
         where training_relationship_id = $1`,
       [trainingRelationships.tina],
     );
-    const einladung = await einladen(
-      users.office,
-      'training',
-      trainingRelationships.tina,
-      'email',
-      true,
+    // Direkt angelegt: Ein neues Kennwort stellt die Praxis nur vor Ort aus (ADR-023 Punkt 10).
+    await asPostgres(
+      `insert into public.platform_access_invitations
+         (organization_id, platform_access_id, purpose, channel, code_hash, email,
+          address_confirmed_by, address_confirmed_at, expires_at, created_by)
+       values ($1, $2, 'reset', 'email', $3, 'tina.training@patient.invalid', $4, now(),
+               now() + interval '14 days', $4)`,
+      [organizationId, platformAccesses.tinaTraining, h('offene-mail-einladung'), users.office],
     );
-    expect(einladung.purpose).toBe('reset');
 
     await asPostgres(
       'select app.delete_training_relationship($1::uuid, extensions.gen_random_uuid(), now())',
@@ -943,6 +944,26 @@ describe('Plattformzugang: Befunde aus dem Zweitreview', () => {
     expect(stand).toEqual([{ status: 'revoked' }]);
     // Ein anderes Konto behaelt seinen Code.
     expect((await asServiceRole(NACHSCHLAGEN, [h(tina.code)])).rows).toHaveLength(1);
+  });
+
+  it('stellt ein neues Kennwort nur vor Ort aus, nie per Mail (ADR-023 Punkte 10 und 18)', async () => {
+    await expect(
+      asUser(users.office, EINLADEN, ['treatment', patients.erika, 'email', true]),
+    ).rejects.toThrow(/reset only on site/);
+    expect((await einladen(users.office, 'treatment', patients.erika)).purpose).toBe('reset');
+  });
+
+  it('laesst eine Mail-Einladung verfallen, wenn sich die Adresse aendert (ADR-023 Punkt 11)', async () => {
+    const einladung = await einladen(users.office, 'treatment', patients.max, 'email', true);
+    await asPostgres(
+      `update public.patient_contact_details set email = 'max.neu@patient.invalid' where patient_id = $1`,
+      [patients.max],
+    );
+    expect((await asServiceRole(NACHSCHLAGEN, [h(einladung.code)])).rows).toEqual([]);
+    await neuesKonto(KONTO_MAX, 'max.konto@patient.invalid');
+    await expect(asServiceRole(EINLOESEN, [h(einladung.code), KONTO_MAX])).rejects.toThrow(
+      /invitation not valid/,
+    );
   });
 
   it('beendet beim neuen Kennwort die Einladung, bevor sich etwas am Konto aendert', async () => {
