@@ -84,7 +84,7 @@ function Zeile({ anhang, zeitzone }: { anhang: HerausgabeAnhang; zeitzone: strin
       </div>
       {anhang.object_missing ? (
         <Statusmeldung ton="warnung" className="mt-2">
-          Die Aufnahme fehlt in der Ablage.
+          Die Aufnahme fehlt in der Ablage; die Kopie kann sie nicht enthalten.
         </Statusmeldung>
       ) : null}
       {erledigt ? (

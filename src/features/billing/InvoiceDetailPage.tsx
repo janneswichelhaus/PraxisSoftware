@@ -1403,7 +1403,7 @@ function Empfaengerformular({
           Blatt ebenso wie Rechnungsliste, offene Posten und Zahlungen (BEF-141). */}
       {bestehend ? (
         <p className="text-ink-muted text-sm">
-          Gilt für alle Entwürfe; ausgestellte Rechnungen bleiben, wie sie sind.
+          Gilt für alle Entwürfe an diesen Empfänger; ausgestellte Rechnungen bleiben, wie sie sind.
         </p>
       ) : null}
       <Select
