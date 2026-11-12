@@ -72,6 +72,8 @@ describe('Benachrichtigungen (KOM-011)', () => {
     const nutzer = userEvent.setup();
     renderWithProviders(<Benachrichtigungen zugaenge={[ZUGANG]} />);
     const erinnerung = await screen.findByRole('group', { name: 'Erinnerung an einen Termin' });
+    // Die Obergrenze nach ANN-343 steht vor dem Speichern, als Beschriftung, nicht als Satz.
+    expect(screen.getByText('Höchstens eine je Art täglich, zehn je Woche')).toBeInTheDocument();
     await nutzer.click(within(erinnerung).getByRole('checkbox', { name: 'Per E-Mail' }));
     await nutzer.selectOptions(screen.getByLabelText('Ab'), '21');
     await nutzer.selectOptions(screen.getByLabelText('Bis'), '7');

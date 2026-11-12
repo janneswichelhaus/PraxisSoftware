@@ -103,6 +103,8 @@ describe('AnhangHerausgabe', { timeout: 20_000 }, () => {
       await screen.findByRole('button', { name: /Kopie für die Person herunterladen/ }),
     ).toBeDisabled();
     expect(screen.getByText(/fehlt in der Ablage/)).toBeInTheDocument();
+    // Art. 15: Die Kopie für die Person ist dann unvollständig, das muss dastehen.
+    expect(screen.getByText(/die Kopie kann sie nicht enthalten/)).toBeInTheDocument();
   });
 
   it('sagt, wenn es keine Aufnahme gibt', async () => {
