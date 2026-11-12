@@ -292,6 +292,8 @@ function Wahlformular({
           </Select>
         </div>
       </fieldset>
+      {/* Die Obergrenze aus ANN-343 vor dem Einschalten: als Beschriftung, nicht als Satz (L7). */}
+      <p className="text-ink-muted text-sm">Höchstens eine je Art täglich, zehn je Woche</p>
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" disabled={speichern.isPending}>
           Speichern

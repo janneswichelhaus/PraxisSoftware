@@ -1321,6 +1321,8 @@ describe('InvoiceDetailPage', () => {
       ).toBeInTheDocument();
       await nutzer.click(screen.getByRole('button', { name: 'Empfänger bearbeiten' }));
 
+      // Die Änderung trifft die Entwürfe an diesen Empfänger, nicht alle Entwürfe der Praxis.
+      expect(screen.getByText(/Gilt für alle Entwürfe an diesen Empfänger/)).toBeInTheDocument();
       expect(screen.getByText(/ausgestellte Rechnungen bleiben, wie sie sind/)).toBeInTheDocument();
       const plz = screen.getByLabelText('PLZ');
       expect(plz).toHaveValue('7207');
