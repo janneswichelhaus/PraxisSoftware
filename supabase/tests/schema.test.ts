@@ -80,6 +80,7 @@ describe('Schema-Invarianten', () => {
       'appointment_notifications',
       'staff_working_hours',
       'staff_working_hour_exceptions',
+      'staff_break_placements',
       'treatment_notes',
       'treatment_note_versions',
       'prescribers',

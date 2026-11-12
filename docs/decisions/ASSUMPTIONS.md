@@ -1067,6 +1067,10 @@ Praxisprozess · offen · 2026-11-07 · — · — · Wiedervorlage: —\
 Technik · offen · 2026-11-09 · — · — · Wiedervorlage: Anbieterprüfung (C6)\
 **Regel.** Ordnen: je Satz ein Titel. Auszug: bis zwei Sätze je Eintrag der letzten sechs Termine. Foto: Fundstellen im erkannten Text. Umformen: ein Satz je Quelle; Zahl, Einheit, Seite, Verneinung, Unsicherheit bleiben, sonst die Quelle. **Grundlage.** ADR-006 Punkt 5; ANN-824. **Anker.** `gleicheSaetze` in `src/lib/ki/einheiten.ts`.
 
+### ANN-863 — Pause frei im Kalender: Dauer im Plan, Lage je Tag
+Praxisprozess · offen · 2026-11-12 · — · — · Wiedervorlage: Sichtung Kalender\
+**Regel.** Planlücke 15–60 Min. = Pause, länger = geteilter Dienst. Block im Kalender, verschiebbar in der Arbeitszeit, nie über Termine; über 6 Std. am Stück nur mit Rückfrage. Soll bleibt. **Grundlage.** § 4 ArbZG. **Anker.** `app.break_gaps`.
+
 ## Übrige Einträge
 | Kennung | Titel | Kategorie · Status | Anker |
 | --- | --- | --- | --- |
