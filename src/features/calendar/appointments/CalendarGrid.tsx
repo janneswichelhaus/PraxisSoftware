@@ -49,6 +49,14 @@ import { Laengenzeichen } from '@/components/ui/Laengenzeichen';
 import { Personenbild } from '@/components/ui/Personenbild';
 import type { Personenfarbe } from '@/components/ui/personenfarben';
 import type { Zeitband } from '@/lib/zeitband';
+import {
+  ausPausenKennung,
+  PAUSENPROBLEM_TEXT,
+  type Pause,
+  type Pausenproblem,
+} from '@/features/calendar/scheduling/pause';
+import { PausenMenue } from './PausenMenue';
+import { Rasterblock } from '@/components/ui/Rasterblock';
 
 /**
  * Eine abgelegte, noch nicht bestätigte Verschiebung, wie das Gitter sie
@@ -311,6 +319,19 @@ export interface GitterSpalte {
    * Ohne Ziel bleibt der Kopf eine Beschriftung.
    */
   ziel?: { to: string; beschriftung: string };
+  /** Die Pausen des Tages an ihrer Lage (ANN-863): wie ein Termin gesetzt, ohne Patient:in. */
+  pausen?: readonly (Pause & { kennung: string; ziehbar: boolean })[];
+  /** Was an der Pause nicht stimmt (§ 4 ArbZG) - als Wort an der Pause, keine Sperre. */
+  pausenProbleme?: readonly Pausenproblem[];
+}
+
+/** Ziel einer verschobenen Pause: dieselbe Spalte, ein neuer Beginn. */
+export interface PausenZiel {
+  /** Die Spalte, aus der die Pause kommt; eine andere Zielspalte weist die Seite ab. */
+  herkunftSpalteId: string;
+  spalteId: string;
+  planVonMinute: number;
+  vonMinute: number;
 }
 
 /**
@@ -392,6 +413,7 @@ export function CalendarGrid({
   stundenHoehe,
   ziehbarErlaubt,
   onVerschieben,
+  onPauseVerschieben,
   onAuswahl,
   auswahl = null,
   rueckweg,
@@ -469,6 +491,8 @@ export function CalendarGrid({
   /** Ohne Änderungsrecht wird gar nicht erst gezogen. */
   ziehbarErlaubt: boolean;
   onVerschieben: (ziel: { terminId: string; spalteId: string; startMinute: number }) => void;
+  /** Eine Pause wurde gezogen oder im Menü verschoben; ohne Angabe steht sie still. */
+  onPauseVerschieben?: ((ziel: PausenZiel) => void) | undefined;
   /**
    * Eine Auswahl auf der freien Fläche einer Spalte (UX-005, CAL-019).
    *
@@ -553,12 +577,24 @@ export function CalendarGrid({
       return 0;
     },
     onBlaettern,
-    onAblegen: (zustand: ZiehZustand) =>
+    onAblegen: (zustand: ZiehZustand) => {
+      const pause = ausPausenKennung(zustand.terminId);
+      if (pause) {
+        // Die Pause bleibt bei Person und Tag; eine andere Spalte meldet die Seite.
+        onPauseVerschieben?.({
+          herkunftSpalteId: pause.spalteId,
+          spalteId: zustand.spalteId,
+          planVonMinute: pause.planVonMinute,
+          vonMinute: zustand.startMinute,
+        });
+        return;
+      }
       onVerschieben({
         terminId: zustand.terminId,
         spalteId: zustand.spalteId,
         startMinute: zustand.startMinute,
-      }),
+      });
+    },
   });
 
   // Die Spanne auf der freien Flaeche (CAL-019). Der obere Rand kommt aus
@@ -691,6 +727,7 @@ export function CalendarGrid({
   const [rueckfrageLage, setRueckfrageLage] = useState<number | null>(null);
   // UBK-016: der angetippte Fahrweg - markiert als Ganzes, mit Menü daneben.
   const [gewaehlterWeg, setGewaehlterWeg] = useState<string | null>(null);
+  const [gewaehltePause, setGewaehltePause] = useState<string | null>(null);
   useLayoutEffect(() => {
     if (!vorschlag) {
       if (rueckfrageLage !== null) setRueckfrageLage(null);
@@ -939,18 +976,20 @@ export function CalendarGrid({
                     Darstellung, keine Prüfung; die freie Fläche bleibt
                     antippbar, und der Server fragt nach (CAL-005). */}
                 {s.baender
-                  ? ausserhalbArbeitszeit(s.baender, fenster).map((b, i) => (
-                      <div
-                        key={i}
-                        aria-hidden="true"
-                        data-testid="ausserhalb-arbeitszeit"
-                        className="bg-surface-sunken schraffur pointer-events-none absolute inset-x-0"
-                        style={{
-                          top: `${minuteZuPixel(b.vonMinute, fenster.vonMinute, stundenHoehe)}px`,
-                          height: `${minuteZuPixel(b.bisMinute, fenster.vonMinute, stundenHoehe) - minuteZuPixel(b.vonMinute, fenster.vonMinute, stundenHoehe)}px`,
-                        }}
-                      />
-                    ))
+                  ? ausserhalbArbeitszeit([...s.baender, ...(s.pausen ?? [])], fenster).map(
+                      (b, i) => (
+                        <div
+                          key={i}
+                          aria-hidden="true"
+                          data-testid="ausserhalb-arbeitszeit"
+                          className="bg-surface-sunken schraffur pointer-events-none absolute inset-x-0"
+                          style={{
+                            top: `${minuteZuPixel(b.vonMinute, fenster.vonMinute, stundenHoehe)}px`,
+                            height: `${minuteZuPixel(b.bisMinute, fenster.vonMinute, stundenHoehe) - minuteZuPixel(b.vonMinute, fenster.vonMinute, stundenHoehe)}px`,
+                          }}
+                        />
+                      ),
+                    )
                   : null}
 
                 {/* Belegt, aber ohne lesbaren Termin (ABN-021, BEF-112):
@@ -1150,6 +1189,87 @@ export function CalendarGrid({
                         <FahrwegMenue
                           weg={w.auskunft}
                           onSchliessen={() => setGewaehlterWeg(null)}
+                          className={[
+                            'absolute z-50 w-64 max-w-[calc(100vw-5rem)]',
+                            rechts ? 'right-1' : 'left-1',
+                          ].join(' ')}
+                          style={{ top: `${oben + Math.max(hoehe, 1) + 4}px` }}
+                        />
+                      ) : null}
+                    </Fragment>
+                  );
+                })}
+
+                {/* Die Pause liegt wie ein Termin im Raster (ANN-863): ziehbar, wo erlaubt;
+                    ein Tipp öffnet das Menü, die Alternative zum Ziehen. */}
+                {(s.pausen ?? []).map((pause) => {
+                  const oben = minuteZuPixel(pause.vonMinute, fenster.vonMinute, stundenHoehe);
+                  const hoehe =
+                    minuteZuPixel(pause.bisMinute, fenster.vonMinute, stundenHoehe) - oben;
+                  const problem = s.pausenProbleme?.[0];
+                  const offen = gewaehltePause === pause.kennung;
+                  const zeitText = `${minuteZuZeit(pause.vonMinute)}–${minuteZuZeit(pause.bisMinute)}`;
+                  const spalteIndex = spaltenModell.findIndex((x) => x.id === s.id);
+                  const rechts =
+                    spalteIndex >= spaltenModell.length / 2 && spaltenModell.length > 1;
+                  return (
+                    <Fragment key={pause.kennung}>
+                      <Rasterblock
+                        data-testid="pause"
+                        aria-expanded={offen}
+                        title={`Pause ${zeitText}`}
+                        oben={oben}
+                        hoehe={hoehe}
+                        ton={problem ? 'warnung' : 'neutral'}
+                        ziehbar={pause.ziehbar}
+                        gedimmt={ziehen.vorschau?.terminId === pause.kennung}
+                        onPointerDown={
+                          pause.ziehbar
+                            ? (event) =>
+                                ziehen.beginnen(event, {
+                                  id: pause.kennung,
+                                  spalteId: s.id,
+                                  startMinute: pause.vonMinute,
+                                  dauer: pause.bisMinute - pause.vonMinute,
+                                })
+                            : undefined
+                        }
+                        onClick={(event) => {
+                          if (ziehen.klickUnterdruecken()) {
+                            event.preventDefault();
+                            return;
+                          }
+                          setGewaehltePause(offen ? null : pause.kennung);
+                        }}
+                      >
+                        <span className="tabular-nums" aria-hidden="true">
+                          {zeitText}
+                        </span>
+                        <span className="font-semibold">
+                          {problem ? <span aria-hidden="true">! </span> : null}Pause
+                        </span>
+                        <span className="sr-only">
+                          {`, ${zeitText}${pause.verschoben ? ', verschoben' : ''}${problem ? `. ${PAUSENPROBLEM_TEXT[problem]}` : ''}`}
+                        </span>
+                      </Rasterblock>
+                      {offen ? (
+                        <PausenMenue
+                          pause={pause}
+                          probleme={s.pausenProbleme ?? []}
+                          onVerschieben={
+                            pause.ziehbar && onPauseVerschieben
+                              ? (vonMinute) => {
+                                  setGewaehltePause(null);
+                                  onPauseVerschieben({
+                                    herkunftSpalteId: s.id,
+                                    spalteId: s.id,
+                                    planVonMinute: pause.planVonMinute,
+                                    vonMinute,
+                                  });
+                                }
+                              : undefined
+                          }
+                          onSchliessen={() => setGewaehltePause(null)}
                           className={[
                             'absolute z-50 w-64 max-w-[calc(100vw-5rem)]',
                             rechts ? 'right-1' : 'left-1',

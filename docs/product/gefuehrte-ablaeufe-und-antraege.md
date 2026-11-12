@@ -69,19 +69,6 @@ geführt und ohne unnötiges Scrollen, nach dem Vorbild des Check-Ups.
 - **Teamchat** (TEAM-001): kein geführter Ablauf; ein Vorgangsbezug auf einen Antrag zeigt nie
   dessen Grund an Unberechtigte.
 
-## 4. Offen: bewegliche Mittagspause (Jannes 2026-10-16, langfristig)
-Die Mittagspause liegt nicht fest: Jede Person hat eine eigene Pausendauer je Tag, ungefähr in der
-Mitte der Arbeitszeit, ohne feste Uhrzeit. Folgen, im Loop als Spec zu klären:
-
-- **Wochenplan** je Tag als Beginn, Ende und Pausendauer statt zwei Blöcken mit Lücke; die
-  Arbeitszeit ist Ende − Beginn − Pause, bestehende Lücken werden zur Pausendauer.
-- **Planung:** Terminvorschläge und Slotsuche lassen um die Tagesmitte ein Fenster frei (Vorschlag
-  Mitte ± 1,5 Stunden); ein Termin darf dort liegen, solange die Pause noch Platz hat. Sonst fragt
-  der Kalender wie außerhalb der Arbeitszeit nach.
-- **Kalender:** ein blasses Pausenfenster mit der Dauer („30 Min. Pause“) statt eines festen grauen
-  Blocks; erst wenn Termine es füllen, zeigt er, wo die Pause noch liegen kann.
-- **Gesetz:** Mindestpause und höchstens 6 Stunden am Stück (§ 4 ArbZG); die Planung prüft sie gegen
-  die Termine des Tages.
-- **Keine Erfassung**, wann die Pause tatsächlich genommen wurde (§20).
-
-Ein eigener Loop nach Überholung 8 (Kalender und Slotsuche, Pfad A).
+## 4. Bewegliche Mittagspause (Jannes 2026-10-16)
+Gebaut als Pause frei im Kalender (ANN-863): Dauer im Plan, Lage je Tag. Offen: Die automatische
+Terminvergabe legt die Pause selbst (§ 4 ArbZG). Keine Erfassung, wann sie genommen wurde (§20).

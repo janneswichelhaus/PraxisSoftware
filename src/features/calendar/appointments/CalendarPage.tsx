@@ -17,6 +17,7 @@ import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import { textlinkKlassen } from '@/components/ui/buttonStile';
 import {
   canManageAppointments,
+  canManageWorkingHours,
   canReadTrainingClients,
   canWriteTrainingClients,
   isTherapyStaff,
@@ -25,6 +26,14 @@ import {
 import { BEGRIFFE } from '@/lib/begriffe';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { fetchWorkingHourExceptions, fetchWorkingHours } from '@/features/calendar/scheduling/api';
+import {
+  pausenKennung,
+  pausenProbleme,
+  tagMitPausen,
+  type Pausenlage,
+} from '@/features/calendar/scheduling/pause';
+import { usePausen } from './usePausen';
+import { PAUSE_BLEIBT_AM_TAG } from '@/features/calendar/scheduling/pause-api';
 import { PLATFORM_REQUESTS_KEY, fetchPlatformRequests } from '@/features/workplace';
 import { useTeamfarben } from '@/features/teamchat';
 import {
@@ -219,6 +228,20 @@ interface Vorschlag {
   frage: VerschiebenFrage;
   /** Die Zielspalte, in der das Gitter die neue Kachel zeichnet (FIX-017). */
   zielSpalteId: string;
+}
+
+// Arbeitszeit mit der Pause an ihrer Lage (ANN-863); außerhalb der Seite, damit Memos stabil bleiben.
+function arbeitszeitMitPausen(
+  person: string,
+  tag: string,
+  wochenplan: Parameters<typeof arbeitszeitBaender>[2],
+  ausnahmen: Parameters<typeof arbeitszeitBaender>[3],
+  lagen: readonly Pausenlage[],
+) {
+  return tagMitPausen(
+    arbeitszeitBaender(person, tag, wochenplan, ausnahmen),
+    lagen.filter((l) => l.staff_member_id === person && l.on_date === tag),
+  );
 }
 
 /**
@@ -523,6 +546,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     retry: false,
     placeholderData: keepPreviousData,
   });
+  const pausen = usePausen(bereich, Boolean(zone));
 
   // „Doku offen" sieht, wer Dokumentation lesen darf (ABN-005, ANN-201
   // Fassung 2): Der Server liefert den Stand nur an diese Rollen
@@ -642,6 +666,42 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
   // Solange der Wochenplan nicht da ist, behauptet das Gitter nichts: Ohne
   // Bänder wäre sonst jeder Tag ganz grau, bis die Antwort kommt (UX-005c).
   const arbeitszeitBekannt = wochenplan.data !== undefined;
+  // Die Pause liegt, wo der Tag sie hat (ANN-863); dieselbe Arbeitszeit für Raster, Lücken und Rückfrage.
+  const lagenDaten = pausen.lagenDaten;
+  const arbeitstagDes = (person: string, tag: string) =>
+    arbeitszeitMitPausen(person, tag, wochenplanDaten, ausnahmenDaten, lagenDaten);
+  const arbeitszeitDes = (person: string, tag: string) => arbeitstagDes(person, tag).arbeitszeit;
+  const darfPauseVerschieben = (person: string) =>
+    canManageWorkingHours(user.roles) || (darfAendern && person === user.staffMemberId);
+  const termineDes = (person: string, tag: string) =>
+    zone
+      ? [
+          ...eintraege
+            .filter(
+              (e) =>
+                e.staff_member_id === person &&
+                e.status !== 'cancelled' &&
+                dayKey(e.starts_at, zone) === tag,
+            )
+            .map((e) => ({
+              vonMinute: minutesOfDay(e.starts_at, zone),
+              bisMinute: minutesOfDay(e.ends_at, zone),
+            })),
+          ...belegtFuer(person, tag),
+        ]
+      : [];
+  const pausenDer = (spalteId: string, person: string | null, tag: string) => {
+    if (!person || !arbeitszeitBekannt) return {};
+    const { arbeitszeit, pausen: liste } = arbeitstagDes(person, tag);
+    return {
+      pausen: liste.map((pause) => ({
+        ...pause,
+        kennung: pausenKennung(spalteId, pause.planVonMinute),
+        ziehbar: darfPauseVerschieben(person),
+      })),
+      pausenProbleme: pausenProbleme(arbeitszeit, liste, termineDes(person, tag)),
+    };
+  };
 
   // Die eigene Person, wenn sie im Kalender eine Spalte hat (KAL-03).
   const eigenePerson =
@@ -720,7 +780,13 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
       id: t.staff_member_id,
       person: t.staff_member_id,
       baender: arbeitszeitBekannt
-        ? arbeitszeitBaender(t.staff_member_id, bereich.von, wochenplanDaten, ausnahmenDaten)
+        ? arbeitszeitMitPausen(
+            t.staff_member_id,
+            bereich.von,
+            wochenplanDaten,
+            ausnahmenDaten,
+            lagenDaten,
+          ).arbeitszeit
         : null,
       belegt: [
         ...eintraege
@@ -748,6 +814,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     arbeitszeitBekannt,
     wochenplanDaten,
     ausnahmenDaten,
+    lagenDaten,
     eintraege,
     belegtDaten,
   ]);
@@ -778,7 +845,8 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
         person,
         tag,
         baender: arbeitszeitBekannt
-          ? arbeitszeitBaender(person, tag, wochenplanDaten, ausnahmenDaten)
+          ? arbeitszeitMitPausen(person, tag, wochenplanDaten, ausnahmenDaten, lagenDaten)
+              .arbeitszeit
           : null,
         belegt: [
           ...eintraege
@@ -809,6 +877,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     arbeitszeitBekannt,
     wochenplanDaten,
     ausnahmenDaten,
+    lagenDaten,
     eintraege,
     belegtDaten,
   ]);
@@ -882,9 +951,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           // Die eigene Spalte, nicht nur als Farbton (KAL-03, KAL-B01).
           hervorgehoben: t.staff_member_id === eigenePerson,
           zusatz: t.staff_member_id === eigenePerson ? 'ich' : undefined,
-          baender: arbeitszeitBekannt
-            ? arbeitszeitBaender(t.staff_member_id, bereich.von, wochenplanDaten, ausnahmenDaten)
-            : null,
+          baender: arbeitszeitBekannt ? arbeitszeitDes(t.staff_member_id, bereich.von) : null,
           belegt: belegtFuer(t.staff_member_id, bereich.von),
           fahrwege: mitAuskunft(
             fahrwege.jeSpalte.get(t.staff_member_id) ?? [],
@@ -893,6 +960,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           ),
           luecken: lueckenDer(t.staff_member_id),
           ziel: zumWochenplan(t.staff_member_id, t.display_name),
+          ...pausenDer(t.staff_member_id, t.staff_member_id, bereich.von),
         }))
       : wochenTage.map((tag) => ({
           id: tag,
@@ -906,13 +974,11 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
               .filter(Boolean)
               .join(' · ') || undefined,
           aktuellesDatum: tag === heute,
-          baender:
-            wochenPerson && arbeitszeitBekannt
-              ? arbeitszeitBaender(wochenPerson, tag, wochenplanDaten, ausnahmenDaten)
-              : null,
+          baender: wochenPerson && arbeitszeitBekannt ? arbeitszeitDes(wochenPerson, tag) : null,
           belegt: wochenPerson ? belegtFuer(wochenPerson, tag) : [],
           fahrwege: mitAuskunft(fahrwege.jeSpalte.get(tag) ?? [], tag, wochenPerson),
           ziel: zumTag(tag),
+          ...pausenDer(tag, wochenPerson, tag),
         }));
 
   // Die Wochenansicht zeigt genau eine Person; alles andere blendet sie aus.
@@ -1873,6 +1939,20 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
               : null
           }
           onVerschieben={ablegen}
+          onPauseVerschieben={(ziel) => {
+            const [person, datum] =
+              p.ansicht === 'tag' ? [ziel.spalteId, bereich.von] : [wochenPerson, ziel.spalteId];
+            if (!person || ziel.spalteId !== ziel.herkunftSpalteId) {
+              pausen.melden(PAUSE_BLEIBT_AM_TAG);
+              return;
+            }
+            pausen.verschieben({
+              staffMemberId: person,
+              datum,
+              planVonMinute: ziel.planVonMinute,
+              vonMinute: ziel.vonMinute,
+            });
+          }}
           kontext={bereich.von}
           // Waehrend des Blaetterns stehen noch die alten Termine da; das
           // Gitter meldet es mit aria-busy, die Zeile darueber sagt es.
@@ -1930,7 +2010,8 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           stand je nach Bildlauf doch außerhalb. Solange eine
           Rückfrage oder die Anlegen-Leiste offen ist, tritt sie zurück: zwei
           Kästen übereinander wären eine Frage zu viel (CAL-023). */}
-      {rueckgaengig && !vorschlag && !auswahl && !gewaehlt ? (
+      {pausen.leiste}
+      {rueckgaengig && !vorschlag && !auswahl && !gewaehlt && !pausen.leiste ? (
         <div
           role="status"
           className="border-line-strong bg-surface-sunken nicht-drucken rounded-card fixed inset-x-4 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-40 flex flex-wrap items-center justify-between gap-3 border px-4 py-3 sm:inset-x-auto sm:right-6 sm:bottom-6 sm:w-[28rem]"
