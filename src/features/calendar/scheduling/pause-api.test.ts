@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 const rpc = vi.fn();
 vi.mock('@/lib/supabase', () => ({ getSupabase: () => ({ rpc }) }));
 
-const { PauseRueckfrage, setPausenlage } = await import('./pause');
+const { PauseRueckfrage, setPausenlage } = await import('./pause-api');
 
 const AUFTRAG = {
   staffMemberId: '55555555-5555-4555-8555-000000000002',

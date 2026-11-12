@@ -202,6 +202,46 @@ describe('set_break_placement', () => {
     ]);
   });
 
+  it('prüft gegen die übrigen Lagen des Tages, nicht nur gegen den Plan', async () => {
+    // Zwei Pausen: 10:00-10:30 und 13:00-13:30.
+    await asUserCommitted(users.ownerTherapist, WOCHE, [
+      STAFF.anna,
+      3,
+      JSON.stringify([
+        { von: '08:00', bis: '10:00' },
+        { von: '10:30', bis: '13:00' },
+        { von: '13:30', bis: '17:00' },
+      ]),
+    ]);
+    try {
+      await setzen('11:00', { plan: '13:00' });
+      // Die erste Pause darf nicht auf die verschobene zweite.
+      await expect(versuch('11:00', { plan: '10:00' })).rejects.toThrow(
+        /break outside working time/,
+      );
+      await expect(versuch('11:15', { plan: '10:00' })).rejects.toThrow(
+        /break outside working time/,
+      );
+      // Die erste auf die frei gewordene Lage der zweiten; die zweite kann dann nicht zurück.
+      await setzen('13:00', { plan: '10:00' });
+      expect(await bereiche()).toBe(
+        '{[08:00:00,11:00:00),[11:30:00,13:00:00),[13:30:00,17:00:00)}',
+      );
+      await expect(versuch('13:00', { plan: '13:00' })).rejects.toThrow(
+        /break outside working time/,
+      );
+    } finally {
+      await asUserCommitted(users.ownerTherapist, WOCHE, [
+        STAFF.anna,
+        3,
+        JSON.stringify([
+          { von: '08:00', bis: '12:00' },
+          { von: '13:00', bis: '18:00' },
+        ]),
+      ]);
+    }
+  });
+
   describe('Rechte', () => {
     it('lässt eine Therapeut:in nur die eigene Pause verschieben', async () => {
       await expect(versuch('14:00', { staff: STAFF.jannes })).rejects.toThrow(
@@ -267,9 +307,9 @@ describe('set_break_placement', () => {
       ).rejects.toThrow(/staff member not assignable/);
     });
 
-    it('zeigt Patienten- und Plattformkonten nichts', async () => {
+    it('zeigt Patienten-, Plattform- und Trainingskonten nichts', async () => {
       await setzen('14:00');
-      for (const user of [users.patientMax, users.plattformTina]) {
+      for (const user of [users.patientMax, users.plattformTina, users.trainer]) {
         const { rows } = await asUser(user, 'select id from public.staff_break_placements');
         expect(rows).toEqual([]);
       }

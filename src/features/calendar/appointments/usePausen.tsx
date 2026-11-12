@@ -1,13 +1,11 @@
 import { useState } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { tagMitPausen, type Band, type Pausenlage } from '@/features/calendar/scheduling/pause';
 import {
   fetchPausenlagen,
   PauseRueckfrage,
   setPausenlage,
-  tagMitPausen,
-  type Band,
-  type Pausenlage,
-} from '@/features/calendar/scheduling/pause';
+} from '@/features/calendar/scheduling/pause-api';
 import { tageslageNeuLaden } from './tageslage';
 import { PausenLeiste } from './PausenLeiste';
 

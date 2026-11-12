@@ -64,19 +64,22 @@ export function PausenMenue({
       <div className="mt-3 flex flex-wrap gap-2">
         {onVerschieben ? (
           <>
+            {pause.vonMinute >= PAUSEN_SCHRITT ? (
+              <Button
+                ref={ersterRef}
+                type="button"
+                variant="secondary"
+                groesse="kompakt"
+                onClick={() => onVerschieben(pause.vonMinute - PAUSEN_SCHRITT)}
+              >
+                {PAUSEN_SCHRITT} Min. früher
+              </Button>
+            ) : null}
             <Button
-              ref={ersterRef}
               type="button"
               variant="secondary"
               groesse="kompakt"
-              onClick={() => onVerschieben(pause.vonMinute - PAUSEN_SCHRITT)}
-            >
-              {PAUSEN_SCHRITT} Min. früher
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              groesse="kompakt"
+              disabled={pause.bisMinute + PAUSEN_SCHRITT >= 24 * 60}
               onClick={() => onVerschieben(pause.vonMinute + PAUSEN_SCHRITT)}
             >
               {PAUSEN_SCHRITT} Min. später

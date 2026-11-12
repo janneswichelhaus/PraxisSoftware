@@ -1,7 +1,3 @@
-import { z } from 'zod';
-import { antwort } from '@/lib/antwort';
-import { getSupabase } from '@/lib/supabase';
-
 /**
  * Pause frei im Kalender (ANN-863): Dauer aus dem Plan, Lage je Tag. Dieselbe Regel
  * wie `app.break_gaps` und `app.working_ranges`, damit Raster und Rückfrage vorher stimmen.
@@ -37,10 +33,6 @@ const PAUSE_UEBER_NEUN = { ab: 9 * 60, minuten: 45 } as const;
 function minute(zeit: string): number {
   const [h, m] = zeit.split(':').map(Number) as [number, number];
   return h * 60 + m;
-}
-
-function zeit(minuten: number): string {
-  return `${String(Math.floor(minuten / 60)).padStart(2, '0')}:${String(minuten % 60).padStart(2, '0')}`;
 }
 
 /** Bänder sortiert und Überlappendes oder Anstoßendes zusammengelegt. */
@@ -98,23 +90,28 @@ export function tagMitPausen(
   plan: readonly Band[],
   lagen: readonly Pausenlage[],
 ): { arbeitszeit: Band[]; pausen: Pause[] } {
-  let arbeitszeit = zusammengelegt(plan);
-  const pausen: Pause[] = [];
-  for (const luecke of pausenLuecken(plan)) {
-    const dauer = luecke.bisMinute - luecke.vonMinute;
+  const passend = pausenLuecken(plan).map((luecke) => {
     const lage = lagen.find((l) => minute(l.plan_starts_at) === luecke.vonMinute);
     const ziel = lage
       ? { vonMinute: minute(lage.starts_at), bisMinute: minute(lage.ends_at) }
       : null;
-    const mitLuecke = zusammengelegt([...arbeitszeit, luecke]);
-    if (ziel && ziel.bisMinute - ziel.vonMinute === dauer && deckt(mitLuecke, ziel)) {
-      arbeitszeit = ohne(mitLuecke, ziel);
-      pausen.push({ ...ziel, planVonMinute: luecke.vonMinute, verschoben: true });
-    } else {
-      pausen.push({ ...luecke, planVonMinute: luecke.vonMinute, verschoben: false });
-    }
-  }
-  return { arbeitszeit, pausen };
+    const gleichLang =
+      ziel !== null && ziel.bisMinute - ziel.vonMinute === luecke.bisMinute - luecke.vonMinute;
+    return { luecke, ziel: gleichLang ? ziel : null };
+  });
+  // Erst alle Lücken mit Lage öffnen, dann prüfen: Die Reihenfolge der Pausen entscheidet nichts.
+  const offen = zusammengelegt([...plan, ...passend.flatMap((p) => (p.ziel ? [p.luecke] : []))]);
+  const gilt = passend.map((p) => ({ ...p, ziel: p.ziel && deckt(offen, p.ziel) ? p.ziel : null }));
+  let arbeitszeit = zusammengelegt([...plan, ...gilt.flatMap((p) => (p.ziel ? [p.luecke] : []))]);
+  for (const p of gilt) if (p.ziel) arbeitszeit = ohne(arbeitszeit, p.ziel);
+  return {
+    arbeitszeit,
+    pausen: gilt.map(({ luecke, ziel }) =>
+      ziel
+        ? { ...ziel, planVonMinute: luecke.vonMinute, verschoben: true }
+        : { ...luecke, planVonMinute: luecke.vonMinute, verschoben: false },
+    ),
+  };
 }
 
 export type Pausenproblem = 'ueberlagert' | 'zu_kurz' | 'am_stueck';
@@ -169,65 +166,6 @@ export const PAUSENPROBLEM_TEXT: Record<Pausenproblem, string> = {
   zu_kurz: 'Pause zu kurz: über 6 Std. 30, über 9 Std. 45 Min. (§ 4 ArbZG).',
   am_stueck: 'Mehr als 6 Std. am Stück ohne Pause (§ 4 ArbZG).',
 };
-
-const lageSchema = z.object({
-  staff_member_id: z.string(),
-  on_date: z.string(),
-  plan_starts_at: z.string().transform((t) => t.slice(0, 5)),
-  starts_at: z.string().transform((t) => t.slice(0, 5)),
-  ends_at: z.string().transform((t) => t.slice(0, 5)),
-});
-
-/** Die Lagen eines Zeitraums; welche Zeilen kommen, entscheidet die RLS. */
-export async function fetchPausenlagen(von: string, bis: string): Promise<Pausenlage[]> {
-  const { data, error } = await getSupabase()
-    .from('staff_break_placements')
-    .select('staff_member_id, on_date, plan_starts_at, starts_at, ends_at')
-    .gte('on_date', von)
-    .lte('on_date', bis);
-  if (error) throw new Error('Pausen nicht geladen.');
-  return antwort(z.array(lageSchema), data ?? [], 'Pausen nicht geladen.');
-}
-
-/** Der Server fragt zurück: Danach wären es mehr als 6 Stunden am Stück. */
-export class PauseRueckfrage extends Error {}
-
-/**
- * Legt die Pause an eine andere Stelle; zurück auf die Lage im Plan löscht
- * die Zeile. Mehr als 6 Stunden am Stück verlangt `bestaetigt`.
- */
-export async function setPausenlage(eingabe: {
-  staffMemberId: string;
-  datum: string;
-  planVonMinute: number;
-  vonMinute: number;
-  bestaetigt: boolean;
-}): Promise<'moved' | 'plan'> {
-  const { data, error } = (await getSupabase().rpc('set_break_placement', {
-    p_staff_member_id: eingabe.staffMemberId,
-    p_date: eingabe.datum,
-    p_plan_starts_at: zeit(eingabe.planVonMinute),
-    p_starts_at: zeit(eingabe.vonMinute),
-    p_confirmed: eingabe.bestaetigt,
-  })) as { data: unknown; error: { message?: string } | null };
-  if (error) {
-    const text = error.message ?? '';
-    if (text.includes('more_than_six_hours_in_a_row')) {
-      throw new PauseRueckfrage(PAUSENPROBLEM_TEXT.am_stueck);
-    }
-    if (text.includes('overlaps appointment')) {
-      throw new Error('Dort liegt ein Termin. Erst den Termin verschieben.');
-    }
-    if (text.includes('outside working time')) {
-      throw new Error('Die Pause bleibt in der Arbeitszeit des Tages.');
-    }
-    if (text.includes('not allowed')) {
-      throw new Error('Die Pause verschiebt nur die Person selbst oder die Planung.');
-    }
-    throw new Error('Die Pause konnte nicht verschoben werden.');
-  }
-  return antwort(z.enum(['moved', 'plan']), data, 'Die Pause konnte nicht verschoben werden.');
-}
 
 /** Kennung einer Pause im Raster: neben den Terminen ziehbar, nie mit ihnen verwechselt. */
 export function pausenKennung(spalteId: string, planVonMinute: number): string {

@@ -67,6 +67,25 @@ describe('tagMitPausen', () => {
   });
 });
 
+describe('tagMitPausen mit zwei Pausen', () => {
+  it('lässt die erste auf die frei gewordene Lage der zweiten - unabhängig von der Reihenfolge', () => {
+    const plan = [band(h(8), h(10)), band(h(10, 30), h(13)), band(h(13, 30), h(17))];
+    const ergebnis = tagMitPausen(plan, [
+      lage('13:00', '13:30', '10:00'),
+      lage('11:00', '11:30', '13:00'),
+    ]);
+    expect(ergebnis.arbeitszeit).toEqual([
+      band(h(8), h(11)),
+      band(h(11, 30), h(13)),
+      band(h(13, 30), h(17)),
+    ]);
+    expect(ergebnis.pausen.map((p) => [p.vonMinute, p.verschoben])).toEqual([
+      [h(13), true],
+      [h(11), true],
+    ]);
+  });
+});
+
 describe('pausenProbleme', () => {
   const ohneLage = tagMitPausen(PLAN, []);
 

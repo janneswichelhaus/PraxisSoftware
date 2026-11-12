@@ -120,21 +120,26 @@ comment on function app.break_gaps(app.timemultirange) is
 revoke all on function app.break_gaps(app.timemultirange)
   from public, anon, authenticated, service_role;
 
-create or replace function app.working_ranges(p_staff_member_id uuid, p_organization_id uuid, p_date date)
+-- Dieselbe Rechnung ohne die Lage einer Pause: so prüft set_break_placement gegen die übrigen Lagen.
+create function app.working_ranges_except(
+  p_staff_member_id uuid, p_organization_id uuid, p_date date, p_skip_plan_starts_at time)
 returns app.timemultirange
 language plpgsql stable security definer
 set search_path to ''
 as $$
 declare
   v_bereiche app.timemultirange := app.planned_working_ranges(p_staff_member_id, p_organization_id, p_date);
-  v_luecke   app.timerange;
-  v_lage     app.timerange;
+  v_offen    app.timemultirange;
+  v_luecken  app.timemultirange := '{}';
+  v_lagen    app.timemultirange := '{}';
   g          record;
 begin
   if v_bereiche is null then
     return null;
   end if;
-  -- Nur eine Zeile, die zur Luecke des Tages passt und ganz in der Arbeitszeit liegt, verschiebt.
+  -- Alle Lücken mit passender Zeile zuerst öffnen, damit die Reihenfolge der Pausen nichts entscheidet;
+  -- es verschiebt nur eine Lage, die ganz in dieser Arbeitszeit liegt.
+  v_offen := v_bereiche;
   for g in
     select l.von, l.bis, p.starts_at, p.ends_at
     from app.break_gaps(v_bereiche) l
@@ -144,15 +149,39 @@ begin
      and p.on_date = p_date
      and p.plan_starts_at = l.von
      and p.ends_at - p.starts_at = l.bis - l.von
+   where p_skip_plan_starts_at is null or l.von <> p_skip_plan_starts_at
   loop
-    v_luecke := app.timerange(g.von, g.bis, '[)');
-    v_lage := app.timerange(g.starts_at, g.ends_at, '[)');
-    if (v_bereiche + app.timemultirange(v_luecke)) @> v_lage then
-      v_bereiche := (v_bereiche + app.timemultirange(v_luecke)) - app.timemultirange(v_lage);
+    v_offen := v_offen + app.timemultirange(app.timerange(g.von, g.bis, '[)'));
+  end loop;
+  for g in
+    select l.von, l.bis, p.starts_at, p.ends_at
+    from app.break_gaps(v_bereiche) l
+    join public.staff_break_placements p
+      on p.staff_member_id = p_staff_member_id
+     and p.organization_id = p_organization_id
+     and p.on_date = p_date
+     and p.plan_starts_at = l.von
+     and p.ends_at - p.starts_at = l.bis - l.von
+   where p_skip_plan_starts_at is null or l.von <> p_skip_plan_starts_at
+  loop
+    if v_offen @> app.timerange(g.starts_at, g.ends_at, '[)') then
+      v_luecken := v_luecken + app.timemultirange(app.timerange(g.von, g.bis, '[)'));
+      v_lagen := v_lagen + app.timemultirange(app.timerange(g.starts_at, g.ends_at, '[)'));
     end if;
   end loop;
-  return v_bereiche;
+  return (v_bereiche + v_luecken) - v_lagen;
 end;
+$$;
+
+revoke all on function app.working_ranges_except(uuid, uuid, date, time)
+  from public, anon, authenticated, service_role;
+
+create or replace function app.working_ranges(p_staff_member_id uuid, p_organization_id uuid, p_date date)
+returns app.timemultirange
+language sql stable security definer
+set search_path to ''
+as $$
+  select app.working_ranges_except(p_staff_member_id, p_organization_id, p_date, null)
 $$;
 
 comment on function app.working_ranges(uuid, uuid, date) is
@@ -198,6 +227,7 @@ declare
   v_org    uuid := app.current_organization_id();
   v_tz     text;
   v_plan   app.timemultirange;
+  v_ist    app.timemultirange;
   v_luecke app.timerange;
   v_lage   app.timerange;
   v_tag    app.timemultirange;
@@ -224,6 +254,9 @@ begin
   end if;
 
   select o.time_zone into v_tz from public.organizations o where o.id = v_org;
+  if v_tz is null then
+    raise exception 'organization has no time zone' using errcode = '22023';
+  end if;
 
   -- Dieselbe Sperre wie Urlaub und Abweichungen: eine Lage je Person und Augenblick.
   perform 1 from public.staff_members sm where sm.id = p_staff_member_id for no key update;
@@ -236,20 +269,32 @@ begin
     raise exception 'no movable break at this time' using errcode = '22023';
   end if;
 
-  if p_starts_at = p_plan_starts_at then
-    delete from public.staff_break_placements
-     where staff_member_id = p_staff_member_id and organization_id = v_org
-       and on_date = p_date and plan_starts_at = p_plan_starts_at;
-    return 'plan';
-  end if;
-
   v_dauer := (extract(epoch from (upper(v_luecke) - lower(v_luecke))) / 60)::integer;
   v_beginn := (extract(epoch from p_starts_at) / 60)::integer;
   if v_beginn + v_dauer >= 24 * 60 then
     raise exception 'break outside working time' using errcode = '22023';
   end if;
   v_lage := app.timerange(p_starts_at, p_starts_at + make_interval(mins => v_dauer), '[)');
-  v_tag := v_plan + app.timemultirange(v_luecke);
+  -- Geprüft wird gegen den Tag, wie er ist: andere verschobene Pausen bleiben, wo sie liegen.
+  v_ist := app.working_ranges(p_staff_member_id, v_org, p_date);
+  v_tag := app.working_ranges_except(p_staff_member_id, v_org, p_date, p_plan_starts_at)
+           + app.timemultirange(v_luecke);
+
+  -- Zurück auf den Plan, solange keine andere Pause dort liegt; ein Termin darf es (der Plan galt so).
+  if p_starts_at = p_plan_starts_at then
+    if exists (
+      select 1 from public.staff_break_placements p
+      where p.staff_member_id = p_staff_member_id and p.organization_id = v_org
+        and p.on_date = p_date and p.plan_starts_at <> p_plan_starts_at
+        and app.timerange(p.starts_at, p.ends_at, '[)') && v_luecke
+    ) then
+      raise exception 'break outside working time' using errcode = '22023';
+    end if;
+    delete from public.staff_break_placements
+     where staff_member_id = p_staff_member_id and organization_id = v_org
+       and on_date = p_date and plan_starts_at = p_plan_starts_at;
+    return 'plan';
+  end if;
   if not v_tag @> v_lage then
     raise exception 'break outside working time' using errcode = '22023';
   end if;
@@ -271,7 +316,7 @@ begin
      and 'more_than_six_hours_in_a_row' = any (
            app.working_day_problems(app.ranges_as_blocks(v_tag - app.timemultirange(v_lage))))
      and not 'more_than_six_hours_in_a_row' = any (
-           app.working_day_problems(app.ranges_as_blocks(v_plan))) then
+           app.working_day_problems(app.ranges_as_blocks(v_ist))) then
     raise exception 'more_than_six_hours_in_a_row' using errcode = '22023';
   end if;
 
