@@ -33,6 +33,7 @@ import {
   type Pausenlage,
 } from '@/features/calendar/scheduling/pause';
 import { usePausen } from './usePausen';
+import { PAUSE_BLEIBT_AM_TAG } from '@/features/calendar/scheduling/pause-api';
 import { PLATFORM_REQUESTS_KEY, fetchPlatformRequests } from '@/features/workplace';
 import { useTeamfarben } from '@/features/teamchat';
 import {
@@ -1942,7 +1943,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
             const [person, datum] =
               p.ansicht === 'tag' ? [ziel.spalteId, bereich.von] : [wochenPerson, ziel.spalteId];
             if (!person || ziel.spalteId !== ziel.herkunftSpalteId) {
-              pausen.melden('Die Pause bleibt bei der Person und am Tag.');
+              pausen.melden(PAUSE_BLEIBT_AM_TAG);
               return;
             }
             pausen.verschieben({

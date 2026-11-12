@@ -56,6 +56,7 @@ import {
   type Pausenproblem,
 } from '@/features/calendar/scheduling/pause';
 import { PausenMenue } from './PausenMenue';
+import { Rasterblock } from '@/components/ui/Rasterblock';
 
 /**
  * Eine abgelegte, noch nicht bestätigte Verschiebung, wie das Gitter sie
@@ -1213,20 +1214,15 @@ export function CalendarGrid({
                     spalteIndex >= spaltenModell.length / 2 && spaltenModell.length > 1;
                   return (
                     <Fragment key={pause.kennung}>
-                      <button
-                        type="button"
+                      <Rasterblock
                         data-testid="pause"
                         aria-expanded={offen}
                         title={`Pause ${zeitText}`}
-                        className={[
-                          'rounded-button absolute inset-x-1 flex flex-col items-start justify-start overflow-hidden border px-1.5 py-0.5 text-left text-xs leading-4 whitespace-nowrap',
-                          problem
-                            ? 'border-warnung bg-warnung-soft text-warnung'
-                            : 'border-line bg-surface-sunken text-ink-muted',
-                          pause.ziehbar ? 'cursor-grab touch-pan-x touch-pan-y' : 'cursor-pointer',
-                          ziehen.vorschau?.terminId === pause.kennung ? 'opacity-40' : '',
-                        ].join(' ')}
-                        style={{ top: `${oben}px`, height: `${Math.max(hoehe, 1)}px` }}
+                        oben={oben}
+                        hoehe={hoehe}
+                        ton={problem ? 'warnung' : 'neutral'}
+                        ziehbar={pause.ziehbar}
+                        gedimmt={ziehen.vorschau?.terminId === pause.kennung}
                         onPointerDown={
                           pause.ziehbar
                             ? (event) =>
@@ -1255,7 +1251,7 @@ export function CalendarGrid({
                         <span className="sr-only">
                           {`, ${zeitText}${pause.verschoben ? ', verschoben' : ''}${problem ? `. ${PAUSENPROBLEM_TEXT[problem]}` : ''}`}
                         </span>
-                      </button>
+                      </Rasterblock>
                       {offen ? (
                         <PausenMenue
                           pause={pause}

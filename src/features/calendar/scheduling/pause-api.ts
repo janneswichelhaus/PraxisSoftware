@@ -26,6 +26,8 @@ export async function fetchPausenlagen(von: string, bis: string): Promise<Pausen
   return antwort(z.array(lageSchema), data ?? [], 'Pausen nicht geladen.');
 }
 
+export const PAUSE_BLEIBT_AM_TAG = 'Die Pause bleibt bei der Person und am Tag.';
+
 /** Der Server fragt zurück: Danach wären es mehr als 6 Stunden am Stück. */
 export class PauseRueckfrage extends Error {}
 
