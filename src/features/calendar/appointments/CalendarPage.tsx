@@ -1340,6 +1340,13 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     p.ansicht === 'tag'
       ? `${wochentagKurz(p.datum)} ${tagesZahl(p.datum)}`
       : `${tagesZahl(bereich.von)}–${tagesZahl(tagePlus(bereich.bis, -1))}`;
+  // Die Streifen am Rand des Gitters: wohin der Bildlauf weitergeht (ANN-864).
+  const nachbar = (richtung: -1 | 1) => {
+    const tag = blaettern(p.ansicht, p.datum, richtung);
+    return p.ansicht === 'tag'
+      ? `${wochentagKurz(tag)} ${tagesZahl(tag)}`
+      : `KW ${kalenderwoche(tag)}`;
+  };
 
   // Ein Filter, der nicht die Voreinstellung ist, steht am Knopf - ein fast
   // leerer Kalender ohne erkennbaren Grund ist ein Fehlerbild
@@ -1887,6 +1894,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           rueckweg={kalenderStand}
           spaltenModell={spaltenModell}
           spaltenart={p.ansicht === 'woche' ? 'woche' : 'team'}
+          nachbarn={{ vorher: nachbar(-1), nachher: nachbar(1) }}
           eintraege={gitterEintraege}
           fenster={fenster}
           raster={user.appointmentGridMinutes}

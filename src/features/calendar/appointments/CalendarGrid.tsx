@@ -6,6 +6,7 @@ import {
   useState,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
+  type Ref,
 } from 'react';
 import { Link } from 'react-router-dom';
 import { BEGRIFFE } from '@/lib/begriffe';
@@ -57,6 +58,8 @@ import {
 } from '@/features/calendar/scheduling/pause';
 import { PausenMenue } from './PausenMenue';
 import { Rasterblock } from '@/components/ui/Rasterblock';
+import { Symbolknopf } from '@/components/ui/Symbolknopf';
+import { landung, nachBildlauf } from './endlosBildlauf';
 
 /**
  * Eine abgelegte, noch nicht bestätigte Verschiebung, wie das Gitter sie
@@ -144,6 +147,12 @@ const SPALTEN_MINDESTBREITE = '9rem';
  * Querrollen, fünf Spalten à rund 135 px neben der Stundenachse.
  */
 const WOCHEN_SPALTEN_MINDESTBREITE = '7.5rem';
+
+/** Breite der Streifen zum Nachbarzeitraum (ANN-864): Platz für „13.11.“ und 44 px Ziel. */
+const STREIFEN_BREITE = '4rem';
+
+/** So lange ruht der Bildlauf, bevor er als beendet gilt; `scrollend` fehlt in Safari. */
+const BILDLAUF_RUHE_MS = 140;
 
 /**
  * Mindesthöhe einer Auswahl oder Vorschau im Gitter (BEF-037).
@@ -399,6 +408,46 @@ function ortsHinweis(eintrag: CalendarEntry): string | null {
   return appointmentTypeHint(eintrag.appointment_type);
 }
 
+/**
+ * Streifen zum Nachbarzeitraum am Rand des Gitters (ANN-864). Herangerollt
+ * blättert er, angetippt ebenso; über beide Zeilen des Gitters.
+ */
+function Nachbarstreifen({
+  ref,
+  richtung,
+  text,
+  onClick,
+}: {
+  ref?: Ref<HTMLDivElement>;
+  richtung: -1 | 1;
+  text: string;
+  onClick: () => void;
+}) {
+  return (
+    <div
+      ref={ref}
+      className={[
+        'bg-surface-sunken border-line text-ink-muted flex flex-col items-center gap-1 pt-0.5 text-xs',
+        richtung === -1 ? 'border-r' : 'border-l',
+      ].join(' ')}
+      style={{ gridRow: '1 / span 2', gridColumn: richtung === -1 ? '1' : '-2' }}
+    >
+      {/* Für die Tastatur gibt es ‹ und › im Kopf; ein Fokus hier rollte den Streifen ins Bild. */}
+      <Symbolknopf
+        beschriftung={`${richtung === -1 ? 'Zurück zu' : 'Weiter zu'} ${text}`}
+        tabIndex={-1}
+        className="text-xl"
+        onClick={onClick}
+      >
+        {richtung === -1 ? '‹' : '›'}
+      </Symbolknopf>
+      <span aria-hidden="true" className="text-center font-medium break-words">
+        {text}
+      </span>
+    </div>
+  );
+}
+
 /** Name einer Spalte für Vorlesesoftware: Person bzw. Tag samt Hervorhebung. */
 function spaltenName(s: GitterSpalte): string {
   const name = [s.titel, s.unterTitel].filter(Boolean).join(' ');
@@ -433,7 +482,13 @@ export function CalendarGrid({
   wegfrage,
   zeitzone = null,
   spaltenart = 'team',
+  nachbarn = null,
 }: {
+  /**
+   * Kurzname des Zeitraums davor und danach („Fr 13.11.“, „KW 46“): Mit `onBlaettern` geht
+   * der waagerechte Bildlauf über den Rand hinaus weiter (ANN-864).
+   */
+  nachbarn?: { vorher: string; nachher: string } | null;
   /**
    * Was eine Spalte ist: eine Person (Teamansicht, 9rem) oder ein Tag
    * (Wochenansicht, 7.5rem). Ohne Angabe gilt die Teamansicht.
@@ -536,6 +591,24 @@ export function CalendarGrid({
   const gitterRef = useRef<HTMLDivElement>(null);
   const eckeRef = useRef<HTMLDivElement>(null);
   const rueckfrageRef = useRef<HTMLDivElement>(null);
+  const streifenRef = useRef<HTMLDivElement>(null);
+  const endlos = nachbarn !== null && onBlaettern !== undefined;
+  // Die Richtung des letzten Blätterns aus dem Gitter: Dort landet der Bildlauf.
+  const landeRichtung = useRef<-1 | 1 | null>(null);
+  const blaettern = onBlaettern
+    ? (richtung: -1 | 1) => {
+        landeRichtung.current = richtung;
+        onBlaettern(richtung);
+      }
+    : undefined;
+  /** Bildlauf, bei dem die erste Spalte an der Zeitachse steht: hinter dem linken Streifen. */
+  const vorlauf = () => streifenRef.current?.offsetWidth ?? 0;
+  /** Waagerecht rollen, ohne einen Streifen ins Bild zu holen. */
+  const rolleZu = (kasten: HTMLElement, links: number) => {
+    const streifen = vorlauf();
+    const max = kasten.scrollWidth - kasten.clientWidth;
+    kasten.scrollLeft = streifen ? landung({ richtung: null, links, max, streifen }) : links;
+  };
   const hoehe = ((fenster.bisMinute - fenster.vonMinute) / 60) * stundenHoehe;
 
   const linien = gitterlinien(stundenHoehe, raster);
@@ -576,7 +649,7 @@ export function CalendarGrid({
       if (clientX > kasten.right - 4) return 1;
       return 0;
     },
-    onBlaettern,
+    onBlaettern: blaettern,
     onAblegen: (zustand: ZiehZustand) => {
       const pause = ausPausenKennung(zustand.terminId);
       if (pause) {
@@ -648,7 +721,10 @@ export function CalendarGrid({
     gerollterAusschnitt.current = schluessel;
     // Der Abstand zur ersten Spalte ist genau der Bildlauf, bei dem die Spalte
     // an der stehenden Zeitachse beginnt - unabhängig vom jetzigen Stand.
-    kasten.scrollLeft = spalte.getBoundingClientRect().left - erste.getBoundingClientRect().left;
+    rolleZu(
+      kasten,
+      vorlauf() + spalte.getBoundingClientRect().left - erste.getBoundingClientRect().left,
+    );
   });
 
   // Die Spalte des gewählten Termins steht im Bild (Design-Review T5): Öffnete
@@ -675,13 +751,97 @@ export function CalendarGrid({
     const anfang = erste.getBoundingClientRect();
     // Sichtbar ist, was rechts der stehenden Zeitachse liegt: Sie ist so
     // breit, wie die erste Spalte ohne Bildlauf vom Rand entfernt beginnt.
-    const zeitachse = anfang.left - rahmen.left + kasten.scrollLeft;
+    const zeitachse = anfang.left - rahmen.left + kasten.scrollLeft - vorlauf();
     const imBild =
       ziel.left >= rahmen.left + zeitachse - 1 &&
       ziel.right <= rahmen.left + kasten.clientWidth + 1;
     if (imBild) return;
-    kasten.scrollLeft = ziel.left - anfang.left;
+    rolleZu(kasten, vorlauf() + ziel.left - anfang.left);
   });
+
+  // Nach dem Blättern landet der Bildlauf dort, wohin man gerollt hat; sonst
+  // nur außerhalb der Streifen (ANN-864). Vor dem Rollen zum heutigen Tag.
+  useLayoutEffect(() => {
+    const kasten = gitterRef.current;
+    const streifen = vorlauf();
+    const richtung = landeRichtung.current;
+    landeRichtung.current = null;
+    if (!kasten || streifen === 0) return;
+    if (richtung !== null) gerollterAusschnitt.current = `${kontext}|${startSpalte}`;
+    kasten.scrollLeft = landung({
+      richtung,
+      links: kasten.scrollLeft,
+      max: kasten.scrollWidth - kasten.clientWidth,
+      streifen,
+    });
+    // Nur beim Wechsel des Ausschnitts; der Startspalte folgt der eigene Effekt.
+  }, [kontext, endlos]);
+
+  // Rollt die Person über den Rand hinaus, entscheidet das Ende des Bildlaufs:
+  // blättern oder zurückfedern. Programmatisches Rollen blättert nie.
+  const nutzerRollt = useRef(false);
+  const fingerAuf = useRef(false);
+  const ruheTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Einmal gebunden: Ein Neuzeichnen (etwa nach dem Laden) löschte sonst den Ruhe-Timer.
+  const blaetternRef = useRef(blaettern);
+  blaetternRef.current = blaettern;
+  useEffect(() => {
+    const kasten = gitterRef.current;
+    if (!kasten || !endlos) return;
+    const auswerten = () => {
+      ruheTimer.current = null;
+      if (fingerAuf.current) return;
+      const streifen = vorlauf();
+      const max = kasten.scrollWidth - kasten.clientWidth;
+      const schluss = nachBildlauf({ links: kasten.scrollLeft, max, streifen });
+      const vomNutzer = nutzerRollt.current;
+      nutzerRollt.current = false;
+      if (schluss === -1 || schluss === 1) {
+        if (vomNutzer) blaetternRef.current?.(schluss);
+        else
+          kasten.scrollLeft = landung({ richtung: null, links: kasten.scrollLeft, max, streifen });
+        return;
+      }
+      if (schluss === null) return;
+      const ruhig = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? true;
+      kasten.scrollTo({
+        left: schluss === 'links' ? streifen : max - streifen,
+        behavior: ruhig ? 'auto' : 'smooth',
+      });
+    };
+    const spaeter = () => {
+      if (ruheTimer.current) clearTimeout(ruheTimer.current);
+      ruheTimer.current = setTimeout(auswerten, BILDLAUF_RUHE_MS);
+    };
+    const eingabe = () => {
+      nutzerRollt.current = true;
+    };
+    const fingerRunter = () => {
+      fingerAuf.current = true;
+      nutzerRollt.current = true;
+    };
+    const fingerHoch = () => {
+      fingerAuf.current = false;
+      spaeter();
+    };
+    kasten.addEventListener('scroll', spaeter, { passive: true });
+    kasten.addEventListener('wheel', eingabe, { passive: true });
+    kasten.addEventListener('pointerdown', eingabe, { passive: true });
+    kasten.addEventListener('keydown', eingabe);
+    kasten.addEventListener('touchstart', fingerRunter, { passive: true });
+    kasten.addEventListener('touchend', fingerHoch, { passive: true });
+    kasten.addEventListener('touchcancel', fingerHoch, { passive: true });
+    return () => {
+      if (ruheTimer.current) clearTimeout(ruheTimer.current);
+      kasten.removeEventListener('scroll', spaeter);
+      kasten.removeEventListener('wheel', eingabe);
+      kasten.removeEventListener('pointerdown', eingabe);
+      kasten.removeEventListener('keydown', eingabe);
+      kasten.removeEventListener('touchstart', fingerRunter);
+      kasten.removeEventListener('touchend', fingerHoch);
+      kasten.removeEventListener('touchcancel', fingerHoch);
+    };
+  }, [endlos]);
 
   // Der Fokus nach einem geschlossenen Kasten (KAL-21). Ohne Ziel - die
   // Kachel ist nach dem Blättern fort - der Knopf in der Ecke.
@@ -780,11 +940,32 @@ export function CalendarGrid({
         <div
           className="grid min-w-max"
           style={{
-            gridTemplateColumns: `3.25rem repeat(${spaltenModell.length}, minmax(${spaltenart === 'woche' ? WOCHEN_SPALTEN_MINDESTBREITE : SPALTEN_MINDESTBREITE}, 1fr))`,
+            gridTemplateColumns: [
+              endlos ? STREIFEN_BREITE : '',
+              `3.25rem repeat(${spaltenModell.length}, minmax(${spaltenart === 'woche' ? WOCHEN_SPALTEN_MINDESTBREITE : SPALTEN_MINDESTBREITE}, 1fr))`,
+              endlos ? STREIFEN_BREITE : '',
+            ].join(' '),
+            // Die Streifen liegen in Ruhe außerhalb des Bildes, die Spalten füllen es.
+            ...(endlos ? { width: `calc(100% + 2 * ${STREIFEN_BREITE})` } : {}),
           }}
           role="region"
           aria-label={beschriftung}
         >
+          {endlos && nachbarn ? (
+            <>
+              <Nachbarstreifen
+                ref={streifenRef}
+                richtung={-1}
+                text={nachbarn.vorher}
+                onClick={() => blaettern?.(-1)}
+              />
+              <Nachbarstreifen
+                richtung={1}
+                text={nachbarn.nachher}
+                onClick={() => blaettern?.(1)}
+              />
+            </>
+          ) : null}
           {/* Kopfzeile. */}
           <div
             ref={eckeRef}

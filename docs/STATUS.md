@@ -1,4 +1,4 @@
-# Status · Stand 2026-11-12
+# Status · Stand 2026-11-14
 
 Livestand in höchstens 4 KB (`pnpm docs:check`). Reihenfolge: `development/ROADMAP.md`; Verlauf
 steht in den PRs und in Git. Abgelegte Dokumente zeigt `git show eb43569:<pfad>` (Archiv,
@@ -6,7 +6,7 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 ## Jetzt
 
-**Terminplaner** (Jannes 2026-11-12): Pause ✓, Endlos-Scroll, Autobuchung, ADR und Online-Buchung.
+**Terminplaner** (Jannes 2026-11-12): Pause ✓, Endlos-Scroll ✓, Autobuchung, ADR und Online-Buchung.
 
 **Wartungsmodus** (#363): Fehler und Anpassungen einzeln je Session, Regel in `CLAUDE.md`,
 Ablauf in `DEVELOPMENT.md`; Merge bei Jannes.
@@ -42,4 +42,5 @@ nennen die Steuerberatung.
 
 ## Letzte Session
 
-12.11.2026, Terminplaner Schritt 1: Pause frei im Kalender statt grauer Mittagspause.
+14.11.2026, Terminplaner Schritt 2: Kalender endlos waagerecht, Streifen zum Nachbarzeitraum
+(ANN-864); Touch-Geste noch am Gerät prüfen.
