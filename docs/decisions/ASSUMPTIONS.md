@@ -1071,6 +1071,10 @@ Technik · offen · 2026-11-09 · — · — · Wiedervorlage: Anbieterprüfung 
 Praxisprozess · offen · 2026-11-12 · — · — · Wiedervorlage: Sichtung Kalender\
 **Regel.** Planlücke 15–60 Min. = Pause, länger = geteilter Dienst. Block im Kalender, verschiebbar in der Arbeitszeit, nie über Termine; über 6 Std. am Stück nur mit Rückfrage. Soll bleibt. **Grundlage.** § 4 ArbZG. **Anker.** `app.break_gaps`.
 
+### ANN-864 — Kalender endlos waagerecht: Streifen zum Nachbarzeitraum
+Technik · offen · 2026-11-14 · — · — · Wiedervorlage: Sichtung Kalender\
+**Regel.** Links und rechts im Gitter je ein Streifen mit Vortag/nächstem Tag (Woche: KW), in Ruhe außer Bild. Über den Rand gerollt und zu ⅔ sichtbar losgelassen: blättern, Landung am Anfang bzw. Ende der Spalten; sonst zurückfedern. Tipp auf den Streifen blättert; Tastatur über ‹ ›. Kein Mitladen der Nachbartage. **Grundlage.** IDEA-PRX-045, Jannes 2026-11-12. **Anker.** `nachBildlauf` in `endlosBildlauf.ts`.
+
 ## Übrige Einträge
 | Kennung | Titel | Kategorie · Status | Anker |
 | --- | --- | --- | --- |

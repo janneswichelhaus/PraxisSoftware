@@ -144,6 +144,32 @@ test.describe('CAL-002: Kalender', () => {
     await expect(page.getByRole('button', { name: /Max Mustermann/ }).first()).toBeVisible();
   });
 
+  test('rollt über den Rand des Gitters in den Nachbartag weiter (ANN-864)', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 780 });
+    await anmelden(page, KONTEN.office);
+    await page.goto(`/kalender?ansicht=tag&datum=${TAG}`);
+    const gitter = page.locator('div.overflow-x-auto').filter({ has: page.getByRole('region') });
+    await expect(page.getByRole('button', { name: /^Weiter zu / })).toBeAttached();
+    // Ein Rad-Ereignis markiert den Bildlauf als den der Person; gesetzt wird er direkt.
+    const rollen = (ziel: 'anfang' | 'ende' | 'angezogen') =>
+      gitter.evaluate((k, z) => {
+        k.dispatchEvent(new WheelEvent('wheel'));
+        k.scrollLeft = z === 'ende' ? k.scrollWidth : z === 'anfang' ? 0 : 30;
+      }, ziel);
+
+    await rollen('ende');
+    await expect(page).not.toHaveURL((u) => u.searchParams.get('datum') === TAG);
+    const nachbar = new URL(page.url()).searchParams.get('datum');
+
+    // Nur angezogen federt der Streifen zurück, statt zu blättern.
+    await rollen('angezogen');
+    await expect.poll(() => gitter.evaluate((k) => k.scrollLeft)).toBeGreaterThan(30);
+    expect(new URL(page.url()).searchParams.get('datum')).toBe(nachbar);
+
+    await rollen('anfang');
+    await expect(page).toHaveURL((u) => u.searchParams.get('datum') === TAG);
+  });
+
   test('läuft bei 375 px ohne horizontales Scrollen', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 780 });
     await anmelden(page, KONTEN.office);
