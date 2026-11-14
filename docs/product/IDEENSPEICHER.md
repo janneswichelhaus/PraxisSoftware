@@ -178,7 +178,7 @@ KI-Assistenz · QSN Querschnitt der Plattform · ANG Angebote und Abrechnung · 
 | IDEA-PRX-041 | Anrufliste mit gespeichertem Stand | überführt → PRX-014 |
 | IDEA-PRX-042 | Terminieren mit ausgewählter Person: der Kalender als Suchfläche | überführt → CAL-015c, UBK-014 |
 | IDEA-PRX-043 | Textbausteine auch im Befund | notiert |
-| IDEA-PRX-045 | Kalender endlos wischen: am Ende des Tags oder der Woche geht es weiter | vorschlag |
+| IDEA-PRX-045 | Kalender endlos wischen: am Ende des Tags oder der Woche geht es weiter | überführt → ANN-864 (gebaut 2026-11-14) |
 | IDEA-PRX-047 | Vergütungsmodelle mit Umsatzbeteiligung | bestätigt (Grundlage in STA-005, das Übrige offen) |
 | IDEA-PRX-048 | Lastenrad als 3D-Modell (Design-Export „Lastenrad") | notiert · Abgrenzung |
 | IDEA-PRX-049 | Geburtsdatum aller Mitarbeitenden hinterlegt | notiert |

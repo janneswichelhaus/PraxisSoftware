@@ -429,6 +429,55 @@ describe('Spaltenbreite je Ansicht (Runde 3, Handoff Kalender und Tour 2026-10-0
   });
 });
 
+describe('Endlos waagerecht (ANN-864)', () => {
+  function zeichne(mitNachbarn: boolean, onBlaettern?: (richtung: -1 | 1) => void) {
+    renderWithProviders(
+      <CalendarGrid
+        spaltenModell={[{ id: 'st-1', titel: 'Anna Beispiel', baender: [] }]}
+        eintraege={[]}
+        fenster={{ vonMinute: 480, bisMinute: 720 }}
+        raster={5}
+        stundenHoehe={80}
+        onVerschieben={() => {}}
+        onBlaettern={onBlaettern}
+        kontext="2027-05-12"
+        ziehbarErlaubt
+        beschriftung="Gitter"
+        nachbarn={mitNachbarn ? { vorher: 'Di 11.05.', nachher: 'Do 13.05.' } : null}
+      />,
+    );
+    return screen.getByRole('region', { name: 'Gitter' });
+  }
+
+  it('legt links und rechts je einen Streifen zum Nachbarzeitraum an, außerhalb des Bildes', () => {
+    const gitter = zeichne(true, () => {});
+    expect(gitter.style.gridTemplateColumns).toMatch(/^4rem 3\.25rem .* 4rem$/);
+    expect(gitter.style.width).toMatch(/^calc\(100% \+ /);
+  });
+
+  it('blättert mit einem Tipp auf den Streifen', () => {
+    const onBlaettern = vi.fn();
+    zeichne(true, onBlaettern);
+    screen.getByRole('button', { name: 'Weiter zu Do 13.05.' }).click();
+    screen.getByRole('button', { name: 'Zurück zu Di 11.05.' }).click();
+    expect(onBlaettern.mock.calls).toEqual([[1], [-1]]);
+  });
+
+  it('lässt die Streifen aus der Tab-Folge: Dafür stehen ‹ und › im Kopf', () => {
+    zeichne(true, () => {});
+    expect(screen.getByRole('button', { name: 'Weiter zu Do 13.05.' })).toHaveAttribute(
+      'tabindex',
+      '-1',
+    );
+  });
+
+  it('zeichnet ohne Nachbarn oder ohne Blättern keine Streifen', () => {
+    const gitter = zeichne(false, () => {});
+    expect(gitter.style.gridTemplateColumns).not.toMatch(/4rem/);
+    expect(screen.queryByRole('button', { name: /Weiter zu/ })).toBeNull();
+  });
+});
+
 describe('Kurze Kachel (Design-Review T5)', () => {
   it('zeigt bei einer Zeile den Titel und die Uhrzeit dahinter, wo beide passen', () => {
     renderWithProviders(
