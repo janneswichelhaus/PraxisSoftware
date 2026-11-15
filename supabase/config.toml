@@ -205,6 +205,14 @@ verify_jwt = true
 [functions.card-terminal]
 verify_jwt = true
 
+# Die automatische Buchung (ANN-865). `verify_jwt` ist der Riegel der Plattform; die Function prueft
+# die Sitzung selbst und laesst die Datenbank mit dem Token der Person planen und buchen
+# (plan_auto_booking, book_next_appointment). Die Fahrzeiten rechnet derselbe Kartendienst wie bei
+# location-provider, mit demselben Schalter (ADR-019 Punkte 35 und 36); ohne ihn bucht sie nicht.
+# Scharf erst nach OPS-001 (ADR-015 Punkt 20).
+[functions.auto-booking]
+verify_jwt = true
+
 # Kalender-Abo (ANN-838, ANN-839): ohne `verify_jwt`, weil Kalenderprogramme sich nicht anmelden;
 # die Datenbank prueft die geheime Adresse. Die Function fragt mit dem Token der Rolle
 # calendar_feed_reader (Secret CALENDAR_FEED_ROLE_KEY), scharf erst nach OPS-001 (ADR-015 Punkt 20).
