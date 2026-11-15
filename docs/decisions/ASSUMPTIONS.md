@@ -1545,3 +1545,4 @@ Technik · offen · 2026-11-14 · — · — · Wiedervorlage: Sichtung Kalender
 | ANN-858 | „Ich“: Gruppen nach Zweck, der Bereich als Wahl im Kopf | Technik · offen | `Ich` in `src/features/portal/platform/Ich.tsx` |
 | ANN-859 | Einwilligung: erster Satz sichtbar, Rest wörtlich unter „Mehr dazu“ | Technik · offen | `zweckteile` in `src/features/portal/platform/Einwilligungen.tsx` |
 | ANN-860 | Einstellungen: Schrift mit Vorschau, ohne Anrede | Technik · offen | `VonDerPraxis` in `src/features/portal/platform/Einstellungen.tsx` |
+| ANN-865 | Automatisch buchen: nur Hausbesuch, Fahrzeit mal Faktor in freier Arbeitszeit, ohne Fahrzeit kein Platz; Patient:innen erst nach dem ADR zur Online-Buchung | Praxisprozess · offen | `app.auto_booking_fits` |

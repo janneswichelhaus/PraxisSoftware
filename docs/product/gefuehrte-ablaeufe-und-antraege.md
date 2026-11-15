@@ -68,7 +68,3 @@ geführt und ohne unnötiges Scrollen, nach dem Vorbild des Check-Ups.
   maskiert; Belegfristen als Annahme (B4).
 - **Teamchat** (TEAM-001): kein geführter Ablauf; ein Vorgangsbezug auf einen Antrag zeigt nie
   dessen Grund an Unberechtigte.
-
-## 4. Bewegliche Mittagspause (Jannes 2026-10-16)
-Gebaut als Pause frei im Kalender (ANN-863): Dauer im Plan, Lage je Tag. Offen: Die automatische
-Terminvergabe legt die Pause selbst (§ 4 ArbZG). Keine Erfassung, wann sie genommen wurde (§20).
