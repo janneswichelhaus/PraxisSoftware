@@ -34,7 +34,6 @@ describe('berechneFahrzeiten', () => {
       adapter,
       ziel: ZIEL,
       wege,
-      protokolliere: vi.fn(),
     });
 
     expect(matrix.mock.calls.map(([anfrage]) => anfrage)).toEqual([
@@ -58,7 +57,6 @@ describe('berechneFahrzeiten', () => {
       adapter,
       ziel: ZIEL,
       wege,
-      protokolliere: vi.fn(),
     });
     expect(matrix.mock.calls.map(([anfrage]) => anfrage.origins.length)).toEqual([25, 5]);
     expect(ergebnis.ok && ergebnis.fahrzeiten.map((f) => f.key)).toEqual(wege.map((w) => w.key));

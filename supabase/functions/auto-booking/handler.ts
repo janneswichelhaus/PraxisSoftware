@@ -26,6 +26,7 @@ export const STATUS: Readonly<Record<Fehlerklasse, number>> = {
   waitlist_closed: 409,
   travel_unavailable: 502,
   unavailable: 502,
+  outcome_unknown: 502,
   busy: 409,
 };
 
@@ -160,7 +161,12 @@ export function erstelleHandler({
       }));
 
       const gebucht = await datenbank.buche(authorization, auftrag, versatz, fahrzeiten);
-      if (!gebucht.ok) return fehler(gebucht.grund, 'Buchung abgewiesen');
+      if (!gebucht.ok) {
+        // Ohne Antwort der Datenbank weiß niemand, ob der Termin steht.
+        return gebucht.grund === 'unavailable'
+          ? fehler('outcome_unknown', 'Buchung ohne Antwort')
+          : fehler(gebucht.grund, 'Buchung abgewiesen');
+      }
       const { buchung } = gebucht;
       if (buchung.ausgang === 'gebucht') {
         return erfolg({ ergebnis: 'gebucht', termin: buchung.termin });

@@ -238,6 +238,13 @@ describe('Ablauf der automatischen Buchung', () => {
     expect(datenbank.buche).not.toHaveBeenCalled();
   });
 
+  it('nennt den Ausgang unklar, wenn die Datenbank beim Buchen nicht antwortet', async () => {
+    const { handler } = aufbau({ buchungen: [{ grund: 'unavailable' }] });
+    const antwort = await handler(anfrage());
+    expect(antwort.status).toBe(502);
+    expect(await lies(antwort)).toMatchObject({ error: { code: 'outcome_unknown' } });
+  });
+
   it('gibt die Abweisung der Buchung weiter', async () => {
     const { handler } = aufbau({ buchungen: [{ grund: 'waitlist_closed' }] });
     const antwort = await handler(anfrage());

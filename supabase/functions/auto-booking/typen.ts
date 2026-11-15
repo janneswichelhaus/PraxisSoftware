@@ -68,6 +68,7 @@ export const FEHLERKLASSEN = [
   'waitlist_closed',
   'travel_unavailable',
   'unavailable',
+  'outcome_unknown',
   'busy',
 ] as const;
 export type Fehlerklasse = (typeof FEHLERKLASSEN)[number];
