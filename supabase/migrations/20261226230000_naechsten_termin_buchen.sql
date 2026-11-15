@@ -732,6 +732,8 @@ begin
   if auth.uid() is null then
     raise exception 'not authenticated' using errcode = '42501';
   end if;
+  -- ANN-865: nur Rollen, die Termine anlegen. Ob Patient:innen selbst buchen, entscheidet das ADR
+  -- zur Online-Buchung; bis dahin schreibt ein Plattformzugang nur Wünsche (ADR-018, ADR-023).
   if not app.can_create_appointment() then
     raise exception 'not allowed to create appointments' using errcode = '42501';
   end if;

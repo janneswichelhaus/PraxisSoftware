@@ -33,6 +33,7 @@ import {
   type TravelRating,
 } from './api';
 import { fetchAssignableTherapists } from '@/features/workforce';
+import { NaechstenTerminBuchen } from './NaechstenTerminBuchen';
 import {
   appointmentTypeLabels,
   appointmentTypeSchema,
@@ -200,6 +201,8 @@ export function SlotSearchPage({ user }: { user: CurrentUser }) {
           from: e?.earliest_on && e.earliest_on > today ? e.earliest_on : today,
         }}
         therapists={therapists.data ?? []}
+        basisId={basisId}
+        waitlistId={e?.id ?? null}
         link={(slot, type, duration) => {
           const vorbelegung = schreibeTerminVorbelegung({
             datum: slot.slot_date,
@@ -225,6 +228,8 @@ function SearchForm({
   today,
   initial,
   therapists,
+  basisId,
+  waitlistId,
   link,
 }: {
   patientId: string;
@@ -237,6 +242,8 @@ function SearchForm({
     from: string;
   };
   therapists: { staff_member_id: string; display_name: string }[];
+  basisId: string | null;
+  waitlistId: string | null;
   link: (slot: Slot, type: AppointmentType, duration: number) => string;
 }) {
   const [type, setType] = useState<AppointmentType>(initial.type);
@@ -349,12 +356,30 @@ function SearchForm({
             </Statusmeldung>
           ) : null}
           <div className="sm:col-span-2">
-            <Button type="submit" disabled={result.isFetching}>
+            <Button type="submit" variant="secondary" disabled={result.isFetching}>
               {result.isFetching ? 'Wird gesucht …' : 'Suchen'}
             </Button>
           </div>
         </form>
       </Disclosure>
+
+      {/* ANN-865: Für den Hausbesuch wählt und bucht der Server; die Wegregel gilt nur dort. Der
+          Auftrag ist die laufende Suche, eine neue Suche setzt die Meldung zurück. */}
+      {params.type === 'home_visit' ? (
+        <NaechstenTerminBuchen
+          key={JSON.stringify(params)}
+          auftrag={{
+            patientId: params.patientId,
+            staffMemberId: params.staffMemberId,
+            duration: params.duration,
+            from: params.from,
+            to: params.to,
+            windows: params.windows,
+            basisId,
+            waitlistId,
+          }}
+        />
+      ) : null}
 
       {/* Ohne Hinweis zur Sortierung: Die Reihenfolge zeigt sich selbst, und
           Abweichungen tragen ihr Kennzeichen (UX-005g). Die Zeile darunter

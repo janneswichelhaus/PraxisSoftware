@@ -25,6 +25,7 @@ export { useAbrechnungslage } from './useAbrechnungslage';
 export { fetchKurzblick } from './kurzblick-api';
 export { dokumentiertOhneHaken, hakenFehlt, hakenZuruecknehmbar } from './haken';
 export { tageslageNeuLaden } from './tageslage';
+export { AufDerPlattformSichtbar, undoAppointmentCreation } from './folgetermin-api';
 export { tagUmplanenAdresse } from './tagumplanen';
 export { fetchTerminTage, type TerminTag } from './terminTage';
 export { useAppointmentFormLists } from './useAppointmentFormLists';

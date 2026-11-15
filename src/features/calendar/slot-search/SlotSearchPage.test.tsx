@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import type * as SlotApi from './api';
+import type * as BuchungsApi from './auto-booking-api';
 import type * as PatientsApi from '@/features/patients/record/api';
 import type * as WaitlistApi from '@/features/calendar/waitlist/api';
 import type * as RouterModul from 'react-router-dom';
@@ -12,6 +14,13 @@ const ENTRY = '99999999-9999-4999-8999-000000000001';
 
 const findFreeSlots = vi.fn();
 const fetchWaitlist = vi.fn();
+const bucheNaechstenTermin = vi.fn();
+
+vi.mock('./auto-booking-api', async (importOriginal) => ({
+  ...(await importOriginal<typeof BuchungsApi>()),
+  bucheNaechstenTermin: (a: BuchungsApi.Buchungsauftrag) =>
+    bucheNaechstenTermin(a) as Promise<BuchungsApi.Buchungsergebnis>,
+}));
 
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof SlotApi>()),
@@ -63,6 +72,7 @@ describe('SlotSearchPage (PRX-003)', () => {
   beforeEach(() => {
     findFreeSlots.mockReset();
     fetchWaitlist.mockReset();
+    bucheNaechstenTermin.mockReset();
   });
 
   it('sucht mit den Wünschen des Wartelisteneintrags und führt vorbelegt ins Formular', async () => {
@@ -120,5 +130,51 @@ describe('SlotSearchPage (PRX-003)', () => {
     );
     expect(await screen.findByText('Kein freier Platz')).toBeInTheDocument();
     expect(screen.queryByText(/Zeitraum verlängern/)).toBeNull();
+  });
+
+  it('bucht den nächsten passenden Hausbesuch mit der laufenden Suche und der Grundlage', async () => {
+    findFreeSlots.mockResolvedValue([]);
+    bucheNaechstenTermin.mockResolvedValue({ art: 'kein_platz', ungeprueft: 0 });
+    renderWithProviders(
+      <SlotSearchPage user={testUser(['office'])} />,
+      `/patienten/${PATIENT}/plaetze?verordnung=88888888-8888-4888-8888-000000000002`,
+    );
+    await screen.findByText('Kein freier Platz');
+    await userEvent.click(screen.getByRole('button', { name: 'Nächsten passenden Termin buchen' }));
+
+    expect(await screen.findByText('Kein passender Platz im Zeitraum.')).toBeInTheDocument();
+    const suche = findFreeSlots.mock.calls[0]![0] as SlotApi.SearchParams;
+    expect(bucheNaechstenTermin).toHaveBeenCalledWith({
+      patientId: PATIENT,
+      staffMemberId: null,
+      duration: 60,
+      from: suche.from,
+      to: suche.to,
+      windows: [],
+      basisId: '88888888-8888-4888-8888-000000000002',
+      waitlistId: null,
+    });
+  });
+
+  it('bietet das Buchen nur für den Hausbesuch: Die Wegregel gilt dort', async () => {
+    fetchWaitlist.mockResolvedValue([
+      {
+        id: ENTRY,
+        patient_id: PATIENT,
+        treatment_basis_id: null,
+        preferred_staff_member_id: null,
+        appointment_type: 'video',
+        duration_minutes: 30,
+        time_windows: [],
+        earliest_on: null,
+      },
+    ]);
+    findFreeSlots.mockResolvedValue([]);
+    renderWithProviders(
+      <SlotSearchPage user={testUser(['office'])} />,
+      `/patienten/${PATIENT}/plaetze?warteliste=${ENTRY}`,
+    );
+    await screen.findByText('Kein freier Platz');
+    expect(screen.queryByRole('button', { name: 'Nächsten passenden Termin buchen' })).toBeNull();
   });
 });
