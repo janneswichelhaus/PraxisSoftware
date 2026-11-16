@@ -33,7 +33,7 @@ import {
   type TravelRating,
 } from './api';
 import { fetchAssignableTherapists } from '@/features/workforce';
-import { NaechstenTerminBuchen } from './NaechstenTerminBuchen';
+import { BuchungUnklar, NaechstenTerminBuchen } from './NaechstenTerminBuchen';
 import {
   appointmentTypeLabels,
   appointmentTypeSchema,
@@ -256,6 +256,8 @@ function SearchForm({
   const [to, setTo] = useState(tagePlus(initial.from, 13));
   const [useWindows, setUseWindows] = useState(initial.windows.length > 0);
   const [error, setError] = useState<string | null>(null);
+  // Ein offener Ausgang der Buchung gilt, bis die Seite verlassen wird: Eine neue Suche hebt ihn nicht auf.
+  const [unklar, setUnklar] = useState<string | null>(null);
 
   const build = (): SearchParams => ({
     patientId,
@@ -378,10 +380,12 @@ function SearchForm({
         {/* ANN-865: Für den Hausbesuch wählt und bucht der Server; die Wegregel gilt nur dort. Der
             Auftrag ist die laufende Suche aus der Zeile darüber, eine neue Suche setzt die Meldung
             zurück. */}
-        {params.type === 'home_visit' ? (
+        {unklar ? <BuchungUnklar patientId={patientId} satz={unklar} /> : null}
+        {params.type === 'home_visit' && !unklar ? (
           <NaechstenTerminBuchen
             key={JSON.stringify(params)}
             hierher={hierher}
+            onUnklar={setUnklar}
             auftrag={{
               patientId: params.patientId,
               staffMemberId: params.staffMemberId,

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as SlotApi from './api';
 import type * as BuchungsApi from './auto-booking-api';
@@ -154,6 +154,35 @@ describe('SlotSearchPage (PRX-003)', () => {
       basisId: '88888888-8888-4888-8888-000000000002',
       waitlistId: null,
     });
+  });
+
+  it('hält einen offenen Ausgang fest: Auch nach einer neuen Suche gibt es keinen Knopf zum Buchen', async () => {
+    findFreeSlots.mockResolvedValue([]);
+    bucheNaechstenTermin.mockResolvedValue({
+      art: 'unklar',
+      satz: 'Unklar, ob gebucht wurde. Bitte bei den Terminen der Akte nachsehen.',
+    });
+    renderWithProviders(
+      <SlotSearchPage user={testUser(['office'])} />,
+      `/patienten/${PATIENT}/plaetze`,
+    );
+    await screen.findByText('Kein freier Platz');
+    await userEvent.click(screen.getByRole('button', { name: 'Nächsten passenden Termin buchen' }));
+    expect(await screen.findByText(/Unklar, ob gebucht wurde/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Nächsten passenden Termin buchen' })).toBeNull();
+
+    // Eine andere Dauer ist eine neue Suche; der offene Ausgang bleibt stehen.
+    await userEvent.click(screen.getByText('Suche anpassen'));
+    const dauer = screen.getByLabelText('Dauer in Minuten');
+    await userEvent.clear(dauer);
+    await userEvent.type(dauer, '45');
+    await userEvent.click(screen.getByRole('button', { name: 'Suchen' }));
+    await waitFor(() =>
+      expect(findFreeSlots).toHaveBeenLastCalledWith(expect.objectContaining({ duration: 45 })),
+    );
+    expect(screen.getByText(/Unklar, ob gebucht wurde/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Nächsten passenden Termin buchen' })).toBeNull();
+    expect(bucheNaechstenTermin).toHaveBeenCalledTimes(1);
   });
 
   it('bietet das Buchen nur für den Hausbesuch: Die Wegregel gilt dort', async () => {

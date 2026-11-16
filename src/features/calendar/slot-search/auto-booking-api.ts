@@ -58,7 +58,7 @@ const fehlerSchema = z.object({
   error: z.object({ code: z.enum(FEHLERKLASSEN) }),
 });
 
-const UNKLAR = 'Unklar, ob gebucht wurde. Bitte im Kalender nachsehen.';
+const UNKLAR = 'Unklar, ob gebucht wurde. Bitte bei den Terminen der Akte nachsehen.';
 const NICHT_EINGERICHTET = 'Automatisch buchen ist hier nicht eingerichtet. Nichts gebucht.';
 
 const SAETZE: Record<(typeof FEHLERKLASSEN)[number], string> = {

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -50,14 +50,27 @@ interface Absagefrage {
 export function NaechstenTerminBuchen({
   auftrag,
   hierher,
+  onUnklar,
 }: {
   auftrag: Buchungsauftrag;
   /** Die Adresse dieser Suche, als Rückweg für einen Abstecher. */
   hierher: string;
+  /** Der Ausgang ist offen: Die Seite hält das fest, auch über eine neue Suche hinweg. */
+  onUnklar: (satz: string) => void;
 }) {
   const queryClient = useQueryClient();
   const [zurueckgenommen, setZurueckgenommen] = useState<'nein' | 'geloescht' | 'abgesagt'>('nein');
   const [absagefrage, setAbsagefrage] = useState<Absagefrage | null>(null);
+  // Nach „Behalten“ geht der Fokus zurück auf „Rückgängig“, wie beim Abbrechen einer Rückfrage.
+  const [fokusZurueck, setFokusZurueck] = useState(false);
+  const rueckgaengig = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (fokusZurueck && !absagefrage) {
+      rueckgaengig.current?.focus();
+      setFokusZurueck(false);
+    }
+  }, [fokusZurueck, absagefrage]);
 
   async function neuLaden() {
     await Promise.all([
@@ -75,6 +88,7 @@ export function NaechstenTerminBuchen({
       setAbsagefrage(null);
     },
     onSuccess: async (ergebnis) => {
+      if (ergebnis.art === 'unklar') onUnklar(ergebnis.satz);
       if (ergebnis.art === 'gebucht' || ergebnis.art === 'unklar') await neuLaden();
     },
   });
@@ -129,6 +143,7 @@ export function NaechstenTerminBuchen({
           </ButtonLink>
           {auftrag.waitlistId || absagefrage ? null : (
             <Button
+              ref={rueckgaengig}
               type="button"
               variant="quiet"
               groesse="kompakt"
@@ -156,30 +171,13 @@ export function NaechstenTerminBuchen({
               onAbbrechen={() => {
                 setAbsagefrage(null);
                 absagen.reset();
+                setFokusZurueck(true);
               }}
             >
               Patient:in sieht Termin und Absage
             </Rueckfragekasten>
           </div>
         ) : null}
-      </div>
-    );
-  }
-
-  // Ausgang offen: Der Knopf bleibt fort, bis nachgesehen ist - ein zweiter Tipp buchte sonst doppelt.
-  if (ergebnis?.art === 'unklar') {
-    return (
-      <div className="mb-6">
-        <Statusmeldung ton="warnung">{ergebnis.satz}</Statusmeldung>
-        <div className="mt-3">
-          <ButtonLink
-            to={`/patienten/${auftrag.patientId}/termine`}
-            variant="secondary"
-            groesse="kompakt"
-          >
-            Termine der Akte ansehen
-          </ButtonLink>
-        </div>
       </div>
     );
   }
@@ -195,9 +193,9 @@ export function NaechstenTerminBuchen({
         {buchen.isPending ? 'Wird gebucht …' : 'Nächsten passenden Termin buchen'}
       </Button>
       {zurueckgenommen === 'nein' ? null : (
-        <Statusmeldung ton="erfolg" className="mt-2">
+        <Rueckmeldung className="mt-3">
           {zurueckgenommen === 'abgesagt' ? 'Termin abgesagt.' : 'Termin zurückgenommen.'}
-        </Statusmeldung>
+        </Rueckmeldung>
       )}
       {ergebnis?.art === 'kein_platz' ? (
         <Statusmeldung ton="warnung" className="mt-2">
@@ -224,6 +222,23 @@ export function NaechstenTerminBuchen({
           ) : null}
         </>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * Der Ausgang einer Buchung ist offen: Bis nachgesehen ist, gibt es hier keinen Knopf - ein zweiter
+ * Tipp buchte sonst doppelt. Die Seite zeigt das statt des Knopfs, auch nach einer neuen Suche.
+ */
+export function BuchungUnklar({ patientId, satz }: { patientId: string; satz: string }) {
+  return (
+    <div className="mb-6">
+      <Statusmeldung ton="warnung">{satz}</Statusmeldung>
+      <div className="mt-3">
+        <ButtonLink to={`/patienten/${patientId}/termine`} variant="secondary" groesse="kompakt">
+          Termine der Akte ansehen
+        </ButtonLink>
+      </div>
     </div>
   );
 }

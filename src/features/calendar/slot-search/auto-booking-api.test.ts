@@ -97,7 +97,7 @@ describe('Automatische Buchung im Browser (ANN-865)', () => {
   it('behauptet nie „nichts gebucht“, wenn der Ausgang offen ist', async () => {
     const unklar = {
       art: 'unklar',
-      satz: 'Unklar, ob gebucht wurde. Bitte im Kalender nachsehen.',
+      satz: 'Unklar, ob gebucht wurde. Bitte bei den Terminen der Akte nachsehen.',
     };
 
     invoke.mockResolvedValue(

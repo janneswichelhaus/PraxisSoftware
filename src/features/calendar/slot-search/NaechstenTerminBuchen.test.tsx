@@ -28,7 +28,7 @@ vi.mock('@/features/calendar/appointments/folgetermin-api', async (importOrigina
     undoAppointmentCreation(id, stand) as Promise<void>,
 }));
 
-const { NaechstenTerminBuchen } = await import('./NaechstenTerminBuchen');
+const { BuchungUnklar, NaechstenTerminBuchen } = await import('./NaechstenTerminBuchen');
 const { AufDerPlattformSichtbar } =
   await import('@/features/calendar/appointments/folgetermin-api');
 
@@ -55,8 +55,12 @@ const TERMIN: BuchungsApi.GebuchterTermin = {
 const KNOPF = 'Nächsten passenden Termin buchen';
 const HIERHER = `/patienten/${PATIENT}/plaetze?verordnung=b1`;
 
+const onUnklar = vi.fn();
+
 function zeige(auftrag: BuchungsApi.Buchungsauftrag = AUFTRAG) {
-  return renderWithProviders(<NaechstenTerminBuchen auftrag={auftrag} hierher={HIERHER} />);
+  return renderWithProviders(
+    <NaechstenTerminBuchen auftrag={auftrag} hierher={HIERHER} onUnklar={onUnklar} />,
+  );
 }
 
 async function bucheUndNimmZurueck() {
@@ -73,6 +77,7 @@ describe('NaechstenTerminBuchen (ANN-865)', () => {
     fetchAppointment.mockReset();
     cancelAppointment.mockReset();
     undoAppointmentCreation.mockReset();
+    onUnklar.mockReset();
   });
 
   it('bucht mit einem Tipp und zeigt Tag, Zeit und Person mit dem Weg in den Kalender', async () => {
@@ -131,7 +136,9 @@ describe('NaechstenTerminBuchen (ANN-865)', () => {
     undoAppointmentCreation.mockResolvedValue(undefined);
     await bucheUndNimmZurueck();
 
-    expect(await screen.findByText('Termin zurückgenommen.')).toBeInTheDocument();
+    const meldung = await screen.findByText('Termin zurückgenommen.');
+    // Der Knopf „Rückgängig“ ist fort: Die Rückmeldung nimmt den Fokus.
+    await waitFor(() => expect(meldung.parentElement).toHaveFocus());
     expect(undoAppointmentCreation).toHaveBeenCalledWith(TERMIN.id, '2099-10-01T10:00:00Z');
     expect(screen.getByRole('button', { name: KNOPF })).toBeEnabled();
     expect(screen.queryByText(/Gebucht:/)).toBeNull();
@@ -168,7 +175,7 @@ describe('NaechstenTerminBuchen (ANN-865)', () => {
     expect(screen.queryByRole('group', { name: 'Termin absagen' })).toBeNull();
     expect(screen.getByText(/Gebucht:/)).toBeInTheDocument();
     expect(cancelAppointment).not.toHaveBeenCalled();
-    expect(screen.getByRole('button', { name: 'Rückgängig' })).toBeEnabled();
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Rückgängig' })).toHaveFocus());
   });
 
   it('zeigt in der Rückfrage, warum die Absage scheiterte, und lässt sie offen', async () => {
@@ -241,18 +248,24 @@ describe('NaechstenTerminBuchen (ANN-865)', () => {
     expect([...new URLSearchParams(suche).values()]).toContain(HIERHER);
   });
 
-  it('nimmt bei offenem Ausgang den Knopf weg und führt zu den Terminen der Akte', async () => {
-    bucheNaechstenTermin.mockResolvedValue({
-      art: 'unklar',
-      satz: 'Unklar, ob gebucht wurde. Bitte im Kalender nachsehen.',
-    });
+  it('meldet einen offenen Ausgang an die Seite', async () => {
+    const satz = 'Unklar, ob gebucht wurde. Bitte bei den Terminen der Akte nachsehen.';
+    bucheNaechstenTermin.mockResolvedValue({ art: 'unklar', satz });
     zeige();
     await userEvent.click(screen.getByRole('button', { name: KNOPF }));
+    await waitFor(() => expect(onUnklar).toHaveBeenCalledWith(satz));
+  });
 
-    expect(await screen.findByRole('status')).toHaveTextContent(
-      'Unklar, ob gebucht wurde. Bitte im Kalender nachsehen.',
+  it('zeigt bei offenem Ausgang keinen Knopf, nur den Weg zu den Terminen der Akte', () => {
+    renderWithProviders(
+      <BuchungUnklar
+        patientId={PATIENT}
+        satz="Unklar, ob gebucht wurde. Bitte bei den Terminen der Akte nachsehen."
+      />,
     );
-    // Ein zweiter Tipp könnte doppelt buchen: Bis nachgesehen ist, gibt es hier keinen Knopf.
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Unklar, ob gebucht wurde. Bitte bei den Terminen der Akte nachsehen.',
+    );
     expect(screen.queryByRole('button')).toBeNull();
     expect(screen.getByRole('link', { name: 'Termine der Akte ansehen' })).toHaveAttribute(
       'href',
