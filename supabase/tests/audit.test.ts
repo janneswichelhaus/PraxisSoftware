@@ -375,6 +375,8 @@ describe('Audit-Lesepfad', () => {
       'list_treatment_basis_versions',
       'list_waitlist_entries',
       'list_waitlist_matches',
+      // ANN-865: die Wege der automatischen Buchung (Rollen, die Termine anlegen).
+      'plan_auto_booking',
       'rate_slot_travel',
       'search_patients',
     ]);

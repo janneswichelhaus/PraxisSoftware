@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
+import { onlineManager } from '@tanstack/react-query';
+import userEvent from '@testing-library/user-event';
 import type * as SlotApi from './api';
+import type * as BuchungsApi from './auto-booking-api';
 import type * as PatientsApi from '@/features/patients/record/api';
 import type * as WaitlistApi from '@/features/calendar/waitlist/api';
 import type * as RouterModul from 'react-router-dom';
@@ -12,6 +15,13 @@ const ENTRY = '99999999-9999-4999-8999-000000000001';
 
 const findFreeSlots = vi.fn();
 const fetchWaitlist = vi.fn();
+const bucheNaechstenTermin = vi.fn();
+
+vi.mock('./auto-booking-api', async (importOriginal) => ({
+  ...(await importOriginal<typeof BuchungsApi>()),
+  bucheNaechstenTermin: (a: BuchungsApi.Buchungsauftrag) =>
+    bucheNaechstenTermin(a) as Promise<BuchungsApi.Buchungsergebnis>,
+}));
 
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof SlotApi>()),
@@ -59,10 +69,46 @@ const SLOT: SlotApi.Slot = {
   target_lon: null,
 };
 
+const KNOPF = 'Nächsten passenden Termin buchen';
+const EINTRAG = {
+  id: ENTRY,
+  patient_id: PATIENT,
+  treatment_basis_id: null,
+  preferred_staff_member_id: null,
+  appointment_type: 'home_visit',
+  duration_minutes: 60,
+  time_windows: [],
+  earliest_on: null,
+};
+const TERMIN: BuchungsApi.GebuchterTermin = {
+  id: 'aaaaaaaa-aaaa-4aaa-8aaa-000000000001',
+  person: 's1',
+  name: 'Anna Beispiel',
+  datum: '2099-10-05',
+  beginn: '08:15',
+  ende: '09:15',
+  gebiet: 'none',
+};
+
+/** Der Eintrag ist nur beim ersten Laden offen; jedes spätere Laden findet ihn eingeplant. */
+function eintragSchliesstNachDemErstenLaden() {
+  fetchWaitlist.mockResolvedValue([]);
+  fetchWaitlist.mockResolvedValueOnce([EINTRAG]);
+}
+
+/** Netz weg und wieder da: Veraltete Abfragen laden neu, auch die Warteliste. */
+function netzKommtZurueck() {
+  act(() => {
+    onlineManager.setOnline(false);
+    onlineManager.setOnline(true);
+  });
+}
+
 describe('SlotSearchPage (PRX-003)', () => {
   beforeEach(() => {
     findFreeSlots.mockReset();
     fetchWaitlist.mockReset();
+    bucheNaechstenTermin.mockReset();
   });
 
   it('sucht mit den Wünschen des Wartelisteneintrags und führt vorbelegt ins Formular', async () => {
@@ -120,5 +166,172 @@ describe('SlotSearchPage (PRX-003)', () => {
     );
     expect(await screen.findByText('Kein freier Platz')).toBeInTheDocument();
     expect(screen.queryByText(/Zeitraum verlängern/)).toBeNull();
+  });
+
+  it('bucht den nächsten passenden Hausbesuch mit der laufenden Suche und der Grundlage', async () => {
+    findFreeSlots.mockResolvedValue([]);
+    bucheNaechstenTermin.mockResolvedValue({ art: 'kein_platz', ungeprueft: 0 });
+    renderWithProviders(
+      <SlotSearchPage user={testUser(['office'])} />,
+      `/patienten/${PATIENT}/plaetze?verordnung=88888888-8888-4888-8888-000000000002`,
+    );
+    await screen.findByText('Kein freier Platz');
+    await userEvent.click(screen.getByRole('button', { name: 'Nächsten passenden Termin buchen' }));
+
+    expect(await screen.findByText('Kein Platz mit passendem Fahrweg')).toBeInTheDocument();
+    const suche = findFreeSlots.mock.calls[0]![0] as SlotApi.SearchParams;
+    expect(bucheNaechstenTermin).toHaveBeenCalledWith({
+      patientId: PATIENT,
+      staffMemberId: null,
+      duration: 60,
+      from: suche.from,
+      to: suche.to,
+      windows: [],
+      basisId: '88888888-8888-4888-8888-000000000002',
+      waitlistId: null,
+    });
+  });
+
+  it('hält einen offenen Ausgang fest: Auch nach einer neuen Suche gibt es keinen Knopf zum Buchen', async () => {
+    findFreeSlots.mockResolvedValue([]);
+    bucheNaechstenTermin.mockResolvedValue({
+      art: 'unklar',
+      satz: 'Unklar, ob gebucht wurde. Bitte bei den Terminen der Akte nachsehen.',
+    });
+    renderWithProviders(
+      <SlotSearchPage user={testUser(['office'])} />,
+      `/patienten/${PATIENT}/plaetze`,
+    );
+    await screen.findByText('Kein freier Platz');
+    await userEvent.click(screen.getByRole('button', { name: 'Nächsten passenden Termin buchen' }));
+    expect(await screen.findByText(/Unklar, ob gebucht wurde/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Nächsten passenden Termin buchen' })).toBeNull();
+
+    // Eine andere Dauer ist eine neue Suche; der offene Ausgang bleibt stehen.
+    await userEvent.click(screen.getByText('Suche anpassen'));
+    const dauer = screen.getByLabelText('Dauer in Minuten');
+    await userEvent.clear(dauer);
+    await userEvent.type(dauer, '45');
+    await userEvent.click(screen.getByRole('button', { name: 'Suchen' }));
+    await waitFor(() =>
+      expect(findFreeSlots).toHaveBeenLastCalledWith(expect.objectContaining({ duration: 45 })),
+    );
+    expect(screen.getByText(/Unklar, ob gebucht wurde/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Nächsten passenden Termin buchen' })).toBeNull();
+    expect(bucheNaechstenTermin).toHaveBeenCalledTimes(1);
+  });
+
+  it('lässt nach dem Nachrücken den Knopf nicht zurückkommen, wenn die Warteliste neu lädt', async () => {
+    eintragSchliesstNachDemErstenLaden();
+    findFreeSlots.mockResolvedValue([]);
+    bucheNaechstenTermin.mockResolvedValue({ art: 'gebucht', termin: TERMIN });
+    renderWithProviders(
+      <SlotSearchPage user={testUser(['office'])} />,
+      `/patienten/${PATIENT}/plaetze?warteliste=${ENTRY}`,
+    );
+    await screen.findByText('Kein freier Platz');
+    await userEvent.click(screen.getByRole('button', { name: KNOPF }));
+    expect(await screen.findByText(/Gebucht:/)).toBeInTheDocument();
+    expect(bucheNaechstenTermin).toHaveBeenCalledWith(
+      expect.objectContaining({ waitlistId: ENTRY }),
+    );
+
+    netzKommtZurueck();
+    expect(await screen.findByText(/Der Wartelisteneintrag ist nicht mehr offen/)).toBeVisible();
+    expect(screen.getByText(/Gebucht:/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: KNOPF })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Rückgängig' })).toBeNull();
+  });
+
+  it('hält einen offenen Ausgang auch dann fest, wenn der Wartelisteneintrag inzwischen schließt', async () => {
+    eintragSchliesstNachDemErstenLaden();
+    findFreeSlots.mockResolvedValue([]);
+    bucheNaechstenTermin.mockResolvedValue({
+      art: 'unklar',
+      satz: 'Unklar, ob gebucht wurde. Bitte bei den Terminen der Akte nachsehen.',
+    });
+    renderWithProviders(
+      <SlotSearchPage user={testUser(['office'])} />,
+      `/patienten/${PATIENT}/plaetze?warteliste=${ENTRY}`,
+    );
+    await screen.findByText('Kein freier Platz');
+    await userEvent.click(screen.getByRole('button', { name: KNOPF }));
+    expect(await screen.findByText(/Unklar, ob gebucht wurde/)).toBeInTheDocument();
+
+    netzKommtZurueck();
+    expect(await screen.findByText(/Der Wartelisteneintrag ist nicht mehr offen/)).toBeVisible();
+    expect(screen.getByText(/Unklar, ob gebucht wurde/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: KNOPF })).toBeNull();
+    expect(bucheNaechstenTermin).toHaveBeenCalledTimes(1);
+  });
+
+  it('zeigt das Ergebnis auch, wenn der Eintrag schließt, während noch gebucht wird', async () => {
+    eintragSchliesstNachDemErstenLaden();
+    findFreeSlots.mockResolvedValue([]);
+    let fertig: (e: BuchungsApi.Buchungsergebnis) => void = () => undefined;
+    bucheNaechstenTermin.mockReturnValue(
+      new Promise<BuchungsApi.Buchungsergebnis>((resolve) => {
+        fertig = resolve;
+      }),
+    );
+    renderWithProviders(
+      <SlotSearchPage user={testUser(['office'])} />,
+      `/patienten/${PATIENT}/plaetze?warteliste=${ENTRY}`,
+    );
+    await screen.findByText('Kein freier Platz');
+    await userEvent.click(screen.getByRole('button', { name: KNOPF }));
+    await screen.findByRole('button', { name: 'Wird gebucht …' });
+
+    netzKommtZurueck();
+    await screen.findByText(/Der Wartelisteneintrag ist nicht mehr offen/);
+    expect(screen.getByRole('button', { name: 'Wird gebucht …' })).toBeDisabled();
+    fertig({ art: 'gebucht', termin: TERMIN });
+    expect(await screen.findByText(/Gebucht:/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: KNOPF })).toBeNull();
+    expect(bucheNaechstenTermin).toHaveBeenCalledTimes(1);
+  });
+
+  it('startet keine neue Suche, solange gebucht wird: Das Ergebnis ginge sonst verloren', async () => {
+    findFreeSlots.mockResolvedValue([]);
+    let fertig: (e: BuchungsApi.Buchungsergebnis) => void = () => undefined;
+    bucheNaechstenTermin.mockReturnValue(
+      new Promise<BuchungsApi.Buchungsergebnis>((resolve) => {
+        fertig = resolve;
+      }),
+    );
+    renderWithProviders(
+      <SlotSearchPage user={testUser(['office'])} />,
+      `/patienten/${PATIENT}/plaetze`,
+    );
+    await screen.findByText('Kein freier Platz');
+    await userEvent.click(screen.getByText('Suche anpassen'));
+    await userEvent.click(screen.getByRole('button', { name: KNOPF }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Suchen' })).toBeDisabled());
+
+    fertig({ art: 'gebucht', termin: TERMIN });
+    expect(await screen.findByText(/Gebucht:/)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Suchen' })).toBeEnabled());
+  });
+
+  it('bietet das Buchen nur für den Hausbesuch: Die Wegregel gilt dort', async () => {
+    fetchWaitlist.mockResolvedValue([
+      {
+        id: ENTRY,
+        patient_id: PATIENT,
+        treatment_basis_id: null,
+        preferred_staff_member_id: null,
+        appointment_type: 'video',
+        duration_minutes: 30,
+        time_windows: [],
+        earliest_on: null,
+      },
+    ]);
+    findFreeSlots.mockResolvedValue([]);
+    renderWithProviders(
+      <SlotSearchPage user={testUser(['office'])} />,
+      `/patienten/${PATIENT}/plaetze?warteliste=${ENTRY}`,
+    );
+    await screen.findByText('Kein freier Platz');
+    expect(screen.queryByRole('button', { name: 'Nächsten passenden Termin buchen' })).toBeNull();
   });
 });

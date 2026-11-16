@@ -78,47 +78,7 @@ export function Rueckfrage({
 }) {
   const [offen, setOffen] = useState(false);
   const [fokusZurueck, setFokusZurueck] = useState(false);
-  // Läuft ein Versprechen aus `onBestaetigen`? Unabhängig von `laeuft`, damit
-  // eine Seite den Zustand nicht eigens durchreichen muss.
-  const [wartet, setWartet] = useState(false);
-  const [gescheitert, setGescheitert] = useState(false);
   const ausloeserRef = useRef<HTMLButtonElement>(null);
-  const bestaetigenRef = useRef<HTMLButtonElement>(null);
-  // Zwischen dem Klick und dem naechsten Rendern des Elternteils ist `laeuft`
-  // noch false; ohne diesen Riegel loeste ein Doppelklick zwei Vorgaenge aus.
-  const laeuftGerade = useRef(false);
-
-  async function bestaetigt() {
-    if (laeuft || laeuftGerade.current) return;
-    laeuftGerade.current = true;
-    setGescheitert(false);
-    try {
-      const ergebnis = onBestaetigen();
-      if (istVersprechen(ergebnis)) {
-        setWartet(true);
-        await ergebnis;
-      }
-      // Erfolg: der Kasten hat seine Frage beantwortet. Der Fokus wandert
-      // nicht zurueck - die ausloesende Schaltflaeche heisst nach dem Vorgang
-      // oft anders oder ist ganz fort.
-      setOffen(false);
-    } catch {
-      // Der Kasten bleibt offen und zeigt den Fehler - den der Seite oder den
-      // Standardsatz. Eine unbehandelte Ablehnung waere nur Rauschen in der
-      // Konsole.
-      setGescheitert(true);
-    } finally {
-      laeuftGerade.current = false;
-      setWartet(false);
-    }
-  }
-
-  const laeuftJetzt = laeuft || wartet;
-  const meldung = fehler ?? (gescheitert ? STANDARDFEHLER : undefined);
-
-  useEffect(() => {
-    if (offen) bestaetigenRef.current?.focus();
-  }, [offen]);
 
   useEffect(() => {
     if (!offen && fokusZurueck) {
@@ -136,10 +96,7 @@ export function Rueckfrage({
         groesse={ausloeserGroesse}
         {...(ausloeserBreit ? { className: 'w-full' } : {})}
         {...(ausloeserAutofokus ? { 'data-autofocus': true } : {})}
-        onClick={() => {
-          setGescheitert(false);
-          setOffen(true);
-        }}
+        onClick={() => setOffen(true)}
       >
         {ausloeser}
         {ausloeserZusatz ? (
@@ -153,9 +110,106 @@ export function Rueckfrage({
   }
 
   return (
+    <Rueckfragekasten
+      bezeichnung={bezeichnung ?? (ausloeserZusatz ? `${ausloeser} ${ausloeserZusatz}` : ausloeser)}
+      bestaetigen={bestaetigen}
+      bestaetigenLaeuft={bestaetigenLaeuft}
+      abbrechen={abbrechen}
+      fehler={fehler}
+      laeuft={laeuft}
+      unterDerReihe={unterDerReihe}
+      onBestaetigen={onBestaetigen}
+      // Erfolg: Der Fokus wandert nicht zurück - der Auslöser heißt nach dem Vorgang oft anders
+      // oder ist ganz fort.
+      onErledigt={() => setOffen(false)}
+      onAbbrechen={() => {
+        setOffen(false);
+        setFokusZurueck(true);
+        onAbbrechen?.();
+      }}
+    >
+      {children}
+    </Rueckfragekasten>
+  );
+}
+
+/**
+ * Der Kasten der Rückfrage ohne eigenen Auslöser: für eine Frage, die erst die Antwort des Servers
+ * stellt. Wie in `Rueckfrage` geht der Fokus aufs Bestätigen, ein Doppelklick löst nur einen Vorgang
+ * aus, und ein Fehler bleibt im Kasten stehen.
+ */
+export function Rueckfragekasten({
+  bezeichnung,
+  bestaetigen,
+  bestaetigenLaeuft,
+  abbrechen = 'Abbrechen',
+  fehler,
+  laeuft = false,
+  unterDerReihe = false,
+  onBestaetigen,
+  onErledigt,
+  onAbbrechen,
+  children,
+}: {
+  /** Zugängliche Bezeichnung des Kastens. */
+  bezeichnung: string;
+  bestaetigen: string;
+  /** Beschriftung, solange der Vorgang läuft. Ohne Angabe „Wird ausgeführt …". */
+  bestaetigenLaeuft?: string | undefined;
+  abbrechen?: string;
+  /** Fehlertext des Vorgangs; geht einem verworfenen Versprechen vor dem Standardsatz vor. */
+  fehler?: string | undefined;
+  laeuft?: boolean;
+  unterDerReihe?: boolean;
+  /** Synchron oder mit Versprechen; mit Versprechen wartet der Kasten. */
+  onBestaetigen: () => void | Promise<unknown>;
+  /** Der Vorgang ist gelungen: Die Frage ist beantwortet. */
+  onErledigt?: () => void;
+  onAbbrechen: () => void;
+  children: ReactNode;
+}) {
+  // Läuft ein Versprechen aus `onBestaetigen`? Unabhängig von `laeuft`, damit
+  // eine Seite den Zustand nicht eigens durchreichen muss.
+  const [wartet, setWartet] = useState(false);
+  const [gescheitert, setGescheitert] = useState(false);
+  const bestaetigenRef = useRef<HTMLButtonElement>(null);
+  // Zwischen dem Klick und dem naechsten Rendern des Elternteils ist `laeuft`
+  // noch false; ohne diesen Riegel loeste ein Doppelklick zwei Vorgaenge aus.
+  const laeuftGerade = useRef(false);
+
+  async function bestaetigt() {
+    if (laeuft || laeuftGerade.current) return;
+    laeuftGerade.current = true;
+    setGescheitert(false);
+    try {
+      const ergebnis = onBestaetigen();
+      if (istVersprechen(ergebnis)) {
+        setWartet(true);
+        await ergebnis;
+      }
+      onErledigt?.();
+    } catch {
+      // Der Kasten bleibt offen und zeigt den Fehler - den der Seite oder den
+      // Standardsatz. Eine unbehandelte Ablehnung waere nur Rauschen in der
+      // Konsole.
+      setGescheitert(true);
+    } finally {
+      laeuftGerade.current = false;
+      setWartet(false);
+    }
+  }
+
+  const laeuftJetzt = laeuft || wartet;
+  const meldung = fehler ?? (gescheitert ? STANDARDFEHLER : undefined);
+
+  useEffect(() => {
+    bestaetigenRef.current?.focus();
+  }, []);
+
+  return (
     <div
       role="group"
-      aria-label={bezeichnung ?? (ausloeserZusatz ? `${ausloeser} ${ausloeserZusatz}` : ausloeser)}
+      aria-label={bezeichnung}
       // Eine vertiefte Fläche mit Linie links (Leitfaden L2): Die Rückfrage
       // öffnet sich meist in einem Abschnitt, der schon eine Karte ist; als
       // eigene Karte war sie der Kasten im Kasten. Sie bleibt keine
@@ -184,16 +238,7 @@ export function Rueckfrage({
         {/* Während der Vorgang läuft, bricht „Abbrechen" nichts ab: Der Aufruf
             am Server wird trotzdem wirksam. Deshalb ist der Knopf bis zur
             Antwort gesperrt (Zweitreview H2). */}
-        <Button
-          type="button"
-          variant="quiet"
-          disabled={laeuftJetzt}
-          onClick={() => {
-            setOffen(false);
-            setFokusZurueck(true);
-            onAbbrechen?.();
-          }}
-        >
+        <Button type="button" variant="quiet" disabled={laeuftJetzt} onClick={onAbbrechen}>
           {abbrechen}
         </Button>
       </div>

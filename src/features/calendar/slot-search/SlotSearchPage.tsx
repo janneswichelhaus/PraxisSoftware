@@ -1,5 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useIsMutating, useQuery } from '@tanstack/react-query';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { Badge, STATUSZEICHEN } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -33,6 +33,7 @@ import {
   type TravelRating,
 } from './api';
 import { fetchAssignableTherapists } from '@/features/workforce';
+import { BUCHUNG_LAEUFT, BuchungUnklar, NaechstenTerminBuchen } from './NaechstenTerminBuchen';
 import {
   appointmentTypeLabels,
   appointmentTypeSchema,
@@ -168,6 +169,10 @@ export function SlotSearchPage({ user }: { user: CurrentUser }) {
     retry: false,
   });
 
+  // Ab dem Tipp auf „Nächsten passenden Termin buchen“ bleibt das Formular stehen, auch wenn der
+  // Eintrag dabei schließt: Baute es sich neu auf, stünde der Knopf wieder da (ANN-865).
+  const [festgehalten, setFestgehalten] = useState<string | null>(null);
+
   if (waitlistId && entry.isPending) return <LoadingState label="Eintrag wird geladen …" />;
 
   const e = entry.data ?? null;
@@ -189,7 +194,8 @@ export function SlotSearchPage({ user }: { user: CurrentUser }) {
         </Statusmeldung>
       ) : null}
       <SearchForm
-        key={e?.id ?? 'ohne'}
+        key={festgehalten ?? e?.id ?? 'ohne'}
+        onTipp={() => setFestgehalten(e?.id ?? 'ohne')}
         patientId={patientId}
         today={today}
         initial={{
@@ -200,6 +206,9 @@ export function SlotSearchPage({ user }: { user: CurrentUser }) {
           from: e?.earliest_on && e.earliest_on > today ? e.earliest_on : today,
         }}
         therapists={therapists.data ?? []}
+        basisId={basisId}
+        waitlistId={e?.id ?? null}
+        hierher={`/patienten/${patientId}/plaetze?${search.toString()}`}
         link={(slot, type, duration) => {
           const vorbelegung = schreibeTerminVorbelegung({
             datum: slot.slot_date,
@@ -225,6 +234,10 @@ function SearchForm({
   today,
   initial,
   therapists,
+  basisId,
+  waitlistId,
+  hierher,
+  onTipp,
   link,
 }: {
   patientId: string;
@@ -237,6 +250,10 @@ function SearchForm({
     from: string;
   };
   therapists: { staff_member_id: string; display_name: string }[];
+  basisId: string | null;
+  waitlistId: string | null;
+  hierher: string;
+  onTipp: () => void;
   link: (slot: Slot, type: AppointmentType, duration: number) => string;
 }) {
   const [type, setType] = useState<AppointmentType>(initial.type);
@@ -246,6 +263,9 @@ function SearchForm({
   const [to, setTo] = useState(tagePlus(initial.from, 13));
   const [useWindows, setUseWindows] = useState(initial.windows.length > 0);
   const [error, setError] = useState<string | null>(null);
+  // Ein offener Ausgang der Buchung gilt, bis die Seite verlassen wird: Eine neue Suche hebt ihn nicht auf.
+  const [unklar, setUnklar] = useState<string | null>(null);
+  const bucht = useIsMutating({ mutationKey: BUCHUNG_LAEUFT }) > 0;
 
   const build = (): SearchParams => ({
     patientId,
@@ -269,6 +289,7 @@ function SearchForm({
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (bucht) return;
     const minutes = Number(duration);
     if (!Number.isInteger(minutes) || minutes < 5 || minutes > 240) {
       setError('Die Dauer liegt zwischen 5 und 240 Minuten.');
@@ -349,7 +370,12 @@ function SearchForm({
             </Statusmeldung>
           ) : null}
           <div className="sm:col-span-2">
-            <Button type="submit" disabled={result.isFetching}>
+            {/* Ein Hauptknopf je Ansicht: Beim Hausbesuch ist es „Nächsten passenden Termin buchen“. */}
+            <Button
+              type="submit"
+              variant={params.type === 'home_visit' ? 'secondary' : 'primary'}
+              disabled={result.isFetching || bucht}
+            >
               {result.isFetching ? 'Wird gesucht …' : 'Suchen'}
             </Button>
           </div>
@@ -360,6 +386,28 @@ function SearchForm({
           Abweichungen tragen ihr Kennzeichen (UX-005g). Die Zeile darunter
           sagt nur, wonach gesucht wurde. */}
       <Section titel="Vorschläge" hinweis={suchzeile(params, therapists)}>
+        {/* ANN-865: Für den Hausbesuch wählt und bucht der Server; die Wegregel gilt nur dort. Der
+            Auftrag ist die laufende Suche aus der Zeile darüber, eine neue Suche setzt die Meldung
+            zurück. */}
+        {unklar ? <BuchungUnklar patientId={patientId} satz={unklar} /> : null}
+        {params.type === 'home_visit' && !unklar ? (
+          <NaechstenTerminBuchen
+            key={JSON.stringify(params)}
+            hierher={hierher}
+            onTipp={onTipp}
+            onUnklar={setUnklar}
+            auftrag={{
+              patientId: params.patientId,
+              staffMemberId: params.staffMemberId,
+              duration: params.duration,
+              from: params.from,
+              to: params.to,
+              windows: params.windows,
+              basisId,
+              waitlistId,
+            }}
+          />
+        ) : null}
         {result.isPending ? <LoadingState label="Freie Plätze werden gesucht …" inKarte /> : null}
         {/* Der Fehler nennt seinen Grund („Diese Dauer passt nicht ins
             Praxisraster.“) - deshalb kein Abfragezustand mit dem Satz zur
