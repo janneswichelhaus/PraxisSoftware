@@ -385,6 +385,41 @@ describe('book_next_appointment: Regeln', () => {
     expect(e.outcome).toBe('none');
   });
 
+  it('nennt einer Therapeutin den Ort eines Trainingstermins nicht und bucht nicht daneben (ADR-022 Punkt 11)', async () => {
+    const ort = { lat: 48.6, lon: 9.1 };
+    // Erst anlegen, dann verorten: Beim Einfügen leert der Auslöser die Koordinate.
+    const { rows } = await asPostgres<{ id: string }>(
+      `insert into public.appointments
+         (organization_id, training_relationship_id, staff_member_id, appointment_type, kind, status,
+          starts_at, ends_at, visit_street, visit_house_number, visit_postal_code, visit_city)
+       values ($1::uuid, $2::uuid, $3::uuid, 'home_visit', 'training', 'confirmed',
+               ($4::date + time '10:00') at time zone 'Europe/Berlin',
+               ($4::date + time '11:00') at time zone 'Europe/Berlin',
+               'Trainingsweg', '5', '72076', 'Tuebingen')
+       returning id`,
+      [organizationId, SEED.trainingRelationships.tina, ANNA, MITTWOCH],
+    );
+    await asPostgres(
+      `update public.appointments set visit_lat = $2, visit_lon = $3, visit_geocode_precision = 'address'
+        where id = $1::uuid`,
+      [rows[0]!.id, ort.lat, ort.lon],
+    );
+    const beruehrt = (plan: Plan | null) =>
+      plan!.legs.some((w) => gleich(w.from, ort) || gleich(w.to, ort));
+
+    // Das Büro liest das Training und plant mit dem Ort; die Therapeutin erfährt ihn nicht.
+    expect(beruehrt(await planen(anfrage()))).toBe(true);
+    expect(beruehrt(await planen(anfrage({ konto: users.therapist })))).toBe(false);
+
+    const therapeutin = await naechstenBuchen({ konto: users.therapist }, ueberall(10));
+    expect(therapeutin).toMatchObject({ outcome: 'none', days: 1 });
+    expect((therapeutin as Nichts).unverified).toBeGreaterThanOrEqual(2);
+    expect(await termine()).toEqual([]);
+
+    const buero = erwarteGebucht(await naechstenBuchen({}, ueberall(10)));
+    expect(buero.start).toBe('08:15');
+  });
+
   it('belegt die Zeiten der Patient:in bei anderen Personen', async () => {
     await termin(patients.max, MITTWOCH, '08:00', '09:30', { staff: JANNES, art: 'video' });
     const e = erwarteGebucht(await naechstenBuchen({}, ueberall(10)));
