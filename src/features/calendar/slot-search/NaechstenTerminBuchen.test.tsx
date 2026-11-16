@@ -97,7 +97,7 @@ describe('NaechstenTerminBuchen (ANN-865)', () => {
     await userEvent.click(wartend);
     expect(bucheNaechstenTermin).toHaveBeenCalledTimes(1);
     fertig({ art: 'kein_platz', ungeprueft: 0 });
-    expect(await screen.findByText('Kein passender Platz im Zeitraum.')).toBeInTheDocument();
+    expect(await screen.findByText('Kein passender Platz')).toBeInTheDocument();
   });
 
   it('kennzeichnet einen Termin außerhalb des Gebietstags', async () => {
@@ -134,9 +134,7 @@ describe('NaechstenTerminBuchen (ANN-865)', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Rückgängig' }));
 
     const frage = await screen.findByRole('group', { name: 'Termin absagen' });
-    expect(frage).toHaveTextContent(
-      'Die Person sieht den Termin auf der Plattform und dort auch die Absage.',
-    );
+    expect(frage).toHaveTextContent('Die Person sieht Termin und Absage');
     expect(cancelAppointment).not.toHaveBeenCalled();
     expect(screen.queryByRole('button', { name: 'Rückgängig' })).toBeNull();
 
@@ -210,9 +208,7 @@ describe('NaechstenTerminBuchen (ANN-865)', () => {
     zeige();
     await userEvent.click(screen.getByRole('button', { name: KNOPF }));
     expect(
-      await screen.findByText(
-        'Kein passender Platz im Zeitraum. An manchen Stellen ließ sich der Weg nicht prüfen.',
-      ),
+      await screen.findByText('Kein passender Platz · Wege teils nicht prüfbar'),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: KNOPF })).toBeEnabled();
   });

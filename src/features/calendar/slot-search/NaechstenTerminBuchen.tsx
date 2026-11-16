@@ -154,9 +154,7 @@ export function NaechstenTerminBuchen({ auftrag }: { auftrag: Buchungsauftrag })
               aria-label="Termin absagen"
               className="border-line-strong bg-surface-sunken mt-3 border-l-4 py-3 pr-4 pl-4"
             >
-              <p className="text-ink text-sm">
-                Die Person sieht den Termin auf der Plattform und dort auch die Absage.
-              </p>
+              <p className="text-ink text-sm">Die Person sieht Termin und Absage</p>
               {absagen.isError ? (
                 <Statusmeldung ton="fehler" className="mt-2">
                   {absagen.error.message}
@@ -203,8 +201,8 @@ export function NaechstenTerminBuchen({ auftrag }: { auftrag: Buchungsauftrag })
           {ergebnis?.art === 'kein_platz' ? (
             <Statusmeldung ton="warnung" className="mt-2">
               {ergebnis.ungeprueft > 0
-                ? 'Kein passender Platz im Zeitraum. An manchen Stellen ließ sich der Weg nicht prüfen.'
-                : 'Kein passender Platz im Zeitraum.'}
+                ? 'Kein passender Platz · Wege teils nicht prüfbar'
+                : 'Kein passender Platz'}
             </Statusmeldung>
           ) : null}
           {ergebnis?.art === 'nichts_gebucht' ? (
