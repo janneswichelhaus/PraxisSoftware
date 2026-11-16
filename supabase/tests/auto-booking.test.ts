@@ -361,6 +361,24 @@ describe('book_next_appointment: Regeln', () => {
     expect(e.start).toBe('10:30');
   });
 
+  it('bucht nicht am Tagesrand, solange der Standort nicht verortet ist', async () => {
+    await asPostgres(
+      `update public.locations set lat = null, lon = null, geocode_precision = null,
+              garage_lat = null, garage_lon = null, garage_geocode_precision = null`,
+    );
+    // Ohne Ort des Tagesbeginns und -endes ist der leere Tag nicht prüfbar: kein Platz, keine Annahme.
+    const leer = await naechstenBuchen({}, ueberall(10));
+    expect(leer).toMatchObject({ outcome: 'none', days: 1 });
+    expect((leer as Nichts).unverified).toBeGreaterThanOrEqual(2);
+    expect((await planen(anfrage()))!.legs).toEqual([]);
+
+    // Zwischen zwei Terminen mit Ort bleibt die Regel prüfbar.
+    await termin(patients.erika, MITTWOCH, '08:00', '09:00');
+    await termin(patients.petra, MITTWOCH, '11:00', '12:00');
+    const e = erwarteGebucht(await naechstenBuchen({}, ueberall(10)));
+    expect(e).toMatchObject({ date: MITTWOCH, start: '09:15', end: '10:15' });
+  });
+
   it('überspringt Plätze neben einem Termin ohne verortete Anschrift', async () => {
     const id = await termin(patients.erika, MITTWOCH, '10:00', '11:00');
     await asPostgres(

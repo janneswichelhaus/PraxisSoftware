@@ -349,7 +349,8 @@ begin
     prev_kind := 'stop';
     prev_at := v_stopp.zeit;
     select p.lat, p.lon into prev_lat, prev_lon from app.appointment_position(v_stopp.id, p_org) p;
-  elsif not isempty(arbeit) and v_ort_lat is not null and lower(arbeit) <= p_start then
+  elsif not isempty(arbeit) and lower(arbeit) <= p_start then
+    -- Ohne verorteten Tagesort bleibt der Ort leer: Der Rand ist dann nicht geprüft, nie frei.
     prev_kind := 'edge';
     prev_at := (p_date + lower(arbeit))::timestamp at time zone p_tz;
     prev_lat := v_ort_lat;
@@ -370,7 +371,7 @@ begin
     next_kind := 'stop';
     next_at := v_stopp.zeit;
     select p.lat, p.lon into next_lat, next_lon from app.appointment_position(v_stopp.id, p_org) p;
-  elsif not isempty(arbeit) and v_ort_lat is not null and upper(arbeit) >= p_end then
+  elsif not isempty(arbeit) and upper(arbeit) >= p_end then
     next_kind := 'edge';
     next_at := (p_date + upper(arbeit))::timestamp at time zone p_tz;
     next_lat := v_ort_lat;
@@ -382,7 +383,7 @@ end;
 $$;
 
 comment on function app.auto_booking_sides(uuid, uuid, date, time, time, text) is
-  'ANN-865: die beiden Seiten eines freien Fensters fuer die Wegregel. stop: der naechste Termin mit Ort davor oder danach (Ort null = nicht pruefbar); edge: Arbeitsbeginn oder -ende am Tagesort (ANN-240); none: nichts zu pruefen. Dazu Arbeitszeit und Belegung der Person an dem Tag.';
+  'ANN-865: die beiden Seiten eines freien Fensters fuer die Wegregel. stop: der naechste Termin mit Ort davor oder danach (Ort null = nicht pruefbar); edge: Arbeitsbeginn oder -ende am Tagesort (ANN-240; Ort null, solange der Standort nicht verortet ist); none: keine Arbeitszeit. Dazu Arbeitszeit und Belegung der Person an dem Tag.';
 revoke all on function app.auto_booking_sides(uuid, uuid, date, time, time, text)
   from public, anon, authenticated, service_role;
 
@@ -778,8 +779,9 @@ begin
     raise exception 'invalid legs' using errcode = '22023';
   end if;
 
-  -- Feste Reihenfolge der Sperren: Eintrag, Akte, dann die Personen nach Kennung. Ab hier ändert
-  -- kein Anlegen und keine Pause den Tag einer dieser Personen, bis gebucht ist.
+  -- Feste Reihenfolge der Sperren: Eintrag, Akte, dann die Personen nach Kennung. Ab hier warten
+  -- create_appointment und set_break_placement für diese Personen, bis gebucht ist; Ändern, Ereignis
+  -- und Trainingstermin nehmen die Sperre nicht und fallen höchstens als belegter Platz auf.
   if p_waitlist_entry_id is not null then
     select e.patient_id, e.status into v_eintrag
     from public.waitlist_entries e
