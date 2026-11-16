@@ -142,7 +142,7 @@ describe('SlotSearchPage (PRX-003)', () => {
     await screen.findByText('Kein freier Platz');
     await userEvent.click(screen.getByRole('button', { name: 'Nächsten passenden Termin buchen' }));
 
-    expect(await screen.findByText('Kein passender Platz')).toBeInTheDocument();
+    expect(await screen.findByText('Kein Platz mit passendem Fahrweg')).toBeInTheDocument();
     const suche = findFreeSlots.mock.calls[0]![0] as SlotApi.SearchParams;
     expect(bucheNaechstenTermin).toHaveBeenCalledWith({
       patientId: PATIENT,

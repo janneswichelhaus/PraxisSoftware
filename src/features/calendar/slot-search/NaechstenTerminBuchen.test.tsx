@@ -32,8 +32,9 @@ const { NaechstenTerminBuchen } = await import('./NaechstenTerminBuchen');
 const { AufDerPlattformSichtbar } =
   await import('@/features/calendar/appointments/folgetermin-api');
 
+const PATIENT = '66666666-6666-4666-8666-000000000001';
 const AUFTRAG: BuchungsApi.Buchungsauftrag = {
-  patientId: '66666666-6666-4666-8666-000000000001',
+  patientId: PATIENT,
   staffMemberId: null,
   duration: 60,
   from: '2099-10-05',
@@ -52,9 +53,18 @@ const TERMIN: BuchungsApi.GebuchterTermin = {
   gebiet: 'none',
 };
 const KNOPF = 'Nächsten passenden Termin buchen';
+const HIERHER = `/patienten/${PATIENT}/plaetze?verordnung=b1`;
 
 function zeige(auftrag: BuchungsApi.Buchungsauftrag = AUFTRAG) {
-  return renderWithProviders(<NaechstenTerminBuchen auftrag={auftrag} />);
+  return renderWithProviders(<NaechstenTerminBuchen auftrag={auftrag} hierher={HIERHER} />);
+}
+
+async function bucheUndNimmZurueck() {
+  bucheNaechstenTermin.mockResolvedValue({ art: 'gebucht', termin: TERMIN });
+  fetchAppointment.mockResolvedValue({ id: TERMIN.id, updated_at: '2099-10-01T10:00:00Z' });
+  zeige();
+  await userEvent.click(screen.getByRole('button', { name: KNOPF }));
+  await userEvent.click(await screen.findByRole('button', { name: 'Rückgängig' }));
 }
 
 describe('NaechstenTerminBuchen (ANN-865)', () => {
@@ -70,17 +80,24 @@ describe('NaechstenTerminBuchen (ANN-865)', () => {
     zeige();
     await userEvent.click(screen.getByRole('button', { name: KNOPF }));
 
-    expect(await screen.findByRole('status')).toHaveTextContent(
-      'Gebucht: Mo 05.10.2099, 08:15–09:15 Uhr · Anna Beispiel',
-    );
+    const meldung = await screen.findByRole('status');
+    expect(meldung).toHaveTextContent('Gebucht: Mo 05.10.2099, 08:15–09:15 Uhr · Anna Beispiel');
+    // Die Meldung steht dort, wo der Knopf war, und nimmt den Fokus.
+    await waitFor(() => expect(meldung.parentElement).toHaveFocus());
     expect(bucheNaechstenTermin).toHaveBeenCalledWith(AUFTRAG);
     expect(screen.getByRole('link', { name: 'Im Kalender ansehen' })).toHaveAttribute(
       'href',
       `/kalender?termin=${TERMIN.id}`,
     );
-    // Der Hauptknopf weicht dem Ergebnis: Ein zweiter Tipp an derselben Stelle bucht nicht noch einmal.
-    expect(screen.queryByRole('button', { name: KNOPF })).toBeNull();
     expect(screen.queryByText('Außerhalb des Gebietstags')).toBeNull();
+  });
+
+  it('lässt nach dem Buchen keinen Knopf stehen, der noch einmal bucht', async () => {
+    bucheNaechstenTermin.mockResolvedValue({ art: 'gebucht', termin: TERMIN });
+    zeige();
+    await userEvent.click(screen.getByRole('button', { name: KNOPF }));
+    await screen.findByText(/Gebucht:/);
+    expect(screen.getAllByRole('button').map((k) => k.textContent)).toEqual(['Rückgängig']);
   });
 
   it('sperrt den Knopf, solange gebucht wird', async () => {
@@ -97,7 +114,7 @@ describe('NaechstenTerminBuchen (ANN-865)', () => {
     await userEvent.click(wartend);
     expect(bucheNaechstenTermin).toHaveBeenCalledTimes(1);
     fertig({ art: 'kein_platz', ungeprueft: 0 });
-    expect(await screen.findByText('Kein passender Platz')).toBeInTheDocument();
+    expect(await screen.findByText('Kein Platz mit passendem Fahrweg')).toBeInTheDocument();
   });
 
   it('kennzeichnet einen Termin außerhalb des Gebietstags', async () => {
@@ -111,12 +128,8 @@ describe('NaechstenTerminBuchen (ANN-865)', () => {
   });
 
   it('nimmt den Termin zurück und bietet danach wieder den Knopf', async () => {
-    bucheNaechstenTermin.mockResolvedValue({ art: 'gebucht', termin: TERMIN });
-    fetchAppointment.mockResolvedValue({ id: TERMIN.id, updated_at: '2099-10-01T10:00:00Z' });
     undoAppointmentCreation.mockResolvedValue(undefined);
-    zeige();
-    await userEvent.click(screen.getByRole('button', { name: KNOPF }));
-    await userEvent.click(await screen.findByRole('button', { name: 'Rückgängig' }));
+    await bucheUndNimmZurueck();
 
     expect(await screen.findByText('Termin zurückgenommen.')).toBeInTheDocument();
     expect(undoAppointmentCreation).toHaveBeenCalledWith(TERMIN.id, '2099-10-01T10:00:00Z');
@@ -125,20 +138,19 @@ describe('NaechstenTerminBuchen (ANN-865)', () => {
   });
 
   it('fragt vor dem Absagen, wenn die Person den Termin schon auf der Plattform sieht (ANN-534)', async () => {
-    bucheNaechstenTermin.mockResolvedValue({ art: 'gebucht', termin: TERMIN });
-    fetchAppointment.mockResolvedValue({ id: TERMIN.id, updated_at: '2099-10-01T10:00:00Z' });
     undoAppointmentCreation.mockRejectedValue(new AufDerPlattformSichtbar());
     cancelAppointment.mockResolvedValue(undefined);
-    zeige();
-    await userEvent.click(screen.getByRole('button', { name: KNOPF }));
-    await userEvent.click(await screen.findByRole('button', { name: 'Rückgängig' }));
+    await bucheUndNimmZurueck();
 
     const frage = await screen.findByRole('group', { name: 'Termin absagen' });
-    expect(frage).toHaveTextContent('Die Person sieht Termin und Absage');
+    expect(frage).toHaveTextContent('Patient:in sieht Termin und Absage');
     expect(cancelAppointment).not.toHaveBeenCalled();
     expect(screen.queryByRole('button', { name: 'Rückgängig' })).toBeNull();
+    // Der Baustein führt den Fokus auf die Bestätigung.
+    const absagen = screen.getByRole('button', { name: 'Termin absagen' });
+    await waitFor(() => expect(absagen).toHaveFocus());
 
-    await userEvent.click(screen.getByRole('button', { name: 'Termin absagen' }));
+    await userEvent.click(absagen);
     expect(await screen.findByText('Termin abgesagt.')).toBeInTheDocument();
     expect(cancelAppointment).toHaveBeenCalledWith(
       TERMIN.id,
@@ -149,12 +161,8 @@ describe('NaechstenTerminBuchen (ANN-865)', () => {
   });
 
   it('lässt den Termin stehen, wenn „Behalten“ gewählt wird', async () => {
-    bucheNaechstenTermin.mockResolvedValue({ art: 'gebucht', termin: TERMIN });
-    fetchAppointment.mockResolvedValue({ id: TERMIN.id, updated_at: '2099-10-01T10:00:00Z' });
     undoAppointmentCreation.mockRejectedValue(new AufDerPlattformSichtbar());
-    zeige();
-    await userEvent.click(screen.getByRole('button', { name: KNOPF }));
-    await userEvent.click(await screen.findByRole('button', { name: 'Rückgängig' }));
+    await bucheUndNimmZurueck();
     await userEvent.click(await screen.findByRole('button', { name: 'Behalten' }));
 
     expect(screen.queryByRole('group', { name: 'Termin absagen' })).toBeNull();
@@ -163,35 +171,27 @@ describe('NaechstenTerminBuchen (ANN-865)', () => {
     expect(screen.getByRole('button', { name: 'Rückgängig' })).toBeEnabled();
   });
 
+  it('zeigt in der Rückfrage, warum die Absage scheiterte, und lässt sie offen', async () => {
+    undoAppointmentCreation.mockRejectedValue(new AufDerPlattformSichtbar());
+    cancelAppointment.mockRejectedValue(new Error('Der Termin wurde inzwischen geändert.'));
+    await bucheUndNimmZurueck();
+    await userEvent.click(await screen.findByRole('button', { name: 'Termin absagen' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Der Termin wurde inzwischen geändert.',
+    );
+    expect(screen.getByRole('group', { name: 'Termin absagen' })).toBeInTheDocument();
+  });
+
   it('nennt den Grund, wenn sich der Termin nicht zurücknehmen lässt', async () => {
-    bucheNaechstenTermin.mockResolvedValue({ art: 'gebucht', termin: TERMIN });
-    fetchAppointment.mockResolvedValue({ id: TERMIN.id, updated_at: '2099-10-01T10:00:00Z' });
     undoAppointmentCreation.mockRejectedValue(
       new Error('Zurücknehmen kann nur, wer den Termin angelegt hat.'),
     );
-    zeige();
-    await userEvent.click(screen.getByRole('button', { name: KNOPF }));
-    await userEvent.click(await screen.findByRole('button', { name: 'Rückgängig' }));
+    await bucheUndNimmZurueck();
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Zurücknehmen kann nur, wer den Termin angelegt hat.',
     );
     expect(screen.getByText(/Gebucht:/)).toBeInTheDocument();
-  });
-
-  it('bucht auf Wunsch einen weiteren Termin', async () => {
-    bucheNaechstenTermin
-      .mockResolvedValueOnce({ art: 'gebucht', termin: TERMIN })
-      .mockResolvedValueOnce({
-        art: 'gebucht',
-        termin: { ...TERMIN, id: 't2', datum: '2099-10-06' },
-      });
-    zeige();
-    await userEvent.click(screen.getByRole('button', { name: KNOPF }));
-    await userEvent.click(await screen.findByRole('button', { name: 'Weiteren Termin buchen' }));
-    await waitFor(() =>
-      expect(screen.getByRole('status')).toHaveTextContent('Gebucht: Di 06.10.2099'),
-    );
-    expect(bucheNaechstenTermin).toHaveBeenCalledTimes(2);
   });
 
   it('bietet beim Nachrücker der Warteliste nur den Weg in den Kalender', async () => {
@@ -199,8 +199,7 @@ describe('NaechstenTerminBuchen (ANN-865)', () => {
     zeige({ ...AUFTRAG, waitlistId: 'w1' });
     await userEvent.click(screen.getByRole('button', { name: KNOPF }));
     expect(await screen.findByRole('link', { name: 'Im Kalender ansehen' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Rückgängig' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Weiteren Termin buchen' })).toBeNull();
+    expect(screen.queryByRole('button')).toBeNull();
   });
 
   it('sagt, wenn sich an manchen Stellen der Weg nicht prüfen ließ', async () => {
@@ -208,30 +207,56 @@ describe('NaechstenTerminBuchen (ANN-865)', () => {
     zeige();
     await userEvent.click(screen.getByRole('button', { name: KNOPF }));
     expect(
-      await screen.findByText('Kein passender Platz · Wege teils nicht prüfbar'),
+      await screen.findByText('Kein Platz mit passendem Fahrweg, teils ungeprüft'),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: KNOPF })).toBeEnabled();
   });
 
-  it('zeigt den Grund als Fehler, wenn nichts gebucht wurde, und einen offenen Ausgang als Warnung', async () => {
-    bucheNaechstenTermin.mockResolvedValueOnce({
+  it('zeigt den Grund als Fehler, wenn nichts gebucht wurde, und lässt den Knopf stehen', async () => {
+    bucheNaechstenTermin.mockResolvedValue({
       art: 'nichts_gebucht',
       satz: 'Die Fahrzeiten lassen sich gerade nicht berechnen. Nichts gebucht.',
+      adresse: false,
     });
     zeige();
     await userEvent.click(screen.getByRole('button', { name: KNOPF }));
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Die Fahrzeiten lassen sich gerade nicht berechnen. Nichts gebucht.',
     );
+    expect(screen.getByRole('button', { name: KNOPF })).toBeEnabled();
+    expect(screen.queryByRole('link')).toBeNull();
+  });
 
-    bucheNaechstenTermin.mockResolvedValueOnce({
+  it('führt zu den Stammdaten, wenn die Anschrift nicht verortet ist, mit dem Rückweg zur Suche', async () => {
+    bucheNaechstenTermin.mockResolvedValue({
+      art: 'nichts_gebucht',
+      satz: 'Die Anschrift ist noch nicht auf der Karte verortet. Nichts gebucht.',
+      adresse: true,
+    });
+    zeige();
+    await userEvent.click(screen.getByRole('button', { name: KNOPF }));
+    const link = await screen.findByRole('link', { name: 'Anschrift in den Stammdaten' });
+    const [pfad, suche] = (link.getAttribute('href') ?? '').split('?');
+    expect(pfad).toBe(`/patienten/${PATIENT}/stammdaten`);
+    expect([...new URLSearchParams(suche).values()]).toContain(HIERHER);
+  });
+
+  it('nimmt bei offenem Ausgang den Knopf weg und führt zu den Terminen der Akte', async () => {
+    bucheNaechstenTermin.mockResolvedValue({
       art: 'unklar',
       satz: 'Unklar, ob gebucht wurde. Bitte im Kalender nachsehen.',
     });
+    zeige();
     await userEvent.click(screen.getByRole('button', { name: KNOPF }));
+
     expect(await screen.findByRole('status')).toHaveTextContent(
       'Unklar, ob gebucht wurde. Bitte im Kalender nachsehen.',
     );
-    expect(screen.queryByRole('alert')).toBeNull();
+    // Ein zweiter Tipp könnte doppelt buchen: Bis nachgesehen ist, gibt es hier keinen Knopf.
+    expect(screen.queryByRole('button')).toBeNull();
+    expect(screen.getByRole('link', { name: 'Termine der Akte ansehen' })).toHaveAttribute(
+      'href',
+      `/patienten/${PATIENT}/termine`,
+    );
   });
 });

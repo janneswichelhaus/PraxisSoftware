@@ -3,6 +3,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
+import { Rueckfragekasten } from '@/components/ui/Rueckfrage';
+import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import {
   AufDerPlattformSichtbar,
@@ -12,6 +14,7 @@ import {
   undoAppointmentCreation,
 } from '@/features/calendar/appointments';
 import { formatDate } from '@/lib/datum';
+import { mitRueckweg } from '@/lib/rueckweg';
 import { kalenderZumTermin } from '@/lib/termin';
 import {
   bucheNaechstenTermin,
@@ -41,10 +44,17 @@ interface Absagefrage {
 
 /**
  * „Nächsten passenden Termin buchen“ (ANN-865): ein Tipp, der Server wählt den frühesten Platz, an
- * dem die Wege aufgehen, und bucht ihn. Danach steht der Termin da, mit dem Weg in den Kalender und
- * „Rückgängig“; ein Nachrücker der Warteliste lässt sich nur im Kalender absagen.
+ * dem die Wege aufgehen, und bucht ihn. Danach steht der Termin an der Stelle des Knopfs, mit dem Weg
+ * in den Kalender und „Rückgängig“; ein Nachrücker der Warteliste lässt sich nur im Kalender absagen.
  */
-export function NaechstenTerminBuchen({ auftrag }: { auftrag: Buchungsauftrag }) {
+export function NaechstenTerminBuchen({
+  auftrag,
+  hierher,
+}: {
+  auftrag: Buchungsauftrag;
+  /** Die Adresse dieser Suche, als Rückweg für einen Abstecher. */
+  hierher: string;
+}) {
   const queryClient = useQueryClient();
   const [zurueckgenommen, setZurueckgenommen] = useState<'nein' | 'geloescht' | 'abgesagt'>('nein');
   const [absagefrage, setAbsagefrage] = useState<Absagefrage | null>(null);
@@ -102,121 +112,118 @@ export function NaechstenTerminBuchen({ auftrag }: { auftrag: Buchungsauftrag })
   });
 
   const ergebnis = buchen.data;
-  const gebucht = ergebnis?.art === 'gebucht' ? ergebnis.termin : null;
+
+  if (ergebnis?.art === 'gebucht') {
+    const gebucht = ergebnis.termin;
+    return (
+      <div className="mb-6">
+        <Rueckmeldung>Gebucht: {terminzeile(gebucht)}</Rueckmeldung>
+        {gebucht.gebiet === 'outside' ? (
+          <p className="mt-2">
+            <Badge ton="warnung">Außerhalb des Gebietstags</Badge>
+          </p>
+        ) : null}
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <ButtonLink to={kalenderZumTermin(gebucht.id)} variant="secondary" groesse="kompakt">
+            Im Kalender ansehen
+          </ButtonLink>
+          {auftrag.waitlistId || absagefrage ? null : (
+            <Button
+              type="button"
+              variant="quiet"
+              groesse="kompakt"
+              disabled={zuruecknehmen.isPending}
+              onClick={() => zuruecknehmen.mutate(gebucht.id)}
+            >
+              {zuruecknehmen.isPending ? 'Wird zurückgenommen …' : 'Rückgängig'}
+            </Button>
+          )}
+        </div>
+        {zuruecknehmen.isError ? (
+          <Statusmeldung ton="fehler" className="mt-2">
+            {zuruecknehmen.error.message}
+          </Statusmeldung>
+        ) : null}
+        {absagefrage ? (
+          <div className="mt-3">
+            <Rueckfragekasten
+              bezeichnung="Termin absagen"
+              bestaetigen="Termin absagen"
+              bestaetigenLaeuft="Wird abgesagt …"
+              abbrechen="Behalten"
+              fehler={absagen.error?.message}
+              onBestaetigen={() => absagen.mutateAsync(absagefrage)}
+              onAbbrechen={() => {
+                setAbsagefrage(null);
+                absagen.reset();
+              }}
+            >
+              Patient:in sieht Termin und Absage
+            </Rueckfragekasten>
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
+  // Ausgang offen: Der Knopf bleibt fort, bis nachgesehen ist - ein zweiter Tipp buchte sonst doppelt.
+  if (ergebnis?.art === 'unklar') {
+    return (
+      <div className="mb-6">
+        <Statusmeldung ton="warnung">{ergebnis.satz}</Statusmeldung>
+        <div className="mt-3">
+          <ButtonLink
+            to={`/patienten/${auftrag.patientId}/termine`}
+            variant="secondary"
+            groesse="kompakt"
+          >
+            Termine der Akte ansehen
+          </ButtonLink>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="mt-6">
-      {gebucht ? (
+    <div className="mb-6">
+      <Button
+        type="button"
+        className="w-full sm:w-auto"
+        disabled={buchen.isPending}
+        onClick={() => buchen.mutate()}
+      >
+        {buchen.isPending ? 'Wird gebucht …' : 'Nächsten passenden Termin buchen'}
+      </Button>
+      {zurueckgenommen === 'nein' ? null : (
+        <Statusmeldung ton="erfolg" className="mt-2">
+          {zurueckgenommen === 'abgesagt' ? 'Termin abgesagt.' : 'Termin zurückgenommen.'}
+        </Statusmeldung>
+      )}
+      {ergebnis?.art === 'kein_platz' ? (
+        <Statusmeldung ton="warnung" className="mt-2">
+          {ergebnis.ungeprueft > 0
+            ? 'Kein Platz mit passendem Fahrweg, teils ungeprüft'
+            : 'Kein Platz mit passendem Fahrweg'}
+        </Statusmeldung>
+      ) : null}
+      {ergebnis?.art === 'nichts_gebucht' ? (
         <>
-          <Statusmeldung ton="erfolg" className="text-liste font-semibold">
-            Gebucht: {terminzeile(gebucht)}
+          <Statusmeldung ton="fehler" className="mt-2">
+            {ergebnis.satz}
           </Statusmeldung>
-          {gebucht.gebiet === 'outside' ? (
-            <p className="mt-2">
-              <Badge ton="warnung">Außerhalb des Gebietstags</Badge>
-            </p>
-          ) : null}
-          <div className="mt-3 flex flex-wrap gap-2">
-            <ButtonLink to={kalenderZumTermin(gebucht.id)} variant="secondary" groesse="kompakt">
-              Im Kalender ansehen
-            </ButtonLink>
-            {auftrag.waitlistId || absagefrage ? null : (
-              <>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  groesse="kompakt"
-                  disabled={buchen.isPending || zuruecknehmen.isPending}
-                  onClick={() => buchen.mutate()}
-                >
-                  {buchen.isPending ? 'Wird gebucht …' : 'Weiteren Termin buchen'}
-                </Button>
-                <Button
-                  type="button"
-                  variant="quiet"
-                  groesse="kompakt"
-                  disabled={buchen.isPending || zuruecknehmen.isPending}
-                  onClick={() => zuruecknehmen.mutate(gebucht.id)}
-                >
-                  {zuruecknehmen.isPending ? 'Wird zurückgenommen …' : 'Rückgängig'}
-                </Button>
-              </>
-            )}
-          </div>
-          {zuruecknehmen.isError ? (
-            <Statusmeldung ton="fehler" className="mt-2">
-              {zuruecknehmen.error.message}
-            </Statusmeldung>
-          ) : null}
-          {absagefrage ? (
-            <div
-              role="group"
-              aria-label="Termin absagen"
-              className="border-line-strong bg-surface-sunken mt-3 border-l-4 py-3 pr-4 pl-4"
-            >
-              <p className="text-ink text-sm">Die Person sieht Termin und Absage</p>
-              {absagen.isError ? (
-                <Statusmeldung ton="fehler" className="mt-2">
-                  {absagen.error.message}
-                </Statusmeldung>
-              ) : null}
-              <div className="mt-3 flex flex-wrap gap-3">
-                <Button
-                  type="button"
-                  disabled={absagen.isPending}
-                  onClick={() => absagen.mutate(absagefrage)}
-                >
-                  {absagen.isPending ? 'Wird abgesagt …' : 'Termin absagen'}
-                </Button>
-                <Button
-                  type="button"
-                  variant="quiet"
-                  disabled={absagen.isPending}
-                  onClick={() => {
-                    setAbsagefrage(null);
-                    absagen.reset();
-                  }}
-                >
-                  Behalten
-                </Button>
-              </div>
+          {ergebnis.adresse ? (
+            <div className="mt-3">
+              <ButtonLink
+                to={mitRueckweg(`/patienten/${auftrag.patientId}/stammdaten`, hierher)}
+                variant="secondary"
+                groesse="kompakt"
+              >
+                Anschrift in den Stammdaten
+              </ButtonLink>
             </div>
           ) : null}
         </>
-      ) : (
-        <>
-          <Button
-            type="button"
-            className="w-full sm:w-auto"
-            disabled={buchen.isPending}
-            onClick={() => buchen.mutate()}
-          >
-            {buchen.isPending ? 'Wird gebucht …' : 'Nächsten passenden Termin buchen'}
-          </Button>
-          {zurueckgenommen === 'nein' ? null : (
-            <Statusmeldung ton="erfolg" className="mt-2">
-              {zurueckgenommen === 'abgesagt' ? 'Termin abgesagt.' : 'Termin zurückgenommen.'}
-            </Statusmeldung>
-          )}
-          {ergebnis?.art === 'kein_platz' ? (
-            <Statusmeldung ton="warnung" className="mt-2">
-              {ergebnis.ungeprueft > 0
-                ? 'Kein passender Platz · Wege teils nicht prüfbar'
-                : 'Kein passender Platz'}
-            </Statusmeldung>
-          ) : null}
-          {ergebnis?.art === 'nichts_gebucht' ? (
-            <Statusmeldung ton="fehler" className="mt-2">
-              {ergebnis.satz}
-            </Statusmeldung>
-          ) : null}
-          {ergebnis?.art === 'unklar' ? (
-            <Statusmeldung ton="warnung" className="mt-2">
-              {ergebnis.satz}
-            </Statusmeldung>
-          ) : null}
-        </>
-      )}
+      ) : null}
     </div>
   );
 }

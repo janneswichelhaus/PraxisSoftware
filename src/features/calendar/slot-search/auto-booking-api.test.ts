@@ -72,9 +72,26 @@ describe('Automatische Buchung im Browser (ANN-865)', () => {
     ['waitlist_closed', 'Der Wartelisteneintrag ist nicht mehr offen. Nichts gebucht.'],
     ['session_invalid', 'Die Anmeldung ist abgelaufen. Bitte neu anmelden. Nichts gebucht.'],
     ['busy', 'Der Kalender ändert sich gerade. Bitte noch einmal versuchen. Nichts gebucht.'],
+    ['too_many_routes', 'Zu viele Wege für eine Suche. Bitte den Zeitraum kürzen. Nichts gebucht.'],
+    ['not_configured', 'Automatisch buchen ist hier nicht eingerichtet. Nichts gebucht.'],
   ])('sagt zu %s, dass nichts gebucht ist', async (code, satz) => {
     invoke.mockResolvedValue(fehlerAntwort({ ok: false, error: { code, message: 'intern' } }));
-    expect(await bucheNaechstenTermin(AUFTRAG)).toEqual({ art: 'nichts_gebucht', satz });
+    expect(await bucheNaechstenTermin(AUFTRAG)).toEqual({
+      art: 'nichts_gebucht',
+      satz,
+      adresse: code === 'address_not_located',
+    });
+  });
+
+  it('nennt bei einer Antwort mit 404 die Ursache der Function, nicht „nicht eingerichtet“', async () => {
+    invoke.mockResolvedValue(
+      fehlerAntwort({ ok: false, error: { code: 'not_found', message: 'intern' } }, 404),
+    );
+    expect(await bucheNaechstenTermin(AUFTRAG)).toEqual({
+      art: 'nichts_gebucht',
+      satz: 'Akte, Person oder Grundlage gibt es nicht mehr. Nichts gebucht.',
+      adresse: false,
+    });
   });
 
   it('behauptet nie „nichts gebucht“, wenn der Ausgang offen ist', async () => {
@@ -106,6 +123,7 @@ describe('Automatische Buchung im Browser (ANN-865)', () => {
     expect(await bucheNaechstenTermin(AUFTRAG)).toEqual({
       art: 'nichts_gebucht',
       satz: 'Automatisch buchen ist hier nicht eingerichtet. Nichts gebucht.',
+      adresse: false,
     });
   });
 });

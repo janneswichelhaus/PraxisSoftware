@@ -47,6 +47,7 @@ const FEHLERKLASSEN = [
   'address_not_located',
   'waitlist_closed',
   'travel_unavailable',
+  'too_many_routes',
   'unavailable',
   'outcome_unknown',
   'busy',
@@ -70,6 +71,7 @@ const SAETZE: Record<(typeof FEHLERKLASSEN)[number], string> = {
   address_not_located: 'Die Anschrift ist noch nicht auf der Karte verortet. Nichts gebucht.',
   waitlist_closed: 'Der Wartelisteneintrag ist nicht mehr offen. Nichts gebucht.',
   travel_unavailable: 'Die Fahrzeiten lassen sich gerade nicht berechnen. Nichts gebucht.',
+  too_many_routes: 'Zu viele Wege für eine Suche. Bitte den Zeitraum kürzen. Nichts gebucht.',
   unavailable: 'Der Kalender antwortet gerade nicht. Nichts gebucht.',
   outcome_unknown: UNKLAR,
   busy: 'Der Kalender ändert sich gerade. Bitte noch einmal versuchen. Nichts gebucht.',
@@ -78,11 +80,13 @@ const SAETZE: Record<(typeof FEHLERKLASSEN)[number], string> = {
 /**
  * `unklar`: Die Antwort fehlt, der Termin kann trotzdem stehen; erst nachsehen, dann erneut buchen.
  * `ungeprueft` zählt freie Stellen, an denen Fahrzeit oder Ort des Nachbartermins fehlten.
+ * `adresse`: Es fehlt an der Anschrift der Akte; die Seite führt dorthin.
  */
 export type Buchungsergebnis =
   | { art: 'gebucht'; termin: GebuchterTermin }
   | { art: 'kein_platz'; ungeprueft: number }
-  | { art: 'nichts_gebucht' | 'unklar'; satz: string };
+  | { art: 'nichts_gebucht'; satz: string; adresse: boolean }
+  | { art: 'unklar'; satz: string };
 
 /** Bucht den nächsten passenden Hausbesuch; wirft nicht, jeder Ausgang hat eine Art. */
 export async function bucheNaechstenTermin(auftrag: Buchungsauftrag): Promise<Buchungsergebnis> {
@@ -116,8 +120,6 @@ export async function bucheNaechstenTermin(auftrag: Buchungsauftrag): Promise<Bu
       : { art: 'kein_platz', ungeprueft: wert.ungeprueft };
   }
 
-  // Die Function gibt es in dieser Umgebung nicht: Dann hat auch niemand gebucht.
-  if (response?.status === 404) return { art: 'nichts_gebucht', satz: NICHT_EINGERICHTET };
   let koerper: unknown = null;
   try {
     koerper = await response?.json();
@@ -125,7 +127,17 @@ export async function bucheNaechstenTermin(auftrag: Buchungsauftrag): Promise<Bu
     koerper = null;
   }
   const fehler = fehlerSchema.safeParse(koerper);
-  if (!fehler.success) return { art: 'unklar', satz: UNKLAR };
+  if (!fehler.success) {
+    // Ein 404 ohne unsere Fehlerklasse: Die Function gibt es hier nicht, also hat niemand gebucht.
+    return response?.status === 404
+      ? { art: 'nichts_gebucht', satz: NICHT_EINGERICHTET, adresse: false }
+      : { art: 'unklar', satz: UNKLAR };
+  }
   const { code } = fehler.data.error;
-  return { art: code === 'outcome_unknown' ? 'unklar' : 'nichts_gebucht', satz: SAETZE[code] };
+  if (code === 'outcome_unknown') return { art: 'unklar', satz: UNKLAR };
+  return {
+    art: 'nichts_gebucht',
+    satz: SAETZE[code],
+    adresse: code === 'address_incomplete' || code === 'address_not_located',
+  };
 }
