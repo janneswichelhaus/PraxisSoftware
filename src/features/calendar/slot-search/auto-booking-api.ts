@@ -37,7 +37,8 @@ const erfolgSchema = z.object({
   ]),
 });
 
-const FEHLERKLASSEN = [
+/** Die Fehlerklassen der Function; `typen.test.ts` dort hält beide Listen gleich. */
+export const FEHLERKLASSEN = [
   'session_invalid',
   'invalid_request',
   'forbidden',

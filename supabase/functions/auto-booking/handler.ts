@@ -38,7 +38,9 @@ export const HOECHSTENS_NOCHMAL = 3;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const TAG = /^\d{4}-\d{2}-\d{2}$/;
-const UHRZEIT = /^([01]\d|2[0-3]):[0-5]\d$|^24:00$/;
+// Dieselben Grenzen wie `app.waitlist_windows_valid`: höchstens 14 Fenster, Uhrzeit bis 23:59.
+const UHRZEIT = /^([01]\d|2[0-3]):[0-5]\d$/;
+const HOECHSTENS_FENSTER = 14;
 const FELDER = [
   'bis',
   'dauer_minuten',
@@ -75,7 +77,7 @@ function kennung(wert: unknown): string | null | undefined {
 }
 
 function fensterAus(wert: unknown): Wunschfenster[] | null {
-  if (!Array.isArray(wert) || wert.length > 21) return null;
+  if (!Array.isArray(wert) || wert.length > HOECHSTENS_FENSTER) return null;
   const fenster: Wunschfenster[] = [];
   for (const eintrag of wert as unknown[]) {
     if (typeof eintrag !== 'object' || eintrag === null) return null;

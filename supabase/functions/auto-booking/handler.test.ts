@@ -313,6 +313,10 @@ describe('Eingang der automatischen Buchung', () => {
       { ...KOERPER, wunschzeiten: [{ weekday: 8, from: '09:00', to: '10:00' }] },
     ],
     [
+      'mit Wunschzeit bis 24:00, die die Datenbank nicht kennt',
+      { ...KOERPER, wunschzeiten: [{ weekday: 1, from: '09:00', to: '24:00' }] },
+    ],
+    [
       'mit Wunschzeit ohne Uhrzeit',
       { ...KOERPER, wunschzeiten: [{ weekday: 1, from: 'früh', to: '10:00' }] },
     ],
@@ -320,7 +324,7 @@ describe('Eingang der automatischen Buchung', () => {
       'mit zu vielen Wunschzeiten',
       {
         ...KOERPER,
-        wunschzeiten: Array.from({ length: 22 }, () => ({
+        wunschzeiten: Array.from({ length: 15 }, () => ({
           weekday: 1,
           from: '09:00',
           to: '10:00',
@@ -340,7 +344,7 @@ describe('Eingang der automatischen Buchung', () => {
       auftragAus({
         ...KOERPER,
         person: '55555555-5555-4555-8555-000000000002',
-        wunschzeiten: [{ weekday: 3, from: '13:00', to: '24:00', egal: 1 }],
+        wunschzeiten: [{ weekday: 3, from: '13:00', to: '18:00', egal: 1 }],
       }),
     ).toEqual({
       patient: PATIENT,
@@ -348,7 +352,7 @@ describe('Eingang der automatischen Buchung', () => {
       dauerMinuten: 60,
       von: '2026-12-01',
       bis: '2026-12-14',
-      wunschzeiten: [{ weekday: 3, from: '13:00', to: '24:00' }],
+      wunschzeiten: [{ weekday: 3, from: '13:00', to: '18:00' }],
       grundlage: null,
       warteliste: null,
     });
