@@ -420,10 +420,45 @@ describe('book_next_appointment: Regeln', () => {
     expect(buero.start).toBe('08:15');
   });
 
-  it('belegt die Zeiten der Patient:in bei anderen Personen', async () => {
-    await termin(patients.max, MITTWOCH, '08:00', '09:30', { staff: JANNES, art: 'video' });
+  it('bucht nicht an einem Tag, an dem die Person schon einen Termin hat', async () => {
+    await termin(patients.max, MITTWOCH, '16:00', '16:30', { staff: JANNES, art: 'video' });
+    const nur = await naechstenBuchen({ staff: null }, ueberall(10));
+    expect(nur).toMatchObject({ outcome: 'none', days: 0 });
+
+    const e = erwarteGebucht(await naechstenBuchen({ staff: null, bis: DONNERSTAG }, ueberall(10)));
+    expect(e).toMatchObject({ date: DONNERSTAG, start: '08:15' });
+  });
+
+  it('zählt einen abgesagten Termin der Person nicht als ihren Termin des Tages', async () => {
+    const id = await termin(patients.max, MITTWOCH, '16:00', '16:30', { art: 'video' });
+    await asPostgres(
+      `update public.appointments set status = 'cancelled', cancelled_at = now(), cancelled_by = $2::uuid,
+              cancellation_reason = 'practice_request' where id = $1::uuid`,
+      [id, users.office],
+    );
     const e = erwarteGebucht(await naechstenBuchen({}, ueberall(10)));
-    expect(e).toMatchObject({ staff_member_id: ANNA, start: '09:30' });
+    expect(e).toMatchObject({ date: MITTWOCH, start: '08:15' });
+  });
+
+  it('bucht frühestens für morgen, auch wenn heute noch etwas frei wäre', async () => {
+    const { rows } = await asPostgres<{ heute: string; morgen: string }>(
+      `select (now() at time zone 'Europe/Berlin')::date::text as heute,
+              ((now() at time zone 'Europe/Berlin')::date + 1)::text as morgen`,
+    );
+    const { heute, morgen } = rows[0]!;
+    for (const person of [ANNA, JANNES, TIM]) {
+      await asPostgres(
+        `insert into public.staff_working_hours (organization_id, staff_member_id, weekday, starts_at, ends_at)
+         values ($1::uuid, $2::uuid, 6, '00:00', '23:55'), ($1::uuid, $2::uuid, 7, '00:00', '23:55')`,
+        [organizationId, person],
+      );
+    }
+    const nur = await naechstenBuchen({ staff: null, von: heute, bis: heute }, ueberall(10));
+    expect(nur).toMatchObject({ outcome: 'none', days: 0 });
+    const e = erwarteGebucht(
+      await naechstenBuchen({ staff: null, von: heute, bis: morgen }, ueberall(10)),
+    );
+    expect(e.date).toBe(morgen);
   });
 
   it('bleibt in den Wunschzeiten', async () => {
@@ -498,6 +533,16 @@ describe('book_next_appointment: Regeln', () => {
     );
     expect(fehler?.message).toMatch(/waitlist entry closed/);
     expect(await termine()).toHaveLength(1);
+
+    // Ein Eintrag einer anderen Person oder einer, den es nicht gibt, bucht ebenfalls nichts.
+    const fremd = anfrage({ patient: patients.erika, eintrag });
+    expect(
+      (await abgefangen(asUser(users.office, BUCHEN, buchArgs(fremd, 0, []))))?.message,
+    ).toMatch(/waitlist entry belongs to another patient/);
+    const ohne = anfrage({ eintrag: '99999999-9999-4999-8999-999999999999' });
+    expect(
+      (await abgefangen(asUser(users.office, BUCHEN, buchArgs(ohne, 0, []))))?.message,
+    ).toMatch(/waitlist entry not found/);
   });
 
   it('nennt nur die Wege, die es braucht: Koordinatenpaare ohne Namen, Kennung und Uhrzeit', async () => {
@@ -623,10 +668,32 @@ describe('book_next_appointment: Eingaben und Rechte', () => {
       [{ key: 'x', seconds: -1 }],
       [{ key: 'x', seconds: 86401 }],
       [{ key: 'x', seconds: 'schnell' }],
-      Array.from({ length: 401 }, () => ({ key: 'x', seconds: 1 })),
+      Array.from({ length: 1001 }, () => ({ key: 'x', seconds: 1 })),
     ]) {
       expect((await versuch({}, legs))?.message, JSON.stringify(legs).slice(0, 40)).toMatch(
         /invalid legs/,
+      );
+    }
+  });
+
+  it('hat für Planung und Buchung dieselbe Grenze der Wege', async () => {
+    // Die Grenze liegt weit über einer Woche der Praxis; hier wird sie für den Test gesenkt.
+    await asPostgres(
+      `create or replace function app.auto_booking_max_legs() returns integer
+         language sql immutable set search_path to '' as $$ select 1 $$`,
+    );
+    try {
+      expect((await planversuch({}))?.message).toMatch(/too many legs/);
+      const zwei = [
+        { key: 'a', seconds: 1 },
+        { key: 'b', seconds: 1 },
+      ];
+      expect((await versuch({}, zwei))?.message).toMatch(/invalid legs/);
+      expect((await versuch({}, zwei.slice(0, 1)))?.message ?? '').not.toMatch(/invalid legs/);
+    } finally {
+      await asPostgres(
+        `create or replace function app.auto_booking_max_legs() returns integer
+           language sql immutable set search_path to '' as $$ select 1000 $$`,
       );
     }
   });
@@ -665,6 +732,7 @@ describe('book_next_appointment: Eingaben und Rechte', () => {
       auto_booking_free_seconds: '',
       auto_booking_leg_key: '',
       auto_booking_leg_seconds: '',
+      auto_booking_max_legs: '',
       auto_booking_page_size: '',
       auto_booking_request: '',
       auto_booking_sides: '',
@@ -745,12 +813,12 @@ describe('book_next_appointment: gleichzeitig', () => {
     expect(rows[0]!.n).toBe('0');
   });
 
-  it('bucht für dieselbe Person nicht zweimal denselben Platz', async () => {
+  it('bucht für dieselbe Person nicht zweimal denselben Tag', async () => {
     const legs = await alleWege();
     const a = await sitzung(users.office);
     const b = await sitzung(users.therapist);
     try {
-      const args = buchArgs(anfrage({ staff: null }), 0, legs);
+      const args = buchArgs(anfrage({ staff: null, bis: DONNERSTAG }), 0, legs);
       await a.query(BUCHEN, args);
       const zweite = b.query<{ ergebnis: Ergebnis }>(BUCHEN, args);
       await a.query('commit');
@@ -763,9 +831,8 @@ describe('book_next_appointment: gleichzeitig', () => {
       await b.end();
     }
     const gebucht = await termine();
-    expect(gebucht).toHaveLength(2);
-    // Die Zeiten der Patient:in überschneiden sich nicht, auch nicht bei zwei Personen.
-    expect(gebucht[0]!.bis <= gebucht[1]!.von).toBe(true);
+    // Die zweite sieht den Termin der ersten und weicht auf den nächsten Tag aus.
+    expect(gebucht.map((g) => g.tag)).toEqual([MITTWOCH, DONNERSTAG]);
   });
 
   it('wartet mit dem Anlegen von Hand, bis die Pause verschoben ist, und landet nicht in ihr', async () => {
@@ -880,6 +947,8 @@ function nachrechnen(
     const wochentag = ((new Date(`${tag}T12:00:00Z`).getUTCDay() + 6) % 7) + 1;
     const wunsch = fenster.filter((f) => f.weekday === wochentag);
     if (fenster.length > 0 && wunsch.length === 0) continue;
+    // Ein Termin je Tag: An einem Tag mit einem Termin der Person wird nicht gebucht.
+    if (lage.bestand.some((t) => t.patient === patients.max && t.tag === tag)) continue;
     for (let start = 0; start + dauer <= 24 * 60 - 1; start += RASTER) {
       const s = start * 60;
       const e = (start + dauer) * 60;
@@ -890,8 +959,6 @@ function nachrechnen(
         const eigene = lage.bestand.filter((t) => t.staff === person.id && t.tag === tag);
         const belegt = eigene.map((t) => ({ von: t.von * 60, bis: t.bis * 60 }));
         if (belegt.some((b) => b.von < e && s < b.bis)) continue;
-        const patient = lage.bestand.filter((t) => t.patient === patients.max && t.tag === tag);
-        if (patient.some((t) => t.von * 60 < e && s < t.bis * 60)) continue;
 
         const seite = (richtung: 'an' | 'weiter'): boolean => {
           const stopps = eigene.filter((t) => t.mitOrt);

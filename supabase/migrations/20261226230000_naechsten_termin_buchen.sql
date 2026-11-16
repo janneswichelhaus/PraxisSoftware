@@ -180,7 +180,7 @@ end;
 $$;
 
 comment on function public.create_appointment(uuid, uuid, text, date, time, time, uuid, boolean, uuid, boolean) is
-  'Legt einen Behandlungstermin im Zustand confirmed an. Die Laenge ist frei im Praxisraster (CAL-020); geprueft werden Raster des Beginns, Arbeitszeit und Belegung (CAL-003, CAL-005, CAL-007, ADR-018). Ein Tag in der Vergangenheit verlangt p_confirmed_past und steht im Auditkontext (FIX-019, ANN-057). Nimmt vor der Pruefung die Sperre der behandelnden Person (ANN-865).';
+  'Legt einen Behandlungstermin im Zustand confirmed an. Die Laenge ist frei im Praxisraster (CAL-020); geprueft werden Raster des Beginns, Arbeitszeit und Belegung (CAL-003, CAL-005, CAL-007, ADR-018). Ein Tag in der Vergangenheit verlangt p_confirmed_past (ANN-057). Nimmt vor der Pruefung die Sperre der behandelnden Person (ANN-865).';
 
 -- So viele Tage (je Gebietsklasse) prüft ein Aufruf; die Serverfunktion blättert weiter.
 create function app.auto_booking_page_size()
@@ -190,6 +190,15 @@ set search_path to ''
 as $$ select 7 $$;
 
 revoke all on function app.auto_booking_page_size() from public, anon, authenticated, service_role;
+
+-- So viele Wege nennt die Planung höchstens und nimmt die Buchung höchstens an.
+create function app.auto_booking_max_legs()
+returns integer
+language sql immutable
+set search_path to ''
+as $$ select 1000 $$;
+
+revoke all on function app.auto_booking_max_legs() from public, anon, authenticated, service_role;
 
 -- Ein Weg ist nur ein Koordinatenpaar: Wer der Nachbar ist, bestimmt die Buchung selbst.
 create function app.auto_booking_leg_key(
@@ -505,10 +514,8 @@ set jit to off
 as $$
 declare
   v_fenster jsonb := coalesce(p_windows, '[]'::jsonb);
-  v_heute   date := (now() at time zone p_tz)::date;
-  v_jetzt   integer := extract(hour from (now() at time zone p_tz))::integer * 60
-                       + extract(minute from (now() at time zone p_tz))::integer;
-  v_von     date := greatest(p_from, (now() at time zone p_tz)::date);
+  -- Frühestens morgen: Wer heute schon unterwegs ist, erführe von einem neuen Besuch nichts.
+  v_von     date := greatest(p_from, (now() at time zone p_tz)::date + 1);
   v_mittag  integer := (ceil(720::numeric / p_grid) * p_grid)::integer;
   v_stamm   uuid;
 begin
@@ -526,6 +533,15 @@ begin
   with tage as (
     select d::date as tag
     from generate_series(v_von::timestamp, p_to::timestamp, interval '1 day') d
+    -- Ein Termin je Tag: Hat die Person an dem Tag schon einen, wird dort nicht gebucht.
+    where not exists (
+      select 1 from public.appointments t
+      where t.organization_id = p_org
+        and t.patient_id = p_patient_id
+        and t.status <> 'cancelled'
+        and t.starts_at < ((d::date + 1)::timestamp at time zone p_tz)
+        and t.ends_at > (d::date::timestamp at time zone p_tz)
+    )
   ),
   personen as (
     select sm.id,
@@ -543,7 +559,6 @@ begin
     select p.id as staff, p.name, p.platz, t.tag, app.working_ranges(p.id, p_org, t.tag) as bereiche
     from personen p cross join tage t
   ),
-  -- Belegt ist, was die Person ODER die Patient:in an diesem Tag schon hat (§8).
   belegung as (
     select a.staff, a.tag,
            range_agg(app.timerange(
@@ -557,7 +572,7 @@ begin
     join public.appointments t
       on t.organization_id = p_org
      and t.status <> 'cancelled'
-     and (t.staff_member_id = a.staff or t.patient_id = p_patient_id)
+     and t.staff_member_id = a.staff
      and t.starts_at < ((a.tag + 1)::timestamp at time zone p_tz)
      and t.ends_at > (a.tag::timestamp at time zone p_tz)
     where a.bereiche is not null
@@ -585,10 +600,7 @@ begin
   ),
   grenzen as (
     select f.staff, f.name, f.platz, f.tag,
-           (ceil(greatest(
-              (extract(epoch from lower(f.r)) / 60)::integer,
-              case when f.tag = v_heute then v_jetzt + 1 else 0 end
-            )::numeric / p_grid) * p_grid)::integer as erster,
+           (ceil((extract(epoch from lower(f.r)) / 60)::numeric / p_grid) * p_grid)::integer as erster,
            least((extract(epoch from upper(f.r)) / 60)::integer, 24 * 60 - 1) - p_duration_minutes as letzter
     from frei f
   ),
@@ -629,7 +641,7 @@ end;
 $$;
 
 comment on function app.auto_booking_windows(uuid, uuid, uuid, integer, date, date, jsonb, integer, text, integer, text) is
-  'ANN-865: die Fenster moeglicher Beginne fuer die automatische Buchung, seitenweise nach Tag (Gebietstag zuerst, ausserhalb zuletzt). Frei ist, was Arbeitszeit der Person ist und weder sie noch die Patient:in belegt, in den Wunschzeiten. Je Fenster die beiden Seiten fuer die Wegregel; personrang: zuletzt behandelnde Person zuerst, dann Name.';
+  'ANN-865: die Fenster moeglicher Beginne fuer die automatische Buchung, seitenweise nach Tag (Gebietstag zuerst, ausserhalb zuletzt), fruehestens morgen und nie an einem Tag, an dem die Patient:in schon einen Termin hat. Frei ist, was Arbeitszeit der Person ist und sie nicht belegt, in den Wunschzeiten. Je Fenster die beiden Seiten fuer die Wegregel; personrang: zuletzt behandelnde Person zuerst, dann Name.';
 revoke all on function app.auto_booking_windows(uuid, uuid, uuid, integer, date, date, jsonb, integer, text, integer, text)
   from public, anon, authenticated, service_role;
 
@@ -637,7 +649,9 @@ create function public.plan_auto_booking(
   p_patient_id uuid, p_staff_member_id uuid, p_duration_minutes integer,
   p_from date, p_to date, p_windows jsonb default '[]'::jsonb, p_offset integer default 0)
 returns jsonb
-language plpgsql stable security definer
+-- Nicht stable: Hinter PostgREST liefe sie sonst in einer lesenden Transaktion, und der Vermerk
+-- der Abweisung scheiterte dort.
+language plpgsql security definer
 set search_path to ''
 as $$
 declare
@@ -688,6 +702,10 @@ begin
            from wege w), '[]'::jsonb)
     into v_gruppen, v_wege;
 
+  if jsonb_array_length(v_wege) > app.auto_booking_max_legs() then
+    raise exception 'too many legs' using errcode = '22023';
+  end if;
+
   return jsonb_build_object(
     'days', v_gruppen,
     'page_size', app.auto_booking_page_size(),
@@ -713,6 +731,7 @@ as $$
 declare
   v_org        uuid;
   v_a          record;
+  v_eintrag    record;
   w            record;
   v_passt      record;
   v_hin        integer;
@@ -746,7 +765,8 @@ begin
   from app.auto_booking_request(v_org, p_patient_id, p_staff_member_id, p_duration_minutes,
                                 p_from, p_to, p_windows, p_offset);
 
-  if p_legs is null or jsonb_typeof(p_legs) <> 'array' or jsonb_array_length(p_legs) > 400
+  if p_legs is null or jsonb_typeof(p_legs) <> 'array'
+     or jsonb_array_length(p_legs) > app.auto_booking_max_legs()
      or exists (
        select 1 from jsonb_array_elements(p_legs) l
        where jsonb_typeof(l) <> 'object'
@@ -761,9 +781,20 @@ begin
   -- Feste Reihenfolge der Sperren: Eintrag, Akte, dann die Personen nach Kennung. Ab hier ändert
   -- kein Anlegen und keine Pause den Tag einer dieser Personen, bis gebucht ist.
   if p_waitlist_entry_id is not null then
-    perform 1 from public.waitlist_entries e
-     where e.id = p_waitlist_entry_id and e.organization_id = v_org
-       for update;
+    select e.patient_id, e.status into v_eintrag
+    from public.waitlist_entries e
+    where e.id = p_waitlist_entry_id and e.organization_id = v_org
+    for update;
+    -- Dieselben Antworten wie create_appointment_from_waitlist, aber bevor gesucht wird.
+    if not found then
+      raise exception 'waitlist entry not found' using errcode = 'P0002';
+    end if;
+    if v_eintrag.patient_id <> p_patient_id then
+      raise exception 'waitlist entry belongs to another patient' using errcode = '22023';
+    end if;
+    if v_eintrag.status <> 'open' then
+      raise exception 'waitlist entry closed' using errcode = '22023';
+    end if;
   end if;
   perform 1 from public.patients p
    where p.id = p_patient_id and p.organization_id = v_org
