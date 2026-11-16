@@ -61,6 +61,7 @@ const fehlerSchema = z.object({
 
 const UNKLAR = 'Unklar, ob gebucht wurde. Bitte bei den Terminen der Akte nachsehen.';
 const NICHT_EINGERICHTET = 'Automatisch buchen ist hier nicht eingerichtet. Nichts gebucht.';
+const OHNE_NETZ = 'Keine Verbindung. Nichts gebucht.';
 
 const SAETZE: Record<(typeof FEHLERKLASSEN)[number], string> = {
   session_invalid: 'Die Anmeldung ist abgelaufen. Bitte neu anmelden. Nichts gebucht.',
@@ -91,6 +92,10 @@ export type Buchungsergebnis =
 
 /** Bucht den nächsten passenden Hausbesuch; wirft nicht, jeder Ausgang hat eine Art. */
 export async function bucheNaechstenTermin(auftrag: Buchungsauftrag): Promise<Buchungsergebnis> {
+  // Meldet das Gerät „getrennt“, geht nichts ab: sicher nichts gebucht, kein offener Ausgang (ANN-015).
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    return { art: 'nichts_gebucht', satz: OHNE_NETZ, adresse: false };
+  }
   let data: unknown;
   let error: unknown;
   let response: Response | undefined;

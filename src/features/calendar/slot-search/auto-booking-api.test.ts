@@ -118,6 +118,20 @@ describe('Automatische Buchung im Browser (ANN-865)', () => {
     expect(await bucheNaechstenTermin(AUFTRAG)).toEqual(unklar);
   });
 
+  it('schickt ohne Netz nichts ab und sagt sicher „nichts gebucht“', async () => {
+    vi.stubGlobal('navigator', { onLine: false });
+    try {
+      expect(await bucheNaechstenTermin(AUFTRAG)).toEqual({
+        art: 'nichts_gebucht',
+        satz: 'Keine Verbindung. Nichts gebucht.',
+        adresse: false,
+      });
+      expect(invoke).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('sagt es, wenn es die Function in der Umgebung nicht gibt', async () => {
     invoke.mockResolvedValue(fehlerAntwort({ message: 'Function not found' }, 404));
     expect(await bucheNaechstenTermin(AUFTRAG)).toEqual({

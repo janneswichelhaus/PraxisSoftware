@@ -87,8 +87,11 @@ export function NaechstenTerminBuchen({
     await queryClient.invalidateQueries({ queryKey: ['waitlist'], refetchType: 'none' });
   }
 
+  // Auch ohne Netz gleich versuchen: Angehalten holte TanStack Buchung, Rücknahme oder Absage beim
+  // nächsten Netz nach, auch wenn die Seite längst verlassen ist - und niemand sähe das Ergebnis.
   const buchen = useMutation({
     mutationKey: BUCHUNG_LAEUFT,
+    networkMode: 'always',
     mutationFn: (a: Buchungsauftrag) => bucheNaechstenTermin(a),
     onMutate: () => {
       onTipp();
@@ -109,6 +112,7 @@ export function NaechstenTerminBuchen({
   }
 
   const zuruecknehmen = useMutation({
+    networkMode: 'always',
     mutationFn: async (id: string): Promise<Absagefrage | null> => {
       const jetzt = await fetchAppointment(id);
       if (!jetzt) throw new Error('Den Termin gibt es nicht mehr.');
@@ -128,6 +132,7 @@ export function NaechstenTerminBuchen({
 
   // Als Praxis, ohne Gebühr; die Person sieht die Absage (ADR-018 Punkt 2).
   const absagen = useMutation({
+    networkMode: 'always',
     mutationFn: (frage: Absagefrage) =>
       cancelAppointment(frage.id, frage.stand, 'practice_request'),
     onSuccess: () => fort('abgesagt'),

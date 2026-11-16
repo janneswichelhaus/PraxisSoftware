@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
+import { onlineManager } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
 import type * as BuchungsApi from './auto-booking-api';
 import type * as TerminApi from '@/features/calendar/appointments/api';
@@ -230,6 +231,43 @@ describe('NaechstenTerminBuchen (ANN-865)', () => {
     rerender(knopf(AUFTRAG));
     expect(screen.getByText(/Gebucht:/)).toBeInTheDocument();
     expect(screen.queryByRole('button')).toBeNull();
+  });
+
+  it('hält ohne Netz nichts an, was später still nachgeholt würde', async () => {
+    bucheNaechstenTermin.mockResolvedValue({
+      art: 'nichts_gebucht',
+      satz: 'Keine Verbindung. Nichts gebucht.',
+      adresse: false,
+    });
+    onlineManager.setOnline(false);
+    try {
+      zeige();
+      await userEvent.click(screen.getByRole('button', { name: KNOPF }));
+      expect(await screen.findByText('Keine Verbindung. Nichts gebucht.')).toBeInTheDocument();
+      expect(bucheNaechstenTermin).toHaveBeenCalledTimes(1);
+      expect(screen.getByRole('button', { name: KNOPF })).toBeEnabled();
+    } finally {
+      onlineManager.setOnline(true);
+    }
+  });
+
+  it('versucht auch die Rücknahme ohne Netz sofort und nennt den Grund', async () => {
+    bucheNaechstenTermin.mockResolvedValue({ art: 'gebucht', termin: TERMIN });
+    fetchAppointment.mockRejectedValue(new Error('Der Termin konnte nicht geladen werden.'));
+    zeige();
+    await userEvent.click(screen.getByRole('button', { name: KNOPF }));
+    const rueckgaengig = await screen.findByRole('button', { name: 'Rückgängig' });
+    onlineManager.setOnline(false);
+    try {
+      await userEvent.click(rueckgaengig);
+      expect(
+        await screen.findByText('Der Termin konnte nicht geladen werden.'),
+      ).toBeInTheDocument();
+      expect(fetchAppointment).toHaveBeenCalledTimes(1);
+      expect(undoAppointmentCreation).not.toHaveBeenCalled();
+    } finally {
+      onlineManager.setOnline(true);
+    }
   });
 
   it('meldet den Tipp an die Seite, bevor gebucht ist', async () => {
