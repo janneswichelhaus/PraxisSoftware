@@ -29,6 +29,9 @@ const TERMINABFRAGEN = [
   ['free-slots'],
 ] as const;
 
+/** Solange diese Buchung läuft, startet die Seite keine neue Suche: Ihr Ergebnis ginge sonst verloren. */
+export const BUCHUNG_LAEUFT = ['auto-booking'] as const;
+
 const WOCHENTAG = new Intl.DateTimeFormat('de-DE', { weekday: 'short', timeZone: 'UTC' });
 
 function terminzeile(termin: GebuchterTermin): string {
@@ -50,11 +53,14 @@ interface Absagefrage {
 export function NaechstenTerminBuchen({
   auftrag,
   hierher,
+  onTipp,
   onUnklar,
 }: {
   auftrag: Buchungsauftrag;
   /** Die Adresse dieser Suche, als Rückweg für einen Abstecher. */
   hierher: string;
+  /** Ab dem Tipp hält die Seite das Formular fest, auch wenn der Wartelisteneintrag dabei schließt. */
+  onTipp: () => void;
   /** Der Ausgang ist offen: Die Seite hält das fest, auch über eine neue Suche hinweg. */
   onUnklar: (satz: string) => void;
 }) {
@@ -82,8 +88,10 @@ export function NaechstenTerminBuchen({
   }
 
   const buchen = useMutation({
-    mutationFn: () => bucheNaechstenTermin(auftrag),
+    mutationKey: BUCHUNG_LAEUFT,
+    mutationFn: (a: Buchungsauftrag) => bucheNaechstenTermin(a),
     onMutate: () => {
+      onTipp();
       setZurueckgenommen('nein');
       setAbsagefrage(null);
     },
@@ -126,6 +134,8 @@ export function NaechstenTerminBuchen({
   });
 
   const ergebnis = buchen.data;
+  // Ob nachgerückt wurde, sagt der Auftrag, mit dem gebucht wurde: Der Eintrag ist danach geschlossen.
+  const nachruecker = Boolean(buchen.variables?.waitlistId);
 
   if (ergebnis?.art === 'gebucht') {
     const gebucht = ergebnis.termin;
@@ -141,7 +151,7 @@ export function NaechstenTerminBuchen({
           <ButtonLink to={kalenderZumTermin(gebucht.id)} variant="secondary" groesse="kompakt">
             Im Kalender ansehen
           </ButtonLink>
-          {auftrag.waitlistId || absagefrage ? null : (
+          {nachruecker || absagefrage ? null : (
             <Button
               ref={rueckgaengig}
               type="button"
@@ -188,7 +198,7 @@ export function NaechstenTerminBuchen({
         type="button"
         className="w-full sm:w-auto"
         disabled={buchen.isPending}
-        onClick={() => buchen.mutate()}
+        onClick={() => buchen.mutate(auftrag)}
       >
         {buchen.isPending ? 'Wird gebucht …' : 'Nächsten passenden Termin buchen'}
       </Button>

@@ -56,11 +56,21 @@ const KNOPF = 'Nächsten passenden Termin buchen';
 const HIERHER = `/patienten/${PATIENT}/plaetze?verordnung=b1`;
 
 const onUnklar = vi.fn();
+const onTipp = vi.fn();
+
+function knopf(auftrag: BuchungsApi.Buchungsauftrag) {
+  return (
+    <NaechstenTerminBuchen
+      auftrag={auftrag}
+      hierher={HIERHER}
+      onTipp={onTipp}
+      onUnklar={onUnklar}
+    />
+  );
+}
 
 function zeige(auftrag: BuchungsApi.Buchungsauftrag = AUFTRAG) {
-  return renderWithProviders(
-    <NaechstenTerminBuchen auftrag={auftrag} hierher={HIERHER} onUnklar={onUnklar} />,
-  );
+  return renderWithProviders(knopf(auftrag));
 }
 
 async function bucheUndNimmZurueck() {
@@ -78,6 +88,7 @@ describe('NaechstenTerminBuchen (ANN-865)', () => {
     cancelAppointment.mockReset();
     undoAppointmentCreation.mockReset();
     onUnklar.mockReset();
+    onTipp.mockReset();
   });
 
   it('bucht mit einem Tipp und zeigt Tag, Zeit und Person mit dem Weg in den Kalender', async () => {
@@ -207,6 +218,33 @@ describe('NaechstenTerminBuchen (ANN-865)', () => {
     await userEvent.click(screen.getByRole('button', { name: KNOPF }));
     expect(await screen.findByRole('link', { name: 'Im Kalender ansehen' })).toBeInTheDocument();
     expect(screen.queryByRole('button')).toBeNull();
+  });
+
+  it('bietet dem Nachrücker auch dann kein „Rückgängig“, wenn der Eintrag danach geschlossen ist', async () => {
+    bucheNaechstenTermin.mockResolvedValue({ art: 'gebucht', termin: TERMIN });
+    const { rerender } = zeige({ ...AUFTRAG, waitlistId: 'w1' });
+    await userEvent.click(screen.getByRole('button', { name: KNOPF }));
+    await screen.findByRole('link', { name: 'Im Kalender ansehen' });
+
+    // Die Seite kennt den Eintrag nach dem Neuladen nicht mehr; gebucht wurde trotzdem über ihn.
+    rerender(knopf(AUFTRAG));
+    expect(screen.getByText(/Gebucht:/)).toBeInTheDocument();
+    expect(screen.queryByRole('button')).toBeNull();
+  });
+
+  it('meldet den Tipp an die Seite, bevor gebucht ist', async () => {
+    let fertig: (e: BuchungsApi.Buchungsergebnis) => void = () => undefined;
+    bucheNaechstenTermin.mockReturnValue(
+      new Promise<BuchungsApi.Buchungsergebnis>((resolve) => {
+        fertig = resolve;
+      }),
+    );
+    zeige();
+    await userEvent.click(screen.getByRole('button', { name: KNOPF }));
+    await waitFor(() => expect(onTipp).toHaveBeenCalledTimes(1));
+    expect(screen.queryByText(/Gebucht:/)).toBeNull();
+    fertig({ art: 'gebucht', termin: TERMIN });
+    expect(await screen.findByText(/Gebucht:/)).toBeInTheDocument();
   });
 
   it('sagt, wenn sich an manchen Stellen der Weg nicht prüfen ließ', async () => {
