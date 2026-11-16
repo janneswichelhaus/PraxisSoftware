@@ -780,8 +780,8 @@ begin
   end if;
 
   -- Feste Reihenfolge der Sperren: Eintrag, Akte, dann die Personen nach Kennung. Ab hier warten
-  -- create_appointment und set_break_placement für diese Personen, bis gebucht ist; Ändern, Ereignis
-  -- und Trainingstermin nehmen die Sperre nicht und fallen höchstens als belegter Platz auf.
+  -- create_appointment und set_break_placement für diese Personen, bis gebucht ist. Ändern, Ereignis
+  -- und Trainingstermin warten nicht: Landen sie zeitgleich daneben, ist ihr Weg hier nicht geprüft.
   if p_waitlist_entry_id is not null then
     select e.patient_id, e.status into v_eintrag
     from public.waitlist_entries e
