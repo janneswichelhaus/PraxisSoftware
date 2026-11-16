@@ -125,6 +125,8 @@ describe('Datenbank der automatischen Buchung', () => {
     [400, { message: 'home visit requires a complete patient address' }, 'address_incomplete'],
     [400, { message: 'waitlist entry closed' }, 'waitlist_closed'],
     [400, { message: 'waitlist entry belongs to another patient' }, 'waitlist_closed'],
+    [400, { message: 'too many legs' }, 'too_many_routes'],
+    [400, { message: 'waitlist entry not found' }, 'waitlist_closed'],
     [400, { message: 'patient not found' }, 'not_found'],
     [400, { message: 'staff member not assignable' }, 'not_found'],
     [400, { message: 'treatment basis not found' }, 'not_found'],

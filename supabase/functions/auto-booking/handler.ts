@@ -1,11 +1,11 @@
-import type { Anbieteradapter } from '../location-provider/typen.ts';
 import type { Datenbank } from './datenbank.ts';
+import type { Kartendienst } from './kartendienst.ts';
 import type { Sitzungspruefung } from './sitzung.ts';
 import type { Antwort, Auftrag, Fahrzeit, Fehlerklasse, Wert, Wunschfenster } from './typen.ts';
 import { berechneFahrzeiten } from './wege.ts';
 
 // Der ganze Ablauf ohne Laufzeit, Umgebung und Anbieter (ANN-865): Sitzung prüfen, die Datenbank
-// nach den Wegen fragen, sie beim Kartendienst rechnen lassen, buchen lassen, weiterblättern.
+// nach den Wegen fragen, sie über `location-provider` rechnen lassen, buchen lassen, weiterblättern.
 // Ohne Fahrzeit wird nicht gebucht und nichts geschätzt; gespeichert wird hier nichts.
 
 const CORS: Readonly<Record<string, string>> = {
@@ -25,6 +25,7 @@ export const STATUS: Readonly<Record<Fehlerklasse, number>> = {
   address_not_located: 409,
   waitlist_closed: 409,
   travel_unavailable: 502,
+  too_many_routes: 409,
   unavailable: 502,
   outcome_unknown: 502,
   busy: 409,
@@ -50,8 +51,7 @@ const FELDER = [
 ];
 
 interface HandlerOptionen {
-  /** `null`, wenn kein Kartendienst eingerichtet oder freigegeben ist (ADR-019 Punkt 36). */
-  readonly adapter: Anbieteradapter | null;
+  readonly kartendienst: Kartendienst;
   readonly pruefeSitzung: Sitzungspruefung;
   readonly datenbank: Datenbank;
 }
@@ -112,7 +112,7 @@ export function auftragAus(wert: unknown): Auftrag | null {
 }
 
 export function erstelleHandler({
-  adapter,
+  kartendienst,
   pruefeSitzung,
   datenbank,
 }: HandlerOptionen): (anfrage: Request) => Promise<Response> {
@@ -149,10 +149,18 @@ export function erstelleHandler({
 
       const offen = plan.wege.filter((w) => !bekannt.has(w.key));
       if (offen.length > 0) {
-        // Ohne Kartendienst wird nicht gebucht: keine Schätzung an seiner Stelle.
-        if (adapter === null) return fehler('travel_unavailable', 'kein Kartendienst eingerichtet');
-        const gerechnet = await berechneFahrzeiten({ adapter, ziel: plan.ziel, wege: offen });
-        if (!gerechnet.ok) return fehler('travel_unavailable', 'Kartendienst ohne Antwort');
+        // Ohne Fahrzeit wird nicht gebucht: keine Schätzung an ihrer Stelle.
+        const gerechnet = await berechneFahrzeiten({
+          kartendienst,
+          authorization,
+          ziel: plan.ziel,
+          wege: offen,
+        });
+        if (!gerechnet.ok) {
+          return gerechnet.grund === 'not_configured'
+            ? fehler('not_configured', 'kein Kartendienst eingerichtet')
+            : fehler('travel_unavailable', 'Kartendienst ohne Antwort');
+        }
         for (const f of gerechnet.fahrzeiten) bekannt.set(f.key, f.seconds);
       }
       const fahrzeiten: Fahrzeit[] = plan.wege.map((w) => ({

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { Anbieteradapter, MatrixErgebnis, MatrixRequest } from '../location-provider/typen.ts';
+import type { Coordinate } from '../location-provider/typen.ts';
 import type { Datenbank } from './datenbank.ts';
+import type { Kartendienst, Matrixantwort } from './kartendienst.ts';
 import { HOECHSTENS_NOCHMAL, HOECHSTENS_SEITEN, auftragAus, erstelleHandler } from './handler.ts';
 import type { Sitzungsergebnis } from './sitzung.ts';
 import type { Antwort, Buchung, Plan, Termin, Weg } from './typen.ts';
@@ -45,7 +46,7 @@ function aufbau(
     sitzung?: Sitzungsergebnis;
     plaene?: (Plan | { grund: Parameters<typeof fehlerVon>[0] })[];
     buchungen?: (Buchung | { grund: Parameters<typeof fehlerVon>[0] })[];
-    matrix?: ((anfrage: MatrixRequest) => MatrixErgebnis) | null;
+    matrix?: (origins: readonly Coordinate[]) => Matrixantwort;
   } = {},
 ) {
   const plaene = [...(opts.plaene ?? [plan()])];
@@ -64,17 +65,18 @@ function aufbau(
       );
     }),
   } satisfies Datenbank;
-  const matrix = vi.fn((anfrage: MatrixRequest) =>
-    Promise.resolve(
-      (opts.matrix ?? (() => ({ ok: true, value: { durationsSeconds: [[600]] } })))(anfrage),
-    ),
+  const matrix = vi.fn(
+    (
+      _authorization: string,
+      origins: readonly Coordinate[],
+      _destinations: readonly Coordinate[],
+    ) =>
+      Promise.resolve(
+        (opts.matrix ?? ((): Matrixantwort => ({ ok: true, sekunden: [[600]] })))(origins),
+      ),
   );
-  const adapter =
-    opts.matrix === null
-      ? null
-      : ({ id: 'probe', quelle: 'nachbildung', matrix } as unknown as Anbieteradapter);
   const handler = erstelleHandler({
-    adapter,
+    kartendienst: { matrix } satisfies Kartendienst,
     pruefeSitzung: () => Promise.resolve(opts.sitzung ?? { befund: 'gueltig' }),
     datenbank,
   });
@@ -82,7 +84,13 @@ function aufbau(
 }
 
 function fehlerVon(
-  grund: 'forbidden' | 'not_found' | 'address_not_located' | 'unavailable' | 'waitlist_closed',
+  grund:
+    | 'forbidden'
+    | 'not_found'
+    | 'address_not_located'
+    | 'too_many_routes'
+    | 'unavailable'
+    | 'waitlist_closed',
 ) {
   return { ok: false as const, grund };
 }
@@ -123,21 +131,18 @@ describe('Ablauf der automatischen Buchung', () => {
     ]);
   });
 
-  it('bucht ohne Kartendienst nicht und schätzt nichts', async () => {
-    const { handler, datenbank } = aufbau({ matrix: null });
-    const antwort = await handler(anfrage());
-    expect(antwort.status).toBe(502);
-    expect((await lies(antwort)).ok).toBe(false);
-    expect(await lies(await handler(anfrage()))).toMatchObject({
-      error: { code: 'travel_unavailable' },
+  it('bucht ohne eingerichteten Kartendienst nicht und schätzt nichts', async () => {
+    const { handler, datenbank } = aufbau({
+      matrix: () => ({ ok: false, grund: 'not_configured' }),
     });
+    const antwort = await handler(anfrage());
+    expect(antwort.status).toBe(503);
+    expect(await lies(antwort)).toMatchObject({ ok: false, error: { code: 'not_configured' } });
     expect(datenbank.buche).not.toHaveBeenCalled();
   });
 
   it('bucht nicht, wenn der Kartendienst nicht antwortet', async () => {
-    const { handler, datenbank } = aufbau({
-      matrix: () => ({ ok: false, error: { code: 'unavailable', message: 'aus' } }),
-    });
+    const { handler, datenbank } = aufbau({ matrix: () => ({ ok: false, grund: 'unavailable' }) });
     const antwort = await handler(anfrage());
     expect(antwort.status).toBe(502);
     expect(await lies(antwort)).toMatchObject({ error: { code: 'travel_unavailable' } });
@@ -145,15 +150,19 @@ describe('Ablauf der automatischen Buchung', () => {
   });
 
   it('braucht keinen Kartendienst, wenn kein Weg zu prüfen ist', async () => {
-    const { handler, datenbank } = aufbau({ matrix: null, plaene: [plan({ wege: [] })] });
+    const { handler, datenbank, matrix } = aufbau({
+      matrix: () => ({ ok: false, grund: 'not_configured' }),
+      plaene: [plan({ wege: [] })],
+    });
     const antwort = await handler(anfrage());
     expect(await lies(antwort)).toMatchObject({ ok: true, value: { ergebnis: 'gebucht' } });
+    expect(matrix).not.toHaveBeenCalled();
     expect(datenbank.buche).toHaveBeenCalledWith('Bearer person', expect.anything(), 0, []);
   });
 
   it('reicht einen Weg ohne Fahrzeit als ungeprüft weiter', async () => {
     const { handler, datenbank } = aufbau({
-      matrix: () => ({ ok: true, value: { durationsSeconds: [[null]] } }),
+      matrix: () => ({ ok: true, sekunden: [[null]] }),
       buchungen: [keiner(4, 0)],
     });
     const antwort = await handler(anfrage());
@@ -178,7 +187,7 @@ describe('Ablauf der automatischen Buchung', () => {
     expect(datenbank.plane.mock.calls.map((aufruf) => (aufruf as unknown[])[2])).toEqual([0, 7]);
     // Seite eins: hin und weiter. Seite zwei: nur der neue Weg.
     expect(matrix).toHaveBeenCalledTimes(3);
-    expect(matrix.mock.calls[2]![0].origins).toEqual([neu.from]);
+    expect(matrix.mock.calls[2]![1]).toEqual([neu.from]);
     expect((datenbank.buche.mock.calls[1] as unknown[])[2]).toBe(7);
   });
 
@@ -229,6 +238,7 @@ describe('Ablauf der automatischen Buchung', () => {
     ['forbidden', 403],
     ['not_found', 404],
     ['address_not_located', 409],
+    ['too_many_routes', 409],
     ['unavailable', 502],
   ] as const)('gibt die Abweisung der Planung weiter: %s', async (grund, status) => {
     const { handler, datenbank } = aufbau({ plaene: [{ grund }] });

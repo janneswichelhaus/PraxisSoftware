@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 // Was die Function nicht darf (ANN-865, ADR-011, ADR-019 Punkt 16): nichts speichern, nichts loggen, kein
 // Datenbankclient, kein Admin-Schlüssel; die Datenbank nur in `datenbank.ts` und nur über die beiden
-// eigenen Funktionen; der Kartendienst nur über den Adapter von `location-provider`.
+// eigenen Funktionen; Fahrzeiten nur über die eigene Function `location-provider`, nie vom Anbieter.
 
 const VERZEICHNIS = join(import.meta.dirname, '.');
 
@@ -20,7 +20,15 @@ const VERBOTEN: { muster: RegExp; grund: string }[] = [
     grund: 'Persistenz',
   },
   { muster: /localStorage|sessionStorage|indexedDB/, grund: 'Persistenz' },
-  { muster: /api\.myptv\.com|\bfetch\s*\(/, grund: 'Anbieter am Adapter vorbei' },
+  { muster: /api\.myptv\.com|\bfetch\s*\(/, grund: 'Anbieter an location-provider vorbei' },
+  {
+    muster: /location-provider\/(?!typen\.ts|sitzung\.ts)/,
+    grund: 'Adapter des Anbieters',
+  },
+  {
+    muster: /PTV_API_KEY|LOCATION_PROVIDER|LOCATION_DATA_GATE/,
+    grund: 'Secrets des Kartendienstes',
+  },
   { muster: /\bconsole\s*\./, grund: 'Betriebslog' },
 ];
 
@@ -67,6 +75,15 @@ describe('Abschottung der automatischen Buchung', () => {
       ),
     ].map((t) => t[1]!);
     expect([...new Set(namen)].sort()).toEqual(['book_next_appointment', 'plan_auto_booking']);
+  });
+
+  it('ruft von den eigenen Functions nur location-provider, und nur in kartendienst.ts', () => {
+    const mitPfad = dateien.filter((pfad) => /\/functions\/v1\//.test(lies(pfad)));
+    expect(mitPfad.map((pfad) => pfad.split('/').pop())).toEqual(['kartendienst.ts']);
+    const ziele = [
+      ...lies(join(VERZEICHNIS, 'kartendienst.ts')).matchAll(/\/functions\/v1\/([a-z-]+)/g),
+    ].map((t) => t[1]);
+    expect(ziele).toEqual(['location-provider']);
   });
 
   it('würde einen fremden Datenbankpfad tatsächlich finden', () => {

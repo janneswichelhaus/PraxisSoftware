@@ -34,6 +34,7 @@ const MELDUNGEN: readonly [RegExp, Fehlerklasse][] = [
   [/patient address is not located/, 'address_not_located'],
   [/complete patient address/, 'address_incomplete'],
   [/waitlist entry/, 'waitlist_closed'],
+  [/too many legs/, 'too_many_routes'],
   [/patient not found|staff member not assignable|treatment basis not found/, 'not_found'],
   [
     /invalid duration|date range|invalid time windows|invalid offset|invalid legs/,

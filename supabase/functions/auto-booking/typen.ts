@@ -67,6 +67,7 @@ export const FEHLERKLASSEN = [
   'address_not_located',
   'waitlist_closed',
   'travel_unavailable',
+  'too_many_routes',
   'unavailable',
   'outcome_unknown',
   'busy',
