@@ -53,8 +53,6 @@ export const GRENZEN: Record<
     'features/privacy/datenschutz': 1,
   },
   divideY: {
-    app: 1,
-
     'features/calendar/appointments': 1,
 
     'features/privacy/datenschutz': 1,

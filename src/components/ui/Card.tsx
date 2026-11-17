@@ -149,6 +149,7 @@ export function Disclosure({
   offenAb,
   inKarte = false,
   mittig = false,
+  zeichenAmEnde = false,
   onUmschalten,
   children,
 }: {
@@ -159,6 +160,8 @@ export function Disclosure({
   offenAb?: 'lg';
   inKarte?: boolean;
   mittig?: boolean;
+  /** Zeichen am Zeilenende: Pfeile von Aufklappern und Links stehen dann untereinander („Mehr“). */
+  zeichenAmEnde?: boolean;
   onUmschalten?: (offen: boolean) => void;
   children: ReactNode;
 }) {
@@ -179,11 +182,16 @@ export function Disclosure({
       }
     >
       <summary className={`${kopfKlassen} ${aufklappKoepfe[kopf]}`}>
-        <Aufklappzeichen />
+        {zeichenAmEnde ? null : <Aufklappzeichen />}
         {summary}
         {/* Eigenes Element, weil der Titel eine Überschrift sein darf und die nicht in ein `span`
             gehört; das Leerzeichen ist für Vorlesesoftware, die Zahl bricht auch bei 200 % nie. */}
         {anzahl === undefined ? null : <span className="-ml-1 whitespace-nowrap"> ({anzahl})</span>}
+        {zeichenAmEnde ? (
+          <span className="ml-auto inline-flex">
+            <Aufklappzeichen />
+          </span>
+        ) : null}
       </summary>
       <div className={inKarte ? 'border-line mt-1 border-t pt-3 pb-2.5' : 'mt-2'}>{children}</div>
     </details>

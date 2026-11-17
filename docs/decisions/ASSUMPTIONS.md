@@ -1,5 +1,5 @@
 # Annahmenregister
-Zuletzt aktualisiert: 2026-11-10.
+Zuletzt aktualisiert: 2026-11-17.
 
 Begründete, **vorläufige** Festlegungen, die weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
 Spezifikation trifft (§15.1, Rang 4). Eine Annahme füllt eine Lücke und überschreibt nichts; sie
@@ -1398,7 +1398,7 @@ Technik · offen · 2026-11-14 · — · — · Wiedervorlage: Sichtung Kalender
 | ANN-641 | Teamchat: Zustellung mit Gerätekennung, Blättern mit Cursor | Technik · offen | `app.team_message_key` |
 | ANN-643 | Teamchat: Antworten auch im Kanal, Ausgangsnachrichten später senden | Praxisprozess · offen | `public.post_team_message` |
 | ANN-645 | Teamchat: Anheften für alle, die lesen, ohne „von wem“ und „wann“ | Praxisprozess · offen | `public.set_team_message_pinned` |
-| ANN-647 | Teamchat: Benachrichtigung nur in der App, Stufen je Gespräch, @alle | Praxisprozess · entschieden (Jannes) | `public.get_team_chat_summary` |
+| ANN-647 | Teamchat: Benachrichtigung nur in der App, Stufen je Gespräch, @alle; Zähler je Nachricht | Praxisprozess · entschieden (Jannes) | `public.get_team_chat_summary` |
 | ANN-648 | Teamchat: Chatfläche mit Gesprächsliste, Threadspalte und Tastatur | Praxisprozess · offen | `src/features/teamchat/flaeche.ts` |
 | ANN-649 | Teamchat: Formatierung wie Slack, nur als React-Elemente, ohne Linkvorschau | Technik · offen | `src/features/teamchat/formatierung.ts` |
 | ANN-650 | Teamchat: eine Nachricht als Aufgabe in die Offenen Punkte übernehmen | Praxisprozess · offen | `src/features/teamchat/AlsAufgabe.tsx` |
