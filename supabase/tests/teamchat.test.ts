@@ -484,6 +484,9 @@ describe('Teamchat: Für dich und Threads (ANN-614)', () => {
     );
     expect((await asUser(users.therapist, AKTIVITAET)).rows).toEqual([]);
     expect((await asUser(users.therapist, THREADS)).rows).toEqual([]);
+    expect(
+      (await asUser(users.therapist, 'select badge from public.get_team_chat_summary()')).rows,
+    ).toEqual([{ badge: 0 }]);
   });
 
   it('weist Konten ohne Praxisrolle ab und zeigt einer fremden Praxis nichts', async () => {
@@ -537,6 +540,9 @@ describe('Teamchat: Für dich und Threads (ANN-614)', () => {
     await senden(users.office, flotte.id, 'Steht im Depot', frage);
     expect((await asUser(users.trainer, AKTIVITAET)).rows).toEqual([]);
     expect((await asUser(users.trainer, THREADS)).rows).toEqual([]);
+    expect(
+      (await asUser(users.trainer, 'select badge from public.get_team_chat_summary()')).rows,
+    ).toEqual([{ badge: 0 }]);
   });
 });
 
