@@ -1,4 +1,4 @@
-# Status · Stand 2026-11-16
+# Status · Stand 2026-11-17
 
 Livestand in höchstens 4 KB (`pnpm docs:check`). Reihenfolge: `development/ROADMAP.md`; Verlauf
 steht in den PRs und in Git. Abgelegte Dokumente zeigt `git show eb43569:<pfad>` (Archiv,
@@ -8,8 +8,8 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 **Terminplaner** (Jannes 2026-11-12): Pause ✓, Endlos-Scroll ✓, Autobuchung ✓, ADR und Online-Buchung.
 
-**Wartungsmodus** (#363): Fehler und Anpassungen einzeln je Session, Regel in `CLAUDE.md`,
-Ablauf in `DEVELOPMENT.md`; Merge bei Jannes.
+**Wartungsmodus** (#363): eine Ursache je Session, Regel in `CLAUDE.md`, Ablauf in
+`DEVELOPMENT.md`; Merge bei Jannes.
 
 ## Danach
 
@@ -42,4 +42,4 @@ nennen die Steuerberatung.
 
 ## Letzte Session
 
-16.11.2026, Terminplaner Schritt 3 (ANN-865).
+17.11.: Zähler je Nachricht, „Mehr“ klappt ein.

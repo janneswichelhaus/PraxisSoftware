@@ -51,9 +51,8 @@ test.describe('Arbeitsbereiche auf schmalen Displays', () => {
     // Bereich gerade aus der Leiste gefallen ist.
     await tableiste.getByRole('link', { name: 'Mehr' }).click();
     await expect(page).toHaveURL(/\/bereiche$/);
-    const uebersicht = page.getByRole('main');
-    // Angeheftet an den Anfang des zugaenglichen Namens: dahinter steht auf
-    // der Bereichsuebersicht noch die Leitfrage.
+    const karten = page.getByRole('list', { name: 'Bereiche' }).locator(':scope > li');
+    // Je Bereich eine Karte: ein Link oder, mit Reitern, ein Aufklapper.
     for (const bereich of [
       /^Übersicht/,
       /^Kalender/,
@@ -62,8 +61,7 @@ test.describe('Arbeitsbereiche auf schmalen Displays', () => {
       /^Organisation/,
       /^Abrechnung/,
     ]) {
-      // Die Karte des Bereichs - darunter stehen seit ORG-001 seine Reiter.
-      await expect(uebersicht.getByRole('link', { name: bereich }).first()).toBeVisible();
+      await expect(karten.filter({ hasText: bereich }).first()).toBeVisible();
     }
   });
 
