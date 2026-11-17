@@ -479,7 +479,8 @@ describe('Teamchat: Gruppennachrichten (ANN-642)', () => {
     expect((await fehler(users.ownerTherapist, NACHRICHTEN, [id, null]))?.code).toBe('P0002');
     const beiTim = (await nachrichten(users.teamLead, id)).find((n) => n.id === frage);
     expect(beiTim).toMatchObject({ new_replies: 1 });
-    expect(await zaehler(users.teamLead)).toMatchObject({ badge: 1, threads_new: 1 });
+    // Frage und Antwort im verfolgten Thread: zwei Nachrichten, zwei im Zähler.
+    expect(await zaehler(users.teamLead)).toMatchObject({ badge: 2, threads_new: 1 });
   });
 });
 
@@ -782,7 +783,7 @@ describe('Teamchat: Für später (ANN-646)', () => {
 });
 
 describe('Teamchat: Einstellungen je Gespräch, @alle und Zähler (ANN-647)', () => {
-  it('zählt im Zähler Direktnachrichten, Erwähnungen und Erinnerungen - stumm nur Erwähnungen', async () => {
+  it('zählt im Zähler jede neue Nachricht, Erwähnungen einmal und Erinnerungen - stumm nur Erwähnungen', async () => {
     const { rows } = await asUserCommitted<{ id: string }>(
       users.office,
       'select public.open_team_direct($1) as id',
@@ -795,7 +796,8 @@ describe('Teamchat: Einstellungen je Gespräch, @alle und Zähler (ANN-647)', ()
     await senden(users.teamLead, allgemein.id, 'Ohne Erwähnung');
     await senden(users.teamLead, allgemein.id, 'Anna?', { erwaehnt: [STAFF.anna] });
 
-    expect(await zaehler(users.therapist)).toMatchObject({ badge: 3, unread_conversations: 2 });
+    // Zwei im Direktgespräch, zwei in „Allgemein“ (Stufe „alle“); die Erwähnung zählt nicht doppelt.
+    expect(await zaehler(users.therapist)).toMatchObject({ badge: 4, unread_conversations: 2 });
     await asUserCommitted(users.therapist, 'select public.set_team_channel_preferences($1, $2)', [
       dm,
       'none',
@@ -849,6 +851,30 @@ describe('Teamchat: Einstellungen je Gespräch, @alle und Zähler (ANN-647)', ()
       [p],
     );
     expect(privat.map((r) => r.staff_member_id)).toEqual([STAFF.anna]);
+  });
+});
+
+describe('Teamchat: Zähler zählt Nachrichten, nicht Gespräche (Jannes 2026-11-17)', () => {
+  it('zählt drei neue Nachrichten im Kanal als drei, mit „nur Erwähnungen“ als keine', async () => {
+    const allgemein = await kanal(users.therapist, 'Allgemein');
+    await senden(users.teamLead, allgemein.id, 'Rad 2 steht am Depot');
+    await senden(users.office, allgemein.id, 'Schlüssel hängt');
+    await senden(users.teamLead, allgemein.id, 'Danke');
+    // Eigenes zählt nie.
+    await senden(users.therapist, allgemein.id, 'Gut');
+    expect(await zaehler(users.therapist)).toMatchObject({ badge: 3, unread_conversations: 1 });
+
+    await asUserCommitted(users.therapist, 'select public.set_team_channel_preferences($1, $2)', [
+      allgemein.id,
+      'mentions',
+    ]);
+    expect(await zaehler(users.therapist)).toMatchObject({ badge: 0 });
+    await asUserCommitted(users.therapist, 'select public.mark_all_team_channels_read()');
+    await asUserCommitted(users.therapist, 'select public.set_team_channel_preferences($1, $2)', [
+      allgemein.id,
+      'all',
+    ]);
+    expect(await zaehler(users.therapist)).toMatchObject({ badge: 0 });
   });
 });
 
