@@ -153,6 +153,8 @@ Umgesetzt am 2026-09-10 auf ausdrücklichen Auftrag von Jannes.
 | Vollseiten ohne Rahmen        | dieselbe Wortmarke, 40 px — „Zugang einrichten", „Zugang gesperrt" und der Fehlerkasten ohne Praxisprofil                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | Akzentfarbe                   | Hauptfarbe `#004429`; Hover trägt Tiefgrün `#042c1b` (ANN-022)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 
+**3D-Lastenrad:** farbige Fassung mit Unterzeile, unverändert als Bild auf der Box.
+
 **Ausgeliefert wird über `public/marke/`.** Vite liefert nur aus, was dort
 liegt; die Dateien sind **byte-gleiche Kopien** dieses Verzeichnisses, und
 `src/marke.test.ts` prüft das bei jedem Testlauf. Damit bleibt es bei einer
@@ -225,12 +227,6 @@ Akzentfarbe und Kopfzeile tragen die Marke; was wo steht, sagt der Abschnitt
 „Wo die Marke in der Anwendung steht". Die Kontraste der Tokens sind
 nachgerechnet und in `src/lib/kontrast.test.ts` festgehalten — der Akzent
 erreicht als Textfarbe 10,30:1 auf der ungünstigsten Fläche.
-
-**Erledigt am 2026-09-11: Befund 2.** Das Kleinformat ist das Monogramm; die
-Mindestgröße-Regel gilt für die Wortmarke. Von den drei Befunden bleiben damit
-**Nummer 1 und 3**. Nummer 1 ist für das Kleinformat nebenbei mit erledigt —
-das Monogramm liegt als SVG vor und wird vom Browser bevorzugt geladen; für
-das 1024er Master und den Android-Kreis fehlt die SVG-Fassung weiterhin.
 
 **Weiterhin offen** neben den verbliebenen Befunden:
 

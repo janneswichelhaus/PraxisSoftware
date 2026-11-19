@@ -182,5 +182,6 @@ Diese Handoffs liegen nur noch in Git (`git show eb43569:docs/design/`).
   (Federn und Übergänge nach ANN-567, Richtungen nach ANN-663; Hover bleibt 120 ms).
 - 05.10. Rahmen: Fläche `#eceee8` für Startbild und Manifest (Weiß).
 - 06.10. Kalender und Tour: Kopfknöpfe der Tour 48 px bleiben bis zur Sichtung (ANN-403).
-- 08.10. Lastenrad 3D: 3D-Rad, Nadeln und ihre Farben entfallen; Bauteile als Liste (M1, 26.10.).
+- 08.10. Lastenrad 3D: Markieren am 3D-Rad und Nadeln entfallen, Bauteile als Liste (M1, 26.10.);
+  zum Ansehen `Lastenrad3D`.
 - Kanvas „Own Motion · Praxis“ (`docs/product/kanvas/`): überholt.

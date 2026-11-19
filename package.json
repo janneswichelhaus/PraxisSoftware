@@ -44,6 +44,7 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.9.3",
+    "three": "0.184.0",
     "zod": "^4.6.7"
   },
   "devDependencies": {
@@ -58,6 +59,7 @@
     "@types/pg": "^8.15.5",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
+    "@types/three": "0.184.1",
     "@vitejs/plugin-react": "^5.0.3",
     "axe-core": "^4.13.0",
     "eslint": "^9.36.0",

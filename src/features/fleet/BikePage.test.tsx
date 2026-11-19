@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { testUser } from '@/test-utils';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
+import { mountLastenrad, type LastenradAnsicht } from '@/components/ui/lastenrad3d/viewer';
 import * as api from './api';
 import { BikePage } from './BikePage';
 import { testDetail, testFlotte } from './testdaten';
@@ -19,6 +20,10 @@ vi.mock('./api', async (importOriginal) => ({
   removeBike: vi.fn(),
 }));
 
+// jsdom hat kein WebGL: three bleibt aus den Seitentests heraus.
+vi.mock('@/components/ui/lastenrad3d/viewer', () => ({ mountLastenrad: vi.fn() }));
+
+const ansicht = vi.mocked(mountLastenrad);
 const fetchFleet = vi.mocked(api.fetchFleet);
 const fetchBike = vi.mocked(api.fetchBike);
 const fetchFleetPhotos = vi.mocked(api.fetchFleetPhotos);
@@ -38,6 +43,7 @@ beforeEach(() => {
   fetchFleetPhotos.mockResolvedValue([]);
   releaseBike.mockResolvedValue({ released: true, resolvedSpots: 3 });
   blockBike.mockResolvedValue();
+  ansicht.mockResolvedValue({ dispose: vi.fn() } as unknown as LastenradAnsicht);
 });
 
 /**
@@ -135,6 +141,18 @@ describe('Rad', () => {
     expect(screen.getByRole('button', { name: 'Rad entfernen' })).toBeInTheDocument();
     // Gesperrt: kein zweites Sperren.
     expect(screen.queryByRole('button', { name: 'Rad sperren' })).toBeNull();
+  });
+
+  it('zeigt die 3D-Ansicht nur im Reiter „Angaben“, ohne Zoom (ANN-868)', async () => {
+    const { unmount } = oeffne();
+    await screen.findByRole('heading', { name: /Check-Up · / });
+    expect(ansicht).not.toHaveBeenCalled();
+    unmount();
+
+    oeffne(`${RAD3}?bereich=angaben`);
+    await screen.findByText('Load 60 · Riemenantrieb mit Nabenschaltung');
+    await waitFor(() => expect(ansicht).toHaveBeenCalledTimes(1));
+    expect(ansicht).toHaveBeenCalledWith(expect.any(HTMLElement), { zoom: false });
   });
 
   it('sperrt ein Rad von Hand nur mit Grund', async () => {
