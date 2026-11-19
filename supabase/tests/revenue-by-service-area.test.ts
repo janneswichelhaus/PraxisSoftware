@@ -57,6 +57,7 @@ const KATALOG = {
 } as const;
 
 const ENTWURF = 'select public.create_invoice_draft($1::uuid, $2::date) as id';
+const ENTWURF_AUSFALL = 'select public.create_absence_fee_invoice_draft($1::uuid, $2::date) as id';
 const AUSSTELLEN = 'select public.issue_invoice($1::uuid) as nummer';
 const BUCHEN =
   'select public.record_payment($1::uuid, $2::int, $3::date, $4::text, $5::text, $6::text) as id';
@@ -205,7 +206,9 @@ async function entwurf(positionen: readonly string[]): Promise<string> {
     await leistung(position, stunde);
     stunde += 2;
   }
-  const { rows } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
+  // Das Ausfallhonorar steht auf seiner eigenen Rechnung (ADR-009 Punkt 25).
+  const weg = positionen.every((p) => p === KATALOG.ausfall) ? ENTWURF_AUSFALL : ENTWURF;
+  const { rows } = await asUserCommitted<{ id: string }>(users.office, weg, [
     patients.erika,
     await monat(),
   ]);
