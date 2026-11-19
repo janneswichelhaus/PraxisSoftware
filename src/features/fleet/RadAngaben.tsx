@@ -4,7 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import { Inhaltsflaeche } from '@/components/ui/Card';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { Field } from '@/components/ui/Field';
+import { Lastenrad3D } from '@/components/ui/Lastenrad3D';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
+import { Zweispalter } from '@/components/ui/Zweispalter';
 import { FLOTTE_SCHLUESSEL, blockBike, removeBike, type Bike, type Fleet } from './api';
 import { bikeTypeLabels } from './zones';
 import { BikeForm } from './BikeForm';
@@ -61,35 +63,46 @@ export function RadAngaben({
 
   return (
     <>
-      {flotte.can_manage ? (
-        <BikeForm
-          // Nach dem Speichern steht der neue Stand im Formular.
-          key={rad.updated_at}
-          rad={rad}
-          flotte={flotte}
-          abbrechenZiel="/betrieb/flotte"
-          onGespeichert={(_id, freigeben) => {
-            freigeben();
-            onMeldung('Angaben gespeichert.');
-          }}
-        />
-      ) : (
-        <Inhaltsflaeche className="lg:max-w-spalte">
-          <DetailList>
-            <DetailRow label="Bauart">{bikeTypeLabels[rad.bike_type].lang}</DetailRow>
-            <DetailRow label="Stammdepot">{depotName(flotte.depots, rad.home_depot_id)}</DetailRow>
-            <DetailRow label="Steht gerade">{standort(rad, flotte.depots)}</DetailRow>
-            <DetailRow label="Stammnutzer:in">
-              {rad.is_spare ? 'Ersatzrad' : (rad.regular_rider?.name ?? 'Keine')}
-            </DetailRow>
-            {!rad.is_spare && rad.planned_weekdays.length > 0 ? (
-              <DetailRow label="Fährt das Rad am">{wochentageKurz(rad.planned_weekdays)}</DetailRow>
-            ) : null}
-            {rad.battery ? <DetailRow label="Akku">{rad.battery}</DetailRow> : null}
-            {rad.note ? <DetailRow label="Notiz">{rad.note}</DetailRow> : null}
-          </DetailList>
-        </Inhaltsflaeche>
-      )}
+      {/* ANN-868: vorläufiger Ort der 3D-Ansicht, nur zum Ansehen; Bauteile bleiben die Liste. */}
+      <Zweispalter
+        kontextBreite="schmal"
+        // Einspaltig so breit wie das Formular darüber, nicht breiter.
+        kontext={<Lastenrad3D className={flotte.can_manage ? 'max-w-formular h-64' : 'h-64'} />}
+      >
+        {flotte.can_manage ? (
+          <BikeForm
+            // Nach dem Speichern steht der neue Stand im Formular.
+            key={rad.updated_at}
+            rad={rad}
+            flotte={flotte}
+            abbrechenZiel="/betrieb/flotte"
+            onGespeichert={(_id, freigeben) => {
+              freigeben();
+              onMeldung('Angaben gespeichert.');
+            }}
+          />
+        ) : (
+          <Inhaltsflaeche className="lg:max-w-spalte">
+            <DetailList>
+              <DetailRow label="Bauart">{bikeTypeLabels[rad.bike_type].lang}</DetailRow>
+              <DetailRow label="Stammdepot">
+                {depotName(flotte.depots, rad.home_depot_id)}
+              </DetailRow>
+              <DetailRow label="Steht gerade">{standort(rad, flotte.depots)}</DetailRow>
+              <DetailRow label="Stammnutzer:in">
+                {rad.is_spare ? 'Ersatzrad' : (rad.regular_rider?.name ?? 'Keine')}
+              </DetailRow>
+              {!rad.is_spare && rad.planned_weekdays.length > 0 ? (
+                <DetailRow label="Fährt das Rad am">
+                  {wochentageKurz(rad.planned_weekdays)}
+                </DetailRow>
+              ) : null}
+              {rad.battery ? <DetailRow label="Akku">{rad.battery}</DetailRow> : null}
+              {rad.note ? <DetailRow label="Notiz">{rad.note}</DetailRow> : null}
+            </DetailList>
+          </Inhaltsflaeche>
+        )}
+      </Zweispalter>
 
       {flotte.can_release && !rad.block ? (
         <div className="border-line max-w-formular mt-8 border-t pt-6">

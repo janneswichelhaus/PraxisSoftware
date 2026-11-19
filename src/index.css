@@ -111,6 +111,9 @@
   /* #767c84 — 4.2:1 auf Weiß, 3.9:1 auf der Vertiefung (bis Grundton B
      #6f7873). */
   --color-line-strong: oklch(58.4% 0.0142 255.6);
+  /* Bühne des 3D-Lastenrads #d6d7da: so hell wie #d7d8d2 der Übergabe, im neutralen Ton der
+     Linien (ANN-869). Auf Weiß und auf `line` ginge der Deckel der Box in Papier unter. */
+  --color-radbuehne: oklch(87.9% 0.0042 271.4);
   /* Spur #8c939b — die leere, ganze Länge eines Balkens (Wegbalken,
      Fortschritt). Leitfaden L4: Ein Balken zeigt leer und voll, mit
      mindestens 3:1 gegen den Grund (WCAG 1.4.11). Vorher trug der Wegbalken

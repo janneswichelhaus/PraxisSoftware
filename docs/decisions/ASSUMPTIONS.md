@@ -1355,7 +1355,7 @@ Technik · offen · 2026-11-14 · — · — · Wiedervorlage: Sichtung Kalender
 | ANN-546 | Übersicht ohne Abschlusskarte, ein Abstand zwischen den Abschnitten | Technik · entschieden (Jannes) | `MyDayPage` in `src/features/calendar/today/MyDayPage.tsx` |
 | ANN-547 | Tagesfortschritt in zwei Hälften, ein Rad beim fertigen Tag, ohne Speichern und Zählen | Technik · entschieden (Jannes) | `tagesfortschritt` in `src/features/calendar/today/tagesstart.ts` |
 | ANN-555 | Stellen am Rad: Bauteil aus der Liste, Nummer je Rad, die Freigabe erledigt sie | Technik · offen | `app.fleet_insert_spots` |
-| ANN-556 | Kein 3D-Rad und kein three.js; Bauteile als Knöpfe und Liste | Technik · verworfen (Jannes 2026-10-26) | `Bauteilwahl` in `src/features/fleet/Bauteilwahl.tsx` |
+| ANN-556 | Kein 3D-Rad zum Markieren; Bauteile als Knöpfe und Liste | Technik · verworfen (Jannes 2026-10-26) | `Bauteilwahl` in `src/features/fleet/Bauteilwahl.tsx` |
 | ANN-557 | Zustand eines Rads abgeleitet; mit Verlauf ausmustern statt löschen | Technik · offen | `radzustand` in `src/features/fleet/rad.ts` |
 | ANN-559 | Auslieferung: SSH-Verbindung mit bis zu fünf Versuchen | Technik · offen | `SSH_PAUSEN` in `scripts/testumgebung.mjs` |
 | ANN-563 | Check-Up geführt: eine Seite je Prüfpunkt, jeder Punkt bestätigt | Praxisprozess · offen | `src/features/fleet/CheckupFenster.tsx`, `TIPPSPERRE_MS` in `src/components/ui/GefuehrterAblauf.tsx` |
@@ -1548,3 +1548,5 @@ Technik · offen · 2026-11-14 · — · — · Wiedervorlage: Sichtung Kalender
 | ANN-865 | Automatisch buchen: nur Hausbesuch ab morgen, ein Termin je Tag, Fahrzeit mal Faktor, sonst kein Platz; Patient:innen erst nach dem ADR | Praxisprozess · offen | `app.auto_booking_fits` |
 | ANN-866 | Terminhonorar 2027: 150 € Endpreis je 60 Minuten samt Anfahrt, bis zur Steuerberatung (B4 Frage 9) | Praxisprozess · entschieden (Jannes) | `HONORARUMFANG` in `src/features/billing/CatalogPage.tsx` |
 | ANN-867 | Entwurf 2027: KG und MT 55 €, doppelt 110 €, Hausbesuch 40 €; Ausfallhonorar 150 €; ohne Personal Training | Praxisprozess · entschieden (Jannes) | `HONORARUMFANG` in `src/features/billing/CatalogPage.tsx` |
+| ANN-868 | 3D-Lastenrad vorläufig am Rad („Angaben“), nur Anzeige | Technik · offen | `RadAngaben` in `src/features/fleet/RadAngaben.tsx` |
+| ANN-869 | Bühne des 3D-Lastenrads neutral statt #d7d8d2 (Grundton B) | Technik · offen | `--color-radbuehne` in `src/index.css` |
