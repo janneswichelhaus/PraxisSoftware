@@ -1,5 +1,12 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { SEED, asPostgres, asUser, asUserCommitted, resetDatabaseOhneTermine } from './helpers/db';
+import {
+  SEED,
+  asPostgres,
+  asUser,
+  asUserCommitted,
+  fremdeOrganisation,
+  resetDatabaseOhneTermine,
+} from './helpers/db';
 
 /**
  * Das Ausfallhonorar steht auf einer eigenen Rechnung (ADR-009 Punkt 25):
@@ -221,15 +228,49 @@ describe('Ausfallhonorar auf eigener Rechnung', () => {
     const m = await monat();
     await entwurf(ENTWURF_AUSFALL, [patients.erika, m]);
     await erfassen(await termin('no_show'), KATALOG.ausfall);
-    await expect(asUser(users.office, ENTWURF_AUSFALL, [patients.erika, m])).rejects.toThrow();
+    await expect(asUser(users.office, ENTWURF_AUSFALL, [patients.erika, m])).rejects.toThrow(
+      /already exists/,
+    );
   });
 
   it('laesst nur die Abrechnung anlegen, nie eine Therapeutin oder ein Patientenkonto', async () => {
     await erfassen(await termin('no_show'), KATALOG.ausfall);
     const m = await monat();
     for (const konto of [users.therapist, users.patientMax]) {
-      await expect(asUser(konto, ENTWURF_AUSFALL, [patients.erika, m])).rejects.toThrow();
+      await expect(asUser(konto, ENTWURF_AUSFALL, [patients.erika, m])).rejects.toThrow(
+        /not allowed to manage invoices/,
+      );
     }
+  });
+
+  it('zeigt einer fremden Organisation nichts und legt fuer sie nichts an', async () => {
+    const fremd = await fremdeOrganisation();
+    await erfassen(await termin('no_show'), KATALOG.ausfall);
+
+    expect((await asUser(fremd.owner, KANDIDATEN)).rows).toEqual([]);
+    await expect(
+      asUser(fremd.owner, ENTWURF_AUSFALL, [patients.erika, await monat()]),
+    ).rejects.toThrow(/patient not found/);
+  });
+
+  it('fuehrt das Ausfallhonorar auch nicht auf der Korrektur der Verordnungsrechnung', async () => {
+    await erfassen(await termin('documented'), KATALOG.kg);
+    const id = await entwurf(ENTWURF_GRUNDLAGE, [GRUNDLAGE]);
+    await asUserCommitted(users.office, AUSSTELLEN, [id]);
+    await asUserCommitted(users.office, STORNIEREN, [id, 'Falscher Empfänger']);
+    await erfassen(await termin('no_show'), KATALOG.ausfall);
+
+    const korrektur = await entwurf(KORREKTUR, [id]);
+    const ausfall = await entwurf(ENTWURF_AUSFALL, [patients.erika, await monat()]);
+    const { rows } = await asPostgres<{ invoice_id: string; code: string }>(
+      `select it.invoice_id, c.code from public.invoice_items it
+         join public.billable_services b on b.id = it.billable_service_id
+         join public.service_catalog_items c on c.id = b.catalog_item_id
+        where it.released_at is null`,
+    );
+    expect(rows).toHaveLength(2);
+    expect(rows.find((r) => r.invoice_id === korrektur)!.code).toBe('KG');
+    expect(rows.find((r) => r.invoice_id === ausfall)!.code).toBe('AUS');
   });
 
   it('korrigiert eine stornierte Ausfallrechnung wieder als Ausfallrechnung', async () => {

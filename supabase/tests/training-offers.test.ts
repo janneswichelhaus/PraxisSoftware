@@ -89,6 +89,16 @@ async function sicht(konto: string, patient: string = patients.erika): Promise<S
 describe('Trainingsangebot aus der Akte (KND-002)', () => {
   beforeAll(async () => {
     await resetDatabase();
+    // Im Seed ruht das Training im Entwurf 2027 (ANN-867); der Fall braucht ein Paket dort.
+    await asPostgres(
+      `insert into public.service_catalog_items (id, organization_id, catalog_version_id, sort_order,
+         code, label, item_kind, unit_price_cents, tax_treatment, tax_rate_permille, service_area,
+         package_months)
+       values ($1, $2, 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 90, 'TP3', 'Trainingspaket 3 Monate',
+               'training_package', 129000, 'taxable', 190, 'training', 3)
+       on conflict (id) do nothing`,
+      [TP3_2027, organizationId],
+    );
   }, 120_000);
 
   beforeEach(async () => {

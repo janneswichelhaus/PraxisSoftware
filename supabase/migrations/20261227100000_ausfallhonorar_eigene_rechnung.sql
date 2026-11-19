@@ -57,6 +57,18 @@ begin
   select i.treatment_basis_id, i.service_area, i.absence_fee into v_basis, v_bereich, v_ausfall
   from public.invoices i where i.id = p_invoice_id;
 
+  if exists (
+    select 1
+    from public.invoice_items it
+    join public.billable_services b on b.id = it.billable_service_id
+    join public.service_catalog_items c on c.id = b.catalog_item_id
+    where it.invoice_id = p_invoice_id
+      and (c.item_kind = 'absence_fee') is distinct from v_ausfall
+  ) then
+    raise exception 'an absence fee is billed on its own invoice, and only there'
+      using errcode = '23514';
+  end if;
+
   if v_bereich <> 'therapy' or v_ausfall then
     return;
   end if;
@@ -548,6 +560,15 @@ begin
     where p.id = p_patient_id and p.organization_id = v_org
   ) then
     raise exception 'patient not found' using errcode = '42501';
+  end if;
+
+  if exists (
+    select 1 from public.invoices i
+    where i.patient_id = p_patient_id and i.period_month = v_monat
+      and i.absence_fee and i.status = 'draft'
+  ) then
+    raise exception 'a draft for the absence fees of this month already exists'
+      using errcode = '23505';
   end if;
 
   select r.id into v_empf

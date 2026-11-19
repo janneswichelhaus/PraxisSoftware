@@ -109,7 +109,7 @@ describe('Trainingspaket in der Preisliste (ANG-005)', () => {
     await resetDatabaseOhneTermine();
   }, 120_000);
 
-  it('fuehrt der Seed je Preisliste zwei Pakete mit Laufzeit', async () => {
+  it('fuehrt der Seed in der Preisliste 2026 zwei Pakete mit Laufzeit', async () => {
     const { rows } = await asPostgres<{ code: string; package_months: number }>(
       `select code, package_months from public.service_catalog_items
         where catalog_version_id = $1 and item_kind = 'training_package' order by code`,
@@ -184,6 +184,16 @@ describe('Trainingspaket am Trainingsverhaeltnis (ANG-006)', () => {
   beforeAll(async () => {
     await resetDatabaseOhneTermine();
     await fremdeOrganisation();
+    // Im Seed ruht das Training im Entwurf 2027 (ANN-867); der Fall braucht ein Paket dort.
+    await asPostgres(
+      `insert into public.service_catalog_items (id, organization_id, catalog_version_id, sort_order,
+         code, label, item_kind, unit_price_cents, tax_treatment, tax_rate_permille, service_area,
+         package_months)
+       values ($1, $2, 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 90, 'TP3', 'Trainingspaket 3 Monate',
+               'training_package', 129000, 'taxable', 190, 'training', 3)
+       on conflict (id) do nothing`,
+      [TP3_2027, organizationId],
+    );
     heute = await tag('heute');
   }, 120_000);
 
