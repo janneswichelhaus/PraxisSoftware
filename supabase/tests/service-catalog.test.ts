@@ -117,12 +117,12 @@ describe('Leistungskatalog', () => {
         'select code, unit_price_cents from public.service_catalog_items where catalog_version_id = $1',
         [KATALOG.entwurf],
       );
-      const preis = Object.fromEntries(rows.map((r) => [r.code, r.unit_price_cents]));
-      expect(preis['KG-D'] + preis.HB).toBe(15000);
-      expect(preis['MT-D'] + preis.HB).toBe(15000);
-      expect(preis.KG + preis.MT + preis.HB).toBe(15000);
-      expect(2 * preis.KG).toBe(preis['KG-D']);
-      expect(2 * preis.MT).toBe(preis['MT-D']);
+      const preis = (code: string) => rows.find((r) => r.code === code)?.unit_price_cents ?? NaN;
+      expect(preis('KG-D') + preis('HB')).toBe(15000);
+      expect(preis('MT-D') + preis('HB')).toBe(15000);
+      expect(preis('KG') + preis('MT') + preis('HB')).toBe(15000);
+      expect(2 * preis('KG')).toBe(preis('KG-D'));
+      expect(2 * preis('MT')).toBe(preis('MT-D'));
     });
 
     it('setzt das Ausfallhonorar im Entwurf 2027 auf das Terminhonorar', async () => {
