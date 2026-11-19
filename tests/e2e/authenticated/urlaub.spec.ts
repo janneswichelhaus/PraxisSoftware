@@ -33,6 +33,9 @@ function iso(datum: Date): string {
   return datum.toISOString().slice(0, 10);
 }
 
+/** Heute wie in der Anwendung: der Tag in Berlin. Nachts ist er dem in UTC schon einen voraus. */
+const HEUTE = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Berlin' }).format(new Date());
+
 /**
  * Eine Woche Montag bis Freitag, 8 bis 27 Wochen voraus - je Lauf eine
  * andere, damit sich zwei Läufe ohne Zurücksetzen nicht überschneiden.
@@ -164,10 +167,10 @@ async function abwesenheiten(
  * Kalenderseiten; ab Oktober 2026 sind es November, Mai und August.
  */
 function sechsWochenMonate(): string[] {
-  const heute = new Date();
+  const [jahr = 0, monat = 1] = HEUTE.split('-').map(Number);
   const monate: string[] = [];
   for (let i = 0; i < 13; i += 1) {
-    const erster = new Date(Date.UTC(heute.getUTCFullYear(), heute.getUTCMonth() + i, 1));
+    const erster = new Date(Date.UTC(jahr, monat - 1 + i, 1));
     const versatz = (erster.getUTCDay() + 6) % 7;
     const tage = new Date(
       Date.UTC(erster.getUTCFullYear(), erster.getUTCMonth() + 1, 0),
@@ -186,7 +189,6 @@ test('G7: Monate mit sechs Wochen rollen nicht, auch nicht mit Feiertagen (Desig
   await page.setViewportSize(TELEFON);
   await anmelden(page, KONTEN.therapist);
   await page.goto('/betrieb/urlaub/beantragen');
-  const heute = iso(new Date());
   for (const [i, monat] of monate.entries()) {
     const auswahl = page.getByRole('dialog', { name: 'Ab welchem Monat?' });
     await auswahl.getByRole('button', { name: monatsKachel(monat) }).click();
@@ -194,7 +196,7 @@ test('G7: Monate mit sechs Wochen rollen nicht, auch nicht mit Feiertagen (Desig
     await stehtImBild(page, beginn, tag(beginn, monatsende(monat)));
     await rolltNicht(beginn);
     if (i === 0) await bild(page, 'b7-g7-02b-beginn-sechs-wochen-375');
-    await tag(beginn, monat < heute ? heute : monat).click();
+    await tag(beginn, monat < HEUTE ? HEUTE : monat).click();
     const ende = page.getByRole('dialog', { name: 'Letzter Urlaubstag?' });
     await stehtImBild(page, ende, ende.getByRole('button', { name: '3 Wochen' }));
     await expect(tag(ende, monatsende(monat))).toBeInViewport();
