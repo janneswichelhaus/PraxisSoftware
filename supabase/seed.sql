@@ -335,18 +335,13 @@ insert into public.service_catalog_items (id, organization_id, catalog_version_i
   ('cccccccc-cccc-4ccc-8ccc-000000000019', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 7, 'MT',    'Manuelle Therapie',                   'treatment',   'Manuelle Therapie',                       5500, 'exempt_healthcare',   0, 'therapy'),
   ('cccccccc-cccc-4ccc-8ccc-000000000020', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 8, 'MT-D',  'Manuelle Therapie als Doppelbehandlung', 'treatment', 'Manuelle Therapie als Doppelbehandlung', 11000, 'exempt_healthcare',   0, 'therapy'),
   ('cccccccc-cccc-4ccc-8ccc-000000000021', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 9, 'HB',    'Hausbesuchspauschale',                'treatment',   'Hausbesuch',                              4000, 'exempt_healthcare',   0, 'therapy'),
-  ('cccccccc-cccc-4ccc-8ccc-000000000022', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 10, 'WT',   'Waermetherapie',                      'treatment',   'Waermetherapie',                          2000, 'exempt_healthcare',   0, 'therapy'),
-  ('cccccccc-cccc-4ccc-8ccc-000000000023', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 11, 'PT',   'Personal Training (Einzelstunde)',    'treatment',   null,                                     12000, 'taxable',           190, 'training');
+  ('cccccccc-cccc-4ccc-8ccc-000000000022', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 10, 'WT',   'Waermetherapie',                      'treatment',   'Waermetherapie',                          2000, 'exempt_healthcare',   0, 'therapy');
 
--- ANG-005: zwei Trainingspakete je Preisliste (ADR-009 Punkt 21), steuer-
--- pflichtig zum Regelsatz bis zur Antwort der Steuerberatung (ANN-275). Der
--- Umfang steht in der Bezeichnung. Preise synthetisch, bis Jannes Preis,
--- Umfang und Zahlungsweise festlegt (BEF-114, Blocker vor Block 5).
+-- Zwei Trainingspakete nur in der Preisliste 2026, zum Regelsatz (ANN-275); im Entwurf
+-- 2027 ruht das Training (ANN-867). Preise synthetisch.
 insert into public.service_catalog_items (id, organization_id, catalog_version_id, sort_order, code, label, item_kind, remedy, unit_price_cents, tax_treatment, tax_rate_permille, service_area, package_months) values
   ('cccccccc-cccc-4ccc-8ccc-000000000014', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001', 11, 'TP3', 'Trainingspaket 3 Monate (eine Einheit je Woche, Plattform inklusive)', 'training_package', null, 39000, 'taxable', 190, 'training', 3),
-  ('cccccccc-cccc-4ccc-8ccc-000000000015', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001', 12, 'TP6', 'Trainingspaket 6 Monate (eine Einheit je Woche, Plattform inklusive)', 'training_package', null, 72000, 'taxable', 190, 'training', 6),
-  ('cccccccc-cccc-4ccc-8ccc-000000000016', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 4, 'TP3', 'Trainingspaket 3 Monate (eine Einheit je Woche, Plattform inklusive)', 'training_package', null, 129000, 'taxable', 190, 'training', 3),
-  ('cccccccc-cccc-4ccc-8ccc-000000000017', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 5, 'TP6', 'Trainingspaket 6 Monate (eine Einheit je Woche, Plattform inklusive)', 'training_package', null, 239000, 'taxable', 190, 'training', 6);
+  ('cccccccc-cccc-4ccc-8ccc-000000000015', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001', 12, 'TP6', 'Trainingspaket 6 Monate (eine Einheit je Woche, Plattform inklusive)', 'training_package', null, 72000, 'taxable', 190, 'training', 6);
 
 -- ERN-003 (ADR-027 Punkt 15, ANN-622): die Ernährungsberatung je Bereich - die
 -- Rechnung trägt genau einen. Voreingestellt steuerpflichtig zum Regelsatz,

@@ -1547,4 +1547,4 @@ Technik · offen · 2026-11-14 · — · — · Wiedervorlage: Sichtung Kalender
 | ANN-860 | Einstellungen: Schrift mit Vorschau, ohne Anrede | Technik · offen | `VonDerPraxis` in `src/features/portal/platform/Einstellungen.tsx` |
 | ANN-865 | Automatisch buchen: nur Hausbesuch ab morgen, ein Termin je Tag, Fahrzeit mal Faktor, sonst kein Platz; Patient:innen erst nach dem ADR | Praxisprozess · offen | `app.auto_booking_fits` |
 | ANN-866 | Terminhonorar 2027: 150 € Endpreis je 60 Minuten samt Anfahrt, bis zur Steuerberatung (B4 Frage 9) | Praxisprozess · entschieden (Jannes) | `HONORARUMFANG` in `src/features/billing/CatalogPage.tsx` |
-| ANN-867 | Entwurf 2027: KG und MT 55 €, doppelt 110 €, Hausbesuch 40 €, zusammen glatt 150 €; Ausfallhonorar 150 € | Praxisprozess · offen | `HONORARUMFANG` in `src/features/billing/CatalogPage.tsx` |
+| ANN-867 | Entwurf 2027: KG und MT 55 €, doppelt 110 €, Hausbesuch 40 €; Ausfallhonorar 150 €; ohne Personal Training | Praxisprozess · entschieden (Jannes) | `HONORARUMFANG` in `src/features/billing/CatalogPage.tsx` |

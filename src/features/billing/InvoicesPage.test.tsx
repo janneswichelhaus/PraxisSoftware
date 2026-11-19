@@ -52,6 +52,7 @@ function kandidat(rest: Partial<BillingApi.Kandidat> = {}): BillingApi.Kandidat 
     cancelled_invoice_number: null,
     draft_replaces_invoice_number: null,
     basis_released_at: null,
+    absence_fee: false,
     ...rest,
   };
 }
@@ -171,6 +172,18 @@ describe('InvoicesPage', () => {
         service_area: 'training',
       }),
     );
+  });
+
+  it('nennt das Ausfallhonorar als eigene Zeile und legt dafuer die eigene Rechnung an', async () => {
+    const nutzer = userEvent.setup();
+    fetchKandidaten.mockResolvedValue([kandidat({ absence_fee: true, total_cents: 15_000 })]);
+    createEntwurf.mockResolvedValue('neu-3');
+
+    renderWithProviders(<InvoicesPage user={testUser(['office'])} />, '/abrechnung');
+
+    expect(await screen.findByText(/Ausfallhonorar August 2026/)).toBeInTheDocument();
+    await nutzer.click(screen.getByRole('button', { name: 'Entwurf anlegen' }));
+    expect(createEntwurf).toHaveBeenCalledWith(expect.objectContaining({ absence_fee: true }));
   });
 
   it('legt einen Entwurf fuer genau diesen Monat und Bereich an', async () => {

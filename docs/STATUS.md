@@ -43,4 +43,4 @@ nennen die Steuerberatung.
 
 ## Letzte Session
 
-19.11.: Entwurf 2027: Honorar und Ausfall 150 €, glatte Einzelpreise.
+19.11.: Entwurf 2027 mit 150 €, Ausfallhonorar auf eigener Rechnung.

@@ -21,9 +21,6 @@ Endpreise in Euro, Umsatzsteuer enthalten (ANN-074).
 | Hausbesuchspauschale ²       | je Besuch, kein Kilometergeld              | 40       | wie die Behandlung    |
 | Ausfallhonorar               | Absage unter 24 Stunden                    | 150      | nicht steuerbar       |
 | Nachsorge-Abo                | Monat, Plattform, Check-ins, Rückfragen    | 49       | 19 %                  |
-| Personal Training            | 60 Minuten bei der Person                  | 120      | 19 %                  |
-| Trainingspaket 3 Monate      | 12 Einheiten à 60 Minuten, Plattform       | 1.290    | 19 %                  |
-| Trainingspaket 6 Monate      | 24 Einheiten à 60 Minuten, Plattform       | 2.390    | 19 %                  |
 | Ernährungsberatung ³         | 45 Minuten, je Bereich eine Position       | 75       | 19 % ³                |
 
 ¹ Steuerfrei nur mit Nachweis des therapeutischen Zwecks, in der Regel einer ärztlichen
@@ -36,14 +33,14 @@ ohne Marktvergleich.
 
 ## Woher die Zahlen kommen
 
-- **Terminhonorar:** 150 € nach Jannes (2026-11-19). Am Markt 120 bis 150 € je 60 Minuten samt
+- **Terminhonorar:** 150 € (Jannes). Am Markt 120 bis 150 € je 60 Minuten samt
   Anfahrt (Köln 110–140 €, physio-dr.de 150 €), einzelne Praxen knapp 200 €.
 - **Einzelpreise:** GKV 2026: KG 29,63 €, MT 35,59 €, Hausbesuch 22,78 €; Beihilfe Bund: KG
   29,70 €, Hausbesuch 28,70 €. Die Preise sind das 1,5- bis 1,9-fache, üblich bis zum 2,3-fachen. Was ein Tarif nicht trägt, ist Eigenanteil
   und gehört vorab in die Honorarvereinbarung (§ 630c Abs. 3 BGB).
-- **Ausfallhonorar:** 150 € nach Jannes; am Markt das volle Honorar oder 30–60 €. § 615 BGB:
+- **Ausfallhonorar:** 150 €, auf eigener Rechnung (ADR-009 Punkt 25); am Markt das volle Honorar oder 30–60 €. § 615 BGB:
   abzüglich Ersparnis, geringerer Schaden nachweisbar (BGH III ZR 78/21); kein Kassenersatz.
 - **Nachsorge-Abo:** Apps kosten 12–25 € im Monat, betreute Programme 80–250 €.
-- **Personal Training** (ruht, Jannes 2026-11-20): Köln 75–150 € je Stunde.
+- **Personal Training** ruht (Jannes), ohne Position.
 
 Aus Suchauszügen; Primärquellen vor dem Start im Volltext prüfen.

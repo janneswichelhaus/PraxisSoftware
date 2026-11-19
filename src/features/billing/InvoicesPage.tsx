@@ -87,7 +87,7 @@ export function InvoicesPage({ user }: { user: CurrentUser }) {
             <ListRows beschriftung="Abzurechnende Leistungen">
               {daten.map((kandidat) => (
                 <KandidatenZeile
-                  key={`${kandidat.patient_id ?? kandidat.training_relationship_id}-${kandidat.treatment_basis_id ?? kandidat.period_month}-${kandidat.service_area}`}
+                  key={`${kandidat.patient_id ?? kandidat.training_relationship_id}-${kandidat.treatment_basis_id ?? kandidat.period_month}-${kandidat.service_area}-${kandidat.absence_fee}`}
                   kandidat={kandidat}
                   heute={heute}
                   darfAusstellen={darfAusstellen}

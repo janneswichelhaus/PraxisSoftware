@@ -125,6 +125,9 @@ describe('Anzeigehilfen der Abrechnung (UXR-010)', () => {
         }),
       ).toBe('Folgeverordnung vom 08.09.2026');
       expect(klammerText({ period_month: '2026-09-01' })).toBe('September 2026');
+      expect(klammerText({ period_month: '2026-09-01', absence_fee: true })).toBe(
+        'Ausfallhonorar September 2026',
+      );
     });
 
     it('nennt den Zeitraum, an einem Tag nur den Tag', () => {

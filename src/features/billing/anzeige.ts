@@ -127,7 +127,9 @@ export function klammerText(eintrag: {
   basis_kind?: string | null;
   basis_issued_on?: string | null;
   period_month: string;
+  absence_fee?: boolean;
 }): string {
+  if (eintrag.absence_fee) return `Ausfallhonorar ${monatsname(eintrag.period_month)}`;
   return eintrag.basis_kind && eintrag.basis_issued_on
     ? grundlageText(eintrag.basis_kind, eintrag.basis_issued_on)
     : monatsname(eintrag.period_month);

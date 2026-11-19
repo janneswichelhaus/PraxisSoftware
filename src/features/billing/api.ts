@@ -448,6 +448,8 @@ const kandidatSchema = z.object({
   draft_replaces_invoice_number: z.string().nullable().default(null),
   /** K13 (ANN-544): Die Verordnung ist in die Abrechnung gestellt am; sonst leer. */
   basis_released_at: z.string().nullable().default(null),
+  /** Ausfallhonorare eines Monats stehen für sich, auf eigener Rechnung (ADR-009 Punkt 25). */
+  absence_fee: z.boolean().default(false),
 });
 
 export type Kandidat = z.infer<typeof kandidatSchema>;
@@ -750,24 +752,29 @@ export async function createEntwurf(
     Kandidat,
     'patient_id' | 'training_relationship_id' | 'period_month' | 'service_area'
   > &
-    Partial<Pick<Kandidat, 'treatment_basis_id'>>,
+    Partial<Pick<Kandidat, 'treatment_basis_id' | 'absence_fee'>>,
 ): Promise<string> {
   const { data, error } = (
-    kandidat.treatment_basis_id
-      ? // ABR-032: eine Rechnung je Behandlungsgrundlage (ANN-077 Fassung 2).
-        await getSupabase().rpc('create_invoice_draft_for_basis', {
-          p_treatment_basis_id: kandidat.treatment_basis_id,
+    kandidat.absence_fee
+      ? await getSupabase().rpc('create_absence_fee_invoice_draft', {
+          p_patient_id: kandidat.patient_id,
+          p_period_month: kandidat.period_month,
         })
-      : kandidat.training_relationship_id
-        ? await getSupabase().rpc('create_training_invoice_draft', {
-            p_training_relationship_id: kandidat.training_relationship_id,
-            p_period_month: kandidat.period_month,
+      : kandidat.treatment_basis_id
+        ? // ABR-032: eine Rechnung je Behandlungsgrundlage (ANN-077 Fassung 2).
+          await getSupabase().rpc('create_invoice_draft_for_basis', {
+            p_treatment_basis_id: kandidat.treatment_basis_id,
           })
-        : await getSupabase().rpc('create_invoice_draft', {
-            p_patient_id: kandidat.patient_id,
-            p_period_month: kandidat.period_month,
-            p_service_area: kandidat.service_area,
-          })
+        : kandidat.training_relationship_id
+          ? await getSupabase().rpc('create_training_invoice_draft', {
+              p_training_relationship_id: kandidat.training_relationship_id,
+              p_period_month: kandidat.period_month,
+            })
+          : await getSupabase().rpc('create_invoice_draft', {
+              p_patient_id: kandidat.patient_id,
+              p_period_month: kandidat.period_month,
+              p_service_area: kandidat.service_area,
+            })
   ) as { data: unknown; error: { message?: string } | null };
 
   if (error?.message?.includes('already exists')) {

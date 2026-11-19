@@ -1,6 +1,6 @@
 # ADR-009: Privatabrechnung
 ## Status
-Angenommen 2026-08-28 (Jannes, B4), geltend Fassung 6 (2026-10-14); Protokoll nur nach ADR-010.
+Angenommen 2026-08-28 (Jannes, B4), geltend Fassung 7 (2026-11-19); Protokoll nur nach ADR-010.
 
 ## Kontext
 Zu entscheiden waren Abrechnungsweg, abweichende Empfänger und GoBD-Unveränderbarkeit neben der
@@ -87,6 +87,9 @@ organisatorisch (C1).
     noch Entwurf sie führt, sonst bleibt der Haken. Ist die Grundlage vollständig, schlägt die
     Anwendung die Freigabe vor, ein Tipp bestätigt (ADR-020 Punkt 9). Die Rechnung entsteht weiter
     im Büro; die Freigabe ist ihre Vorstufe, keine Bedingung.
+25. *(Fassung 7)* **Das Ausfallhonorar steht auf einer eigenen Rechnung,** je Person und
+    Kalendermonat, ohne Verordnung und Diagnose: Kasse und Beihilfe erstatten es nicht. Das
+    Datenmodell weist jede Mischung ab (`absence_fee`).
 
 ## Konsequenzen
 Ohne Factoring verlassen Abrechnungsdaten die Plattform nicht; ein Dienstleister bräuchte ADR,
@@ -111,4 +114,5 @@ gerechnet. Bei beiden Verhältnissen: getrennte Rechnungen, keine Summe über zw
 - Fassung 4 (2026-10-02, Jannes): Punkt 22 Terminhonorar; Vereinbarung vor Tarif, Lückenlosigkeit.
 - Fassung 5 (2026-10-05, Jannes, B17): Punkt 23, Positionen je Heilmittel, Rechnung je Verordnung.
 - Fassung 6 (2026-10-14, Jannes, B7): Punkt 24, Haken und Freigabe; Punkt 23 „erfasste“ Heilmittel.
+- Fassung 7 (2026-11-19, Jannes): Punkt 25, Ausfallhonorar auf eigener Rechnung.
 - Verdichtet 2026-10-27 (Aufräumen 5), Inhalt unverändert; früherer Wortlaut: `git log -p`.
