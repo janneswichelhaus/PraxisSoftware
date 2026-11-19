@@ -56,6 +56,9 @@ import { Eintraege, Eintrag } from './Eintraege';
 
 const STEUERSATZ_VORGABE = 190;
 
+/** Was das Terminhonorar umfasst; der Betrag steht an der Preisliste (ANN-866). */
+const HONORARUMFANG = 'in Euro, je 60 Minuten mit Anfahrt und Dokumentation';
+
 /** Die Sätze des Verlustschutzes für den Entwurf einer Preisliste (ABR-14, ANN-046). */
 const PREISLISTENTEXTE = { ...EINGABETEXTE, bezeichnung: 'Ungespeicherte Preisliste' };
 
@@ -951,7 +954,7 @@ function Tarif({ version, bearbeitbar }: { version: KatalogVersion; bearbeitbar:
             label="Terminhonorar je Behandlungstermin"
             inputMode="decimal"
             value={wert}
-            hint="in Euro, mit Dokumentation und Hausbesuch"
+            hint={HONORARUMFANG}
             error={fehler}
             onChange={(event) => setEingabe(event.target.value)}
           />

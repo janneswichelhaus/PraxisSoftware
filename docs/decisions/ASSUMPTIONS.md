@@ -1,5 +1,5 @@
 # Annahmenregister
-Zuletzt aktualisiert: 2026-11-17.
+Zuletzt aktualisiert: 2026-11-19.
 
 Begründete, **vorläufige** Festlegungen, die weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
 Spezifikation trifft (§15.1, Rang 4). Eine Annahme füllt eine Lücke und überschreibt nichts; sie
@@ -1546,3 +1546,4 @@ Technik · offen · 2026-11-14 · — · — · Wiedervorlage: Sichtung Kalender
 | ANN-859 | Einwilligung: erster Satz sichtbar, Rest wörtlich unter „Mehr dazu“ | Technik · offen | `zweckteile` in `src/features/portal/platform/Einwilligungen.tsx` |
 | ANN-860 | Einstellungen: Schrift mit Vorschau, ohne Anrede | Technik · offen | `VonDerPraxis` in `src/features/portal/platform/Einstellungen.tsx` |
 | ANN-865 | Automatisch buchen: nur Hausbesuch ab morgen, ein Termin je Tag, Fahrzeit mal Faktor, sonst kein Platz; Patient:innen erst nach dem ADR | Praxisprozess · offen | `app.auto_booking_fits` |
+| ANN-866 | Terminhonorar 2027: 150 € Endpreis je 60 Minuten samt Anfahrt, bis zur Steuerberatung (B4 Frage 9) | Praxisprozess · entschieden (Jannes) | `HONORARUMFANG` in `src/features/billing/CatalogPage.tsx` |

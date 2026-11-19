@@ -103,6 +103,16 @@ describe('Leistungskatalog', () => {
     );
   });
 
+  describe('Startinhalt', () => {
+    it('traegt im Entwurf 2027 das Terminhonorar von 150 Euro', async () => {
+      const { rows } = await asPostgres<{ session_fee_cents: number }>(
+        'select session_fee_cents from public.service_catalog_versions where id = $1',
+        [KATALOG.entwurf],
+      );
+      expect(rows[0]?.session_fee_cents).toBe(15000);
+    });
+  });
+
   describe('Wer liest und wer pflegt', () => {
     it('laesst alle vier Praxisrollen die Preisliste lesen', async () => {
       for (const konto of [users.ownerTherapist, users.therapist, users.teamLead, users.office]) {

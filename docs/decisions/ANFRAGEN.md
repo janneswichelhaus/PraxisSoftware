@@ -92,6 +92,8 @@ zu den Fragen 1 bis 4** sind vier Festlegungen, vorläufig entschieden am 2026-0
 8. **Weiteres:** Rechnungstext und Rechtsgrundlage, wenn die Tür geöffnet wird, aber nicht behandelt
    werden kann (E14 Fall 1, §8); Wortlaut der Befreiungshinweise (ANN-082); Wahl der
    Gewinnermittlungsart (B9, ANN-088).
+9. **Terminhonorar** (ANN-866): 150 € Endpreis je 60 Minuten samt Anfahrt. Gilt er auch ohne
+   Verordnung (bei 19 % netto 126,05 €), oder zuzüglich Steuer? Trägt die Kalkulation?
 
 Nicht mehr gefragt: eine Behandlungsbestätigung je Termin (Jannes 2026-09-06, `IDEA-PRX-015`
 verworfen). **Blockiert:** nichts; bis zur Antwort tragen ANN-074, ANN-075, ANN-082 und ANN-088.
