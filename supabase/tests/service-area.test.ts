@@ -98,14 +98,10 @@ describe('Leistungsbereich', () => {
         `select service_area, count(*) as anzahl from public.service_catalog_items
           group by service_area order by service_area`,
       );
-      // Seit ANG-002 je Preisliste der Abo-Monat dazu (12 statt 10), seit
-      // ANG-005 je Preisliste zwei Trainingspakete (5 statt 1), seit dem
-      // Preisblatt-Entwurf vom 2026-10-15 die Preisliste 2027 vollständig
-      // (docs/product/preisblatt-entwurf.md: fünf Heilmittel und Personal Training dazu),
-      // seit ERN-003 je Preisliste die Ernährungsberatung in beiden Bereichen.
+      // Im Entwurf 2027 ruhen Personal Training und Pakete (ANN-867).
       expect(rows).toEqual([
         { service_area: 'therapy', anzahl: '19' },
-        { service_area: 'training', anzahl: '8' },
+        { service_area: 'training', anzahl: '5' },
       ]);
     });
 

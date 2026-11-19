@@ -23,6 +23,7 @@ function kandidat(zusatz: Partial<Kandidat> = {}): Kandidat {
     cancelled_invoice_number: null,
     draft_replaces_invoice_number: null,
     basis_released_at: null,
+    absence_fee: false,
     ...zusatz,
   };
 }
@@ -70,6 +71,7 @@ describe('Monatslauf: welcher Entwurf ausgestellt wird (ANN-544)', () => {
   const entwurf = {
     treatment_basis_id: null,
     basis_released_at: null,
+    absence_fee: false,
     period_month: '2026-09-01',
     is_correction: false,
   };

@@ -1,4 +1,4 @@
-# Status · Stand 2026-11-17
+# Status · Stand 2026-11-19
 
 Livestand in höchstens 4 KB (`pnpm docs:check`). Reihenfolge: `development/ROADMAP.md`; Verlauf
 steht in den PRs und in Git. Abgelegte Dokumente zeigt `git show eb43569:<pfad>` (Archiv,
@@ -29,8 +29,9 @@ nennen die Steuerberatung.
   ANN-479 ansehen (Besuch).
 - Tübinger Standortvorlage für den Pannenablauf (bis dahin Köln mit Platzhaltern, ANN-554).
 - Widersprüche zwischen ADR-Wortlaut und Code oder Prinzipien (`development/BEFUNDE.md`, „Doku“).
-- Preise: Entwurf 2027 steht (`product/preisblatt-entwurf.md`), echte Preise kurz vor dem Start;
-  G13 Umsatzsteuer vor M3 (ANN-541: ohne Verordnung 19 %? Kleinunternehmer?); B8 bis M3.
+- Preise: Terminhonorar 150 € im Entwurf 2027 (ANN-866), Steuerberatung fragen (B4 Frage 9);
+  übrige Preise kurz vor dem Start (`product/preisblatt-entwurf.md`); G13 Umsatzsteuer
+  vor M3 (ANN-541: ohne Verordnung 19 %? Kleinunternehmer?); B8 bis M3.
 - Bilder zu den Tests für FRB-EPIC-005.
 - LOG-EPIC-001: AV-Verträge Supabase und PTV; Nachweis `apply_retention()` per pg_cron;
   Backupfrist ≤ 30 Tage.
@@ -42,4 +43,4 @@ nennen die Steuerberatung.
 
 ## Letzte Session
 
-17.11.: Zähler je Nachricht, „Mehr“ klappt ein.
+19.11.: Entwurf 2027 mit 150 €, Ausfallhonorar auf eigener Rechnung.

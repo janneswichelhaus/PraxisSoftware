@@ -103,6 +103,38 @@ describe('Leistungskatalog', () => {
     );
   });
 
+  describe('Startinhalt', () => {
+    it('traegt im Entwurf 2027 das Terminhonorar von 150 Euro', async () => {
+      const { rows } = await asPostgres<{ session_fee_cents: number }>(
+        'select session_fee_cents from public.service_catalog_versions where id = $1',
+        [KATALOG.entwurf],
+      );
+      expect(rows[0]?.session_fee_cents).toBe(15000);
+    });
+
+    it('ergibt je 60 Minuten mit Hausbesuch genau das Honorar, ohne krumme Einzelpreise', async () => {
+      const { rows } = await asPostgres<{ code: string; unit_price_cents: number }>(
+        'select code, unit_price_cents from public.service_catalog_items where catalog_version_id = $1',
+        [KATALOG.entwurf],
+      );
+      const preis = (code: string) => rows.find((r) => r.code === code)?.unit_price_cents ?? NaN;
+      expect(preis('KG-D') + preis('HB')).toBe(15000);
+      expect(preis('MT-D') + preis('HB')).toBe(15000);
+      expect(preis('KG') + preis('MT') + preis('HB')).toBe(15000);
+      expect(2 * preis('KG')).toBe(preis('KG-D'));
+      expect(2 * preis('MT')).toBe(preis('MT-D'));
+    });
+
+    it('setzt das Ausfallhonorar im Entwurf 2027 auf das Terminhonorar', async () => {
+      const { rows } = await asPostgres<{ unit_price_cents: number }>(
+        `select unit_price_cents from public.service_catalog_items
+          where catalog_version_id = $1 and item_kind = 'absence_fee'`,
+        [KATALOG.entwurf],
+      );
+      expect(rows[0]?.unit_price_cents).toBe(15000);
+    });
+  });
+
   describe('Wer liest und wer pflegt', () => {
     it('laesst alle vier Praxisrollen die Preisliste lesen', async () => {
       for (const konto of [users.ownerTherapist, users.therapist, users.teamLead, users.office]) {
