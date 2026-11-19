@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, render, screen, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
 import { testUser } from '@/test-utils';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
+import { richteAuswahlEin } from '@/components/ui/lastenrad3d/auswahl';
+import { mountLastenrad, type LastenradAnsicht } from '@/components/ui/lastenrad3d/viewer';
 import * as api from './api';
 import { BreakdownPage } from './BreakdownPage';
 import { Zielanzeige } from './Testbausteine';
@@ -30,6 +32,14 @@ vi.mock('@/components/ui/Kameradialog', () => ({
   ),
 }));
 
+// jsdom hat kein WebGL: Ansicht und Auswahl des Rads sind Attrappen, den Tipp aufs Rad löst der Test aus.
+vi.mock('@/components/ui/lastenrad3d/viewer', () => ({ mountLastenrad: vi.fn() }));
+vi.mock('@/components/ui/lastenrad3d/auswahl', () => ({ richteAuswahlEin: vi.fn() }));
+
+const radAnsicht = vi.mocked(mountLastenrad);
+const radAuswahl = vi.mocked(richteAuswahlEin);
+const radStand = vi.fn();
+const radFrei = vi.fn();
 const fetchFleet = vi.mocked(api.fetchFleet);
 const fetchBike = vi.mocked(api.fetchBike);
 const recordBreakdown = vi.mocked(api.recordBreakdown);
@@ -101,6 +111,8 @@ beforeEach(() => {
     blocked: false,
   });
   uploadFleetPhoto.mockResolvedValue('foto-neu');
+  radAnsicht.mockResolvedValue({ dispose: vi.fn() } as unknown as LastenradAnsicht);
+  radAuswahl.mockReturnValue({ setze: radStand, punkt: vi.fn(), dispose: radFrei });
   let nummer = 0;
   vi.stubGlobal(
     'URL',
@@ -142,6 +154,31 @@ describe('Panne melden', () => {
     // Zurück führt vor die erste Frage der Vorlage.
     await nutzer.click(within(frage).getByRole('button', { name: '← Zurück' }));
     expect(await fenster('Wo ist der Schaden?')).toBeInTheDocument();
+  });
+
+  it('öffnet den Schaden mit einem Tipp aufs Rad und zeigt gesetzte Schäden daran (ANN-870)', async () => {
+    const nutzer = userEvent.setup();
+    oeffne();
+    const schaden = within(await fenster('Wo ist der Schaden?'));
+    // Das ganze Rad steht zur Wahl, noch ohne Marke.
+    await waitFor(() => expect(radStand).toHaveBeenLastCalledWith({ waehlbar: null, marken: [] }));
+    const amRad = radAuswahl.mock.calls.at(-1)![3];
+    act(() => amRad(['transportbox']));
+    // Derselbe Schritt wie über die Liste: Die Stelle ist offen, das Bauteil steht darin.
+    await waitFor(() =>
+      expect(schaden.getByRole('combobox', { name: 'Bauteil' })).toHaveValue('transportbox'),
+    );
+    // Neben Notiz und Fotos steht kein Rad.
+    expect(radFrei).toHaveBeenCalledTimes(1);
+
+    await nutzer.type(schaden.getByLabelText('Was ist passiert?'), 'Deckel klemmt');
+    await nutzer.click(schaden.getByRole('button', { name: 'Stelle setzen' }));
+    await waitFor(() =>
+      expect(radStand).toHaveBeenLastCalledWith({
+        waehlbar: null,
+        marken: [{ gruppe: 'transportbox', farbe: '' }],
+      }),
+    );
   });
 
   it('bietet „Weiter“ erst, wenn keine Stelle mehr offen ist; jede Stelle ist ein Schaden', async () => {

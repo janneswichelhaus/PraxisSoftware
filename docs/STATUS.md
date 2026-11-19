@@ -44,4 +44,4 @@ nennen die Steuerberatung.
 
 ## Letzte Session
 
-19.11.: 3D-Lastenrad, three.js nur auf Abruf.
+19.11.: Bauteil am 3D-Rad antippen.

@@ -221,6 +221,11 @@ function zaehler() {
       tipps += 1;
       await feld.selectOption(wert);
     },
+    /** Ein Tipp auf eine Stelle im Bild, etwa ein Bauteil am Rad. */
+    async tippeAuf(ziel: Locator, position: { x: number; y: number }) {
+      tipps += 1;
+      await ziel.tap({ position });
+    },
     get tipps() {
       return tipps;
     },
@@ -679,6 +684,238 @@ test('R5: Panne, Rad weiter fahrbar, mit einer Stelle in höchstens sieben Tipps
   ]);
   test.info().annotations.push({ type: 'R5', description: `${z.tipps} Tipps + Text (vorher 7)` });
   expect(z.tipps).toBeLessThanOrEqual(7);
+});
+
+const rad = (seite: Locator) => seite.getByRole('img', { name: 'Lastenrad, Bauteil antippen' });
+
+/**
+ * Wo im Bild ein Teil liegt, am Bild abgelesen: `reifen` der rechte Rand des dunkelsten Teils (der
+ * vordere Reifen), `hinterrad` die Mitte des Dunklen links (dort drängen sich die Bauteile),
+ * `deckel` die hellste Fläche (der Deckel der Box), `marke` die Bildpunkte in der Farbe „Problem“.
+ */
+async function imRad(
+  ziel: Locator,
+  art: 'reifen' | 'hinterrad' | 'deckel' | 'marke',
+): Promise<{ x: number; y: number; zahl: number }> {
+  const aufnahme = (await ziel.screenshot()).toString('base64');
+  return ziel.page().evaluate(
+    async ([base64, was]) => {
+      const roh = Uint8Array.from(atob(base64), (zeichen) => zeichen.charCodeAt(0));
+      const bild = await createImageBitmap(new Blob([roh], { type: 'image/png' }));
+      const flaeche = new OffscreenCanvas(bild.width, bild.height);
+      const stift = flaeche.getContext('2d');
+      if (stift === null) throw new Error('Kein 2D-Kontext für die Auswertung.');
+      stift.drawImage(bild, 0, 0);
+      const punkte = stift.getImageData(0, 0, bild.width, bild.height).data;
+      const treffer: [number, number][] = [];
+      // Ohne den Rand: In den runden Ecken der Bühne scheint die weiße Seite durch.
+      const rand = 20;
+      for (let i = 0; i < punkte.length; i += 4) {
+        const [x, y] = [(i / 4) % bild.width, Math.floor(i / 4 / bild.width)];
+        if (x < rand || y < rand || x >= bild.width - rand || y >= bild.height - rand) continue;
+        const [r, g, b] = [punkte[i]!, punkte[i + 1]!, punkte[i + 2]!];
+        const passt =
+          was === 'reifen'
+            ? Math.max(r, g, b) < 60
+            : was === 'hinterrad'
+              ? Math.max(r, g, b) < 60 && x < bild.width * 0.4
+              : was === 'deckel'
+                ? Math.min(r, g, b) >= 226
+                : r > 110 && r > 1.8 * g && r > 1.8 * b;
+        if (passt) treffer.push([x, y]);
+      }
+      if (treffer.length === 0) return { x: 0, y: 0, zahl: 0 };
+      const rechts = Math.max(...treffer.map(([x]) => x));
+      const links = Math.min(...treffer.map(([x]) => x));
+      // Beim Reifen nur das rechte Zehntel: Dort steht der Bogen fast senkrecht, die Mitte liegt auf ihm.
+      const gewaehlt =
+        was === 'reifen' ? treffer.filter(([x]) => x > rechts - (rechts - links) / 10) : treffer;
+      const mitte = (index: 0 | 1) =>
+        gewaehlt.reduce((summe, punkt) => summe + punkt[index], 0) / gewaehlt.length;
+      return { x: mitte(0), y: mitte(1), zahl: treffer.length };
+    },
+    [aufnahme, art] as const,
+  );
+}
+
+test('R4 am Rad: „Wo genau?“ zeigt die Bauteile des Punkts, ein Tipp aufs Rad setzt die Stelle', async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  const server = nachbildung();
+  await oeffne(page, server);
+  await page.setViewportSize({ width: 375, height: 667 });
+  const z = zaehler();
+  await z.tippe(page.getByRole('link', { name: 'Check-Up', exact: true }));
+  await z.tippe(page.getByRole('button', { name: 'Weiter' }));
+  const reifen = checkupFenster(page, 'Reifen und Luftdruck');
+  // Bis hier lädt kein Rad: Es steht erst, wo ein Bauteil zu wählen ist.
+  await expect(reifen.getByRole('button', { name: 'In Ordnung' })).toBeVisible();
+  await expect(page.locator('canvas')).toHaveCount(0);
+  await z.tippe(reifen.getByRole('button', { name: 'Problem' }));
+
+  // Das Rad über der Frage, die Knöpfe bleiben als gleicher Weg darunter.
+  await expect(reifen.getByText('Wo genau?', { exact: true })).toBeVisible();
+  await expect(rad(reifen)).toBeVisible();
+  await mindestens44(reifen.getByRole('button', { name: 'Reifen vorne' }));
+  await mindestens44(reifen.getByRole('button', { name: 'Reifen hinten' }));
+  await expect.poll(async () => (await imRad(rad(reifen), 'reifen')).zahl).toBeGreaterThan(300);
+  expect(await ueberlaeuft(page)).toBe(false);
+  expect(await scrolltNicht(page), 'Wo genau? mit Rad ohne Scrollen').toBe(true);
+  expect(await axeVerstoesse(page)).toEqual([]);
+  expect((await rad(reifen).boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(144);
+  await bild(page, 'checkup-rad-01-wo-genau', true);
+
+  // Ein Tipp auf den vorderen Reifen: derselbe eine Tipp wie der Knopf.
+  await z.tippeAuf(rad(reifen), await imRad(rad(reifen), 'reifen'));
+  await expect(reifen.getByLabel('Was ist aufgefallen?')).toBeVisible();
+  await expect(reifen.getByText('Reifen vorne', { exact: true })).toBeVisible();
+  await expect(page.locator('canvas')).toHaveCount(0);
+  expect(z.tipps).toBe(4);
+
+  // Zurück: Das Rad zeigt die Stelle in der Farbe ihrer Einstufung, der Knopf ist gedrückt.
+  await reifen.getByRole('button', { name: '← Zurück' }).click();
+  await expect(reifen.getByRole('button', { name: 'Reifen vorne' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await expect.poll(async () => (await imRad(rad(reifen), 'marke')).zahl).toBeGreaterThan(200);
+  // Nicht nur als Farbe: Zeichen und Wort unter dem Rad, der Haken am Knopf.
+  await expect(reifen.getByRole('list', { name: 'Am Rad markiert' })).toHaveText(
+    '× Problem · Reifen vorne',
+  );
+  await expect(reifen.getByRole('button', { name: 'Reifen vorne' })).toHaveText('✓ Reifen vorne');
+  expect(await scrolltNicht(page), 'Wo genau? mit Marke ohne Scrollen').toBe(true);
+  expect(await axeVerstoesse(page)).toEqual([]);
+  await bild(page, 'checkup-rad-02-stelle-markiert');
+});
+
+test('Check-Up am Rad: „Weitere Stelle“ fragt zuerst das Bauteil, mit dem ganzen Rad und ohne Scrollen', async ({
+  page,
+}) => {
+  test.setTimeout(120_000);
+  const server = nachbildung();
+  await oeffne(page, server);
+  await page.setViewportSize({ width: 375, height: 667 });
+  await page.getByRole('link', { name: 'Check-Up', exact: true }).click();
+  await page.getByRole('button', { name: 'Weiter' }).click();
+  for (const label of [
+    'Reifen und Luftdruck',
+    'Speichen',
+    'Bremsen',
+    'Riemen und Antrieb',
+    'Licht vorne',
+    'Licht hinten',
+    'Akku-Zustand',
+    'Schrauben und Sattel fest',
+    'Klingel',
+    'Schutzbleche',
+    'Ständer',
+    'Transportbox',
+  ]) {
+    await checkupFenster(page, label).getByRole('button', { name: 'In Ordnung' }).click();
+  }
+  await reinigenUndFotografieren(page, zaehler());
+  const abschluss = checkupFenster(page, 'Alles geprüft?');
+  await abschluss.getByText('Notiz, Fotos, weitere Stelle').click();
+  await abschluss.getByRole('button', { name: 'Weitere Stelle markieren' }).click();
+
+  // Erst das Bauteil: das ganze Rad, darunter die Liste als gleicher Weg.
+  const weitere = checkupFenster(page, 'Weitere Stelle');
+  await expect(rad(weitere)).toBeVisible();
+  await expect.poll(async () => (await imRad(rad(weitere), 'deckel')).zahl).toBeGreaterThan(100);
+  await mindestens44(weitere.getByLabel('Bauteil', { exact: true }));
+  await expect(weitere.getByRole('button', { name: 'Stelle setzen' })).toHaveCount(0);
+  expect(await ueberlaeuft(page)).toBe(false);
+  expect(await scrolltNicht(page), 'Weitere Stelle mit Rad ohne Scrollen').toBe(true);
+  expect(await axeVerstoesse(page)).toEqual([]);
+  expect((await rad(weitere).boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(144);
+  await bild(page, 'checkup-rad-03-weitere-stelle', true);
+
+  // Ein Tipp auf die Box: Jetzt steht das Formular allein, das Bauteil ist gewählt.
+  await rad(weitere).tap({ position: await imRad(rad(weitere), 'deckel') });
+  await expect(weitere.getByLabel('Bauteil', { exact: true })).toHaveValue('transportbox');
+  await expect(page.locator('canvas')).toHaveCount(0);
+  await weitere.getByLabel('Notiz zur Stelle').fill('Kratzer am Deckel');
+  await weitere.getByRole('button', { name: 'Stelle setzen' }).click();
+  await expect(checkupFenster(page, 'Alles geprüft?').getByText('Kratzer am Deckel')).toBeVisible();
+});
+
+test('R5 am Rad: ein Tipp auf die Box öffnet den Schaden an der Transportbox, in drei Tipps', async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  const server = nachbildung();
+  await oeffne(page, server);
+  await page.setViewportSize({ width: 375, height: 667 });
+  const z = zaehler();
+  await z.tippe(page.getByRole('link', { name: 'Panne melden' }));
+  await z.tippe(page.getByRole('button', { name: 'Weiter' }));
+
+  const schaden = fenster(page, 'Wo ist der Schaden?');
+  await expect(rad(schaden)).toBeVisible();
+  await expect.poll(async () => (await imRad(rad(schaden), 'deckel')).zahl).toBeGreaterThan(100);
+  expect(await scrolltNicht(page), 'Wo ist der Schaden? mit Rad ohne Scrollen').toBe(true);
+  expect(await axeVerstoesse(page)).toEqual([]);
+  await mindestens44(schaden.getByLabel('Bauteil', { exact: true }));
+  await bild(page, 'panne-rad-01-schaden', true);
+
+  await z.tippeAuf(rad(schaden), await imRad(rad(schaden), 'deckel'));
+  await expect(schaden.getByLabel('Bauteil', { exact: true })).toHaveValue('transportbox');
+  expect(z.tipps).toBe(3);
+  // Mit offener Stelle steht das Formular allein: kein Rad, kein Scrollen.
+  await expect(page.locator('canvas')).toHaveCount(0);
+  await schaden.getByLabel('Was ist passiert?').fill('Deckel klemmt');
+  expect(await scrolltNicht(page), 'offene Stelle ohne Scrollen').toBe(true);
+  await z.tippe(schaden.getByRole('button', { name: 'Stelle setzen' }));
+
+  // Gesetzt: Die Box trägt am Rad die Farbe „Problem“, die Liste nennt den Schaden.
+  await expect(schaden.getByRole('list', { name: 'Schäden am Rad' })).toContainText(
+    'Deckel klemmt',
+  );
+  await expect.poll(async () => (await imRad(rad(schaden), 'marke')).zahl).toBeGreaterThan(1000);
+  expect(await scrolltNicht(page), 'Schaden gesetzt mit Rad ohne Scrollen').toBe(true);
+  await bild(page, 'panne-rad-02-schaden-gesetzt');
+});
+
+test('R5 am Rad: liegen mehrere Bauteile unter dem Finger, stehen sie als Knöpfe zur Wahl', async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  const server = nachbildung();
+  await oeffne(page, server);
+  await page.setViewportSize({ width: 375, height: 667 });
+  const z = zaehler();
+  await z.tippe(page.getByRole('link', { name: 'Panne melden' }));
+  await z.tippe(page.getByRole('button', { name: 'Weiter' }));
+  const schaden = fenster(page, 'Wo ist der Schaden?');
+  await expect.poll(async () => (await imRad(rad(schaden), 'hinterrad')).zahl).toBeGreaterThan(300);
+  // Am Telefon nimmt das Rad den freien Platz der Seite: groß genug zum Zielen.
+  expect((await rad(schaden).boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(280);
+
+  // An der Hinterradnabe drängen sich Bremse, Schaltung und Antrieb: Der Tipp fragt nach.
+  await z.tippeAuf(rad(schaden), await imRad(rad(schaden), 'hinterrad'));
+  const wahl = schaden.getByRole('group', { name: 'Bauteile an der getippten Stelle' });
+  const knoepfe = wahl.getByRole('button');
+  await expect(wahl).toBeVisible();
+  const zahl = await knoepfe.count();
+  expect(zahl).toBeGreaterThanOrEqual(2);
+  expect(zahl).toBeLessThanOrEqual(4);
+  for (let i = 0; i < zahl; i += 1) await mindestens44(knoepfe.nth(i));
+  await expect(schaden.getByLabel('Bauteil', { exact: true })).toHaveValue('');
+  expect(await ueberlaeuft(page)).toBe(false);
+  expect(await scrolltNicht(page), 'Bauteile zur Wahl ohne Scrollen').toBe(true);
+  expect(await axeVerstoesse(page)).toEqual([]);
+  await bild(page, 'panne-rad-03-bauteile-zur-wahl');
+
+  // Der Name steht vor dem Tipp da; einer davon öffnet den Schaden an genau diesem Bauteil.
+  const name = (await knoepfe.nth(1).innerText()).trim();
+  await z.tippe(knoepfe.nth(1));
+  await expect(schaden.getByLabel('Bauteil', { exact: true }).locator('option:checked')).toHaveText(
+    name,
+  );
+  expect(z.tipps).toBe(4);
+  await expect(page.locator('canvas')).toHaveCount(0);
 });
 
 test('G3: Panne bis „Rad zurückgelassen“ in elf Tipps wie vorher, jede Seite ohne Scrollen', async ({

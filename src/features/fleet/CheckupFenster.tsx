@@ -62,6 +62,8 @@ import {
   type Teil,
   type Werbeflaechen,
 } from './checkupablauf';
+import { Bauteilrad } from './Bauteilrad';
+import { Bauteilwahl } from './Bauteilwahl';
 import { Einstufung } from './Einstufung';
 import { fotoText, fotosVerlorenText, uebertrageFotos, type Fotoauftrag } from './fotoauftraege';
 import { Fotovormerkung } from './Fotovormerkung';
@@ -71,8 +73,8 @@ import { useStellenerfassung, type Stelle } from './stellen';
 
 /**
  * Der geführte Check-Up (ANN-563, ANN-568): eine Seite je Prüfpunkt, keiner vorbelegt, damit am
- * Rad nichts übersprungen wird. „Wo genau?“ wählt das Bauteil aus einer Liste; gespeichert wird
- * erst mit dem Haken (ANN-553, ANN-555).
+ * Rad nichts übersprungen wird. „Wo genau?“ wählt das Bauteil am Rad oder per Knopf (ANN-870);
+ * gespeichert wird erst mit dem Haken (ANN-553, ANN-555).
  */
 export function CheckupFenster({
   detail,
@@ -398,19 +400,39 @@ export function CheckupFenster({
   // Im Abschluss rollt die Zusammenfassung; Haken und Speichern stehen fest darunter.
   const abschlussZeigen = seite.art === 'abschluss' && !ausstehend;
 
+  // Das Rad steht nur, solange ein Bauteil zu wählen ist: Ein Check-Up ohne Befund lädt es nie,
+  // und neben Notiz und Fotos bliebe am Telefon kein Platz. Die weitere Stelle fragt es deshalb
+  // zuerst, auf eigener Seite.
+  const bauteilZuerst = seite.art === 'weitere' && entwurf !== null && !isZoneKey(entwurf.zone);
+  const rad = ausstehend ? undefined : seite.art === 'punkt' && seite.teil === 'wo' ? (
+    <Bauteilrad
+      waehlbar={zonesOfCheckItem(punkt!.key)}
+      stellen={stellen}
+      entwurf={entwurf}
+      onWahl={(zone) => waehleBauteil(seite.index, zone)}
+    />
+  ) : bauteilZuerst ? (
+    <Bauteilrad
+      stellen={stellen}
+      entwurf={entwurf}
+      onWahl={(zone) => erfassung.aendere({ zone })}
+    />
+  ) : undefined;
+
   return (
     <GefuehrterAblauf
       titel={titel}
       objekt={`${bike.name} · ${bikeTypeLabels[bike.bike_type].kurz}`}
       schliessen="Check-Up abbrechen"
       onSchliessen={() => void navigate(zurueck)}
-      seite={seitenKennung(seite)}
+      seite={bauteilZuerst ? 'weitere-bauteil' : seitenKennung(seite)}
       stand={{ text: stand.text, wert: stand.wert, von: SCHRITTE }}
       onZurueck={zurueckZiel ? zurueckGehen : undefined}
       ansage={ansage}
       schutz={schutz}
       abschluss={abschlussZeigen}
       inhaltUnten={!abschlussZeigen}
+      vorDemTitel={rad}
       fuss={
         abschlussZeigen ? (
           <AbschlussFuss
@@ -483,6 +505,26 @@ export function CheckupFenster({
           onAufnahme={(foto) => fotoAufgenommen(seite.index, foto)}
           onWeiter={() => fotoWeiter(seite.index)}
         />
+      ) : bauteilZuerst ? (
+        <div className="flex flex-col gap-3">
+          <Bauteilwahl
+            label="Bauteil"
+            wert=""
+            onWahl={(zone) => erfassung.aendere({ zone })}
+            autofokus
+          />
+          <div>
+            <Button
+              variant="quiet"
+              onClick={() => {
+                erfassung.verwerfen();
+                gehe(ABSCHLUSS);
+              }}
+            >
+              Verwerfen
+            </Button>
+          </div>
+        </div>
       ) : seite.art === 'weitere' ? (
         entwurf ? (
           <Entwurfsfeld
@@ -825,6 +867,7 @@ function WoGenau({
             onClick={() => onBauteil(zone)}
             {...(nummer === 0 ? { 'data-autofocus': true } : {})}
           >
+            {zone === vorher ? <span aria-hidden="true">✓ </span> : null}
             {zoneLabel(zone)}
           </Button>
         ))}

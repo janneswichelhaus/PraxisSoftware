@@ -253,3 +253,116 @@ test.describe('3D-Ansicht des Lastenrads', () => {
     await expect(page.locator('canvas')).toHaveCount(0);
   });
 });
+
+test.describe('Auswahl am 3D-Rad', () => {
+  type Ort = { x: number; y: number; allein: boolean };
+  type Fenster = { __wahl: { punkt: (gruppe: string) => Ort | null } };
+  const punkt = (page: Page, gruppe: string) =>
+    page.evaluate((name) => (window as unknown as Fenster).__wahl.punkt(name), gruppe);
+  const gewaehlt = (page: Page) => page.locator('output');
+
+  /** Die Prüfseite ohne Baustein: Sie nennt je Bauteil den Punkt, an dem ein Tipp trifft. */
+  async function direkt(page: Page, waehlbar = '') {
+    await page.setViewportSize({ width: 375, height: 667 });
+    await page.goto(`${PRUEFSEITE}?direkt=${waehlbar}`);
+    await expect(page.getByText('Auswahl bereit')).toBeVisible({ timeout: 30_000 });
+  }
+
+  test('wählt mit einem Tipp das getroffene Bauteil, am ganzen Rad', async ({ page }) => {
+    const meldungen = meldungenSammeln(page);
+    await direkt(page);
+    for (const bauteil of ['reifen-vorne', 'reifen-hinten', 'transportbox', 'sattel', 'lenker']) {
+      const ort = await punkt(page, bauteil);
+      expect(ort, bauteil).not.toBeNull();
+      await page.touchscreen.tap(ort!.x, ort!.y);
+      await expect(gewaehlt(page)).toHaveText(bauteil);
+    }
+    // Für den Gepäckträger hat das Modell kein Teil: Er bleibt der Liste.
+    expect(await punkt(page, 'gepaecktraeger')).toBeNull();
+    expect(meldungen).toEqual([]);
+  });
+
+  test('meldet am ganzen Rad jedes Bauteil unter dem Finger, das getroffene zuerst', async ({
+    page,
+  }) => {
+    await direkt(page);
+    // Auf dem Deckel der Box liegt unter dem ganzen Finger nichts anderes.
+    const box = (await punkt(page, 'transportbox'))!;
+    expect(box.allein).toBe(true);
+    await page.touchscreen.tap(box.x, box.y);
+    await expect(gewaehlt(page)).toHaveAttribute('data-finger', 'transportbox');
+    // Am Tretlager drängen sich Kette, Motor, Kurbeln und Akku: Das Getroffene steht vorn, nicht allein.
+    const kette = (await punkt(page, 'riemen'))!;
+    expect(kette.allein).toBe(false);
+    await page.touchscreen.tap(kette.x, kette.y);
+    await expect(gewaehlt(page)).toHaveAttribute('data-finger', /^riemen,./);
+  });
+
+  test('lässt nur die wählbaren Bauteile zu und trifft kleine auch knapp daneben', async ({
+    page,
+  }) => {
+    await direkt(page, 'bremse-vorne,bremse-hinten,bremsgriffe');
+    // Was zurücktritt, ist nicht wählbar.
+    expect(await punkt(page, 'transportbox')).toBeNull();
+    const scheibe = (await punkt(page, 'bremse-vorne'))!;
+    await page.touchscreen.tap(scheibe.x, scheibe.y);
+    await expect(gewaehlt(page)).toHaveText('bremse-vorne');
+    const griff = (await punkt(page, 'bremsgriffe'))!;
+    await page.touchscreen.tap(griff.x, griff.y);
+    await expect(gewaehlt(page)).toHaveText('bremsgriffe');
+    // Weit weg von jedem wählbaren Teil ändert ein Tipp nichts.
+    const flaeche = (await page.locator('canvas').boundingBox())!;
+    await page.touchscreen.tap(flaeche.x + 6, flaeche.y + 6);
+    await page.waitForTimeout(200);
+    await expect(gewaehlt(page)).toHaveText('bremsgriffe');
+  });
+
+  test('dreht beim Ziehen, ohne etwas zu wählen', async ({ page }) => {
+    await direkt(page);
+    const ort = (await punkt(page, 'transportbox'))!;
+    await page.mouse.move(ort.x, ort.y);
+    await page.mouse.down();
+    await page.mouse.move(ort.x + 80, ort.y, { steps: 6 });
+    await page.mouse.up();
+    await page.waitForTimeout(200);
+    await expect(gewaehlt(page)).toHaveText('nichts');
+  });
+
+  test('markiert im Baustein das gewählte Bauteil in der Farbe seines Tokens', async ({ page }) => {
+    const meldungen = meldungenSammeln(page);
+    await direkt(page, 'reifen-vorne,reifen-hinten');
+    const ort = (await punkt(page, 'reifen-vorne'))!;
+
+    await page.goto(`${PRUEFSEITE}?auswahl=reifen-vorne,reifen-hinten`);
+    const ansicht = page.getByRole('img', { name: 'Lastenrad zum Antippen eines Bauteils' });
+    await expect(ansicht).toBeVisible({ timeout: 30_000 });
+    // Derselbe Ausschnitt wie auf der Prüfseite ohne Baustein: Der Punkt gilt hier genauso.
+    const rot = () =>
+      ansicht.screenshot().then((aufnahme) =>
+        page.evaluate(async (base64) => {
+          const roh = Uint8Array.from(atob(base64), (zeichen) => zeichen.charCodeAt(0));
+          const bild = await createImageBitmap(new Blob([roh], { type: 'image/png' }));
+          const flaeche = new OffscreenCanvas(bild.width, bild.height);
+          const stift = flaeche.getContext('2d');
+          if (stift === null) throw new Error('Kein 2D-Kontext für die Auswertung.');
+          stift.drawImage(bild, 0, 0);
+          const punkte = stift.getImageData(0, 0, bild.width, bild.height).data;
+          let zahl = 0;
+          for (let i = 0; i < punkte.length; i += 4) {
+            const [r, g, b] = [punkte[i]!, punkte[i + 1]!, punkte[i + 2]!];
+            if (r > 110 && r > 1.8 * g && r > 1.8 * b) zahl += 1;
+          }
+          return zahl;
+        }, aufnahme.toString('base64')),
+      );
+    await expect.poll(rot).toBe(0);
+    await expect
+      .poll(async () => {
+        await page.touchscreen.tap(ort.x, ort.y);
+        return gewaehlt(page).innerText();
+      })
+      .toBe('reifen-vorne');
+    await expect.poll(rot).toBeGreaterThan(500);
+    expect(meldungen).toEqual([]);
+  });
+});

@@ -1,13 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
-import { Lastenrad3D } from './Lastenrad3D';
+import { Lastenrad3D, type Radauswahl } from './Lastenrad3D';
+import { richteAuswahlEin, type Auswahl } from './lastenrad3d/auswahl';
 import { mountLastenrad, type LastenradAnsicht } from './lastenrad3d/viewer';
 
 // jsdom hat kein WebGL: Die Ansicht selbst prüft tests/e2e/lastenrad.spec.ts im Browser.
 vi.mock('./lastenrad3d/viewer', () => ({ mountLastenrad: vi.fn() }));
+vi.mock('./lastenrad3d/auswahl', () => ({ richteAuswahlEin: vi.fn() }));
 
 const mount = vi.mocked(mountLastenrad);
+const einrichten = vi.mocked(richteAuswahlEin);
 
 function ansicht(): LastenradAnsicht & { dispose: ReturnType<typeof vi.fn> } {
   return { dispose: vi.fn(), render: vi.fn() } as unknown as LastenradAnsicht & {
@@ -17,6 +20,7 @@ function ansicht(): LastenradAnsicht & { dispose: ReturnType<typeof vi.fn> } {
 
 beforeEach(() => {
   mount.mockReset();
+  einrichten.mockReset();
 });
 
 afterEach(() => {
@@ -93,5 +97,83 @@ describe('Lastenrad3D', () => {
     });
     await waitFor(() => expect(mount).toHaveBeenCalledTimes(1));
     expect(trennen).toHaveBeenCalled();
+  });
+  describe('mit Auswahl', () => {
+    const gruppeVon = (teil: string) => (teil === 'vorderrad_reifen' ? 'reifen-vorne' : null);
+    function aufbau() {
+      const fertig = ansicht();
+      const wahl = { setze: vi.fn(), punkt: vi.fn(), dispose: vi.fn() } satisfies Auswahl;
+      mount.mockResolvedValue(fertig);
+      einrichten.mockReturnValue(wahl);
+      return { fertig, wahl };
+    }
+    const angaben = (teil: Partial<Radauswahl> = {}): Radauswahl => ({
+      gruppeVon,
+      onWahl: vi.fn(),
+      ...teil,
+    });
+
+    it('lässt das Rad stillstehen, behält die Teile einzeln und nennt die Ansicht', async () => {
+      const { wahl } = aufbau();
+      const { container } = render(
+        <Lastenrad3D label="Lastenrad zum Antippen" auswahl={angaben({ waehlbar: ['a', 'b'] })} />,
+      );
+      await waitFor(() => expect(wahl.setze).toHaveBeenCalled());
+      expect(mount).toHaveBeenCalledWith(container.firstElementChild, {
+        zoom: false,
+        label: 'Lastenrad zum Antippen',
+        merge: false,
+        autoRotate: false,
+      });
+      expect(wahl.setze).toHaveBeenLastCalledWith({ waehlbar: ['a', 'b'], marken: [] });
+    });
+
+    it('reicht Zuordnung und Wahl an die jüngsten Angaben weiter', async () => {
+      const { wahl } = aufbau();
+      const erste = vi.fn();
+      const zweite = vi.fn();
+      const { rerender } = render(<Lastenrad3D auswahl={angaben({ onWahl: erste })} />);
+      await waitFor(() => expect(wahl.setze).toHaveBeenCalled());
+      const [, , zuordnen, waehlen] = einrichten.mock.calls[0]!;
+      expect(zuordnen('vorderrad_reifen')).toBe('reifen-vorne');
+      expect(zuordnen('sattel')).toBeNull();
+
+      rerender(<Lastenrad3D auswahl={angaben({ onWahl: zweite })} />);
+      waehlen(['reifen-vorne', 'laufrad-vorne']);
+      expect(erste).not.toHaveBeenCalled();
+      expect(zweite).toHaveBeenCalledWith(['reifen-vorne', 'laufrad-vorne']);
+      // Dieselben Angaben bauen nichts neu und setzen nichts doppelt.
+      expect(mount).toHaveBeenCalledTimes(1);
+      expect(wahl.setze).toHaveBeenCalledTimes(1);
+    });
+
+    it('überträgt eine neue Marke mit der Farbe ihres Tokens', async () => {
+      const { wahl } = aufbau();
+      const { container, rerender } = render(<Lastenrad3D auswahl={angaben()} />);
+      await waitFor(() => expect(wahl.setze).toHaveBeenCalledTimes(1));
+      (container.firstElementChild as HTMLElement).style.setProperty('--color-danger', 'red');
+
+      rerender(
+        <Lastenrad3D
+          auswahl={angaben({ marken: [{ gruppe: 'reifen-vorne', ton: 'kritisch' }] })}
+        />,
+      );
+      await waitFor(() => expect(wahl.setze).toHaveBeenCalledTimes(2));
+      expect(wahl.setze).toHaveBeenLastCalledWith({
+        waehlbar: null,
+        marken: [{ gruppe: 'reifen-vorne', farbe: 'red' }],
+      });
+    });
+
+    it('gibt erst die Auswahl frei, dann die Ansicht', async () => {
+      const { fertig, wahl } = aufbau();
+      const { unmount } = render(<Lastenrad3D auswahl={angaben()} />);
+      await waitFor(() => expect(wahl.setze).toHaveBeenCalled());
+      unmount();
+      expect(wahl.dispose).toHaveBeenCalledTimes(1);
+      expect(wahl.dispose.mock.invocationCallOrder[0]).toBeLessThan(
+        fertig.dispose.mock.invocationCallOrder[0]!,
+      );
+    });
   });
 });

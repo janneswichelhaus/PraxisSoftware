@@ -11,7 +11,7 @@ import { Fotovormerkung } from './Fotovormerkung';
 import type { Entwurf, Stellenzustand } from './stellen';
 
 /**
- * Stellen erfassen in Check-Up und Panne: Bauteil aus der Liste, Einstufung, Notiz, Fotos.
+ * Stellen erfassen in Check-Up und Panne: Bauteil, Einstufung, Notiz, Fotos.
  * Schon offene Stellen werden nicht übernommen; erst die Freigabe erledigt sie (ANN-555).
  */
 

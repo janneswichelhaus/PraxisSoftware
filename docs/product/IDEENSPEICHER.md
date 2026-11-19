@@ -190,7 +190,7 @@ KI-Assistenz · QSN Querschnitt der Plattform · ANG Angebote und Abrechnung · 
 | IDEA-PRX-054 | Eigener Anmeldebogen der Praxis zum Ausdrucken | notiert |
 | IDEA-PRX-055 | Verordnung vom Foto automatisch erkennen | notiert |
 | IDEA-PRX-056 | Reihenfolgevorschlag für den Tag | notiert · entscheidung nötig |
-| IDEA-PRX-057 | Schäden am Lastenrad im 3D-Modell markieren | bestätigt · ausgearbeitet |
+| IDEA-PRX-057 | Schäden am Lastenrad im 3D-Modell markieren | überführt → ANN-870 |
 | IDEA-PRX-058 | Aus dem Check-Up gleich Panne melden oder das Rad sperren lassen | vorschlag |
 | IDEA-PRX-059 | Liste der Trainingspakete, die ohne Folgepaket enden, als Ziel der Statistik | überführt → PRX-043 |
 | IDEA-PRX-060 | Planungskarte: je Postleitzahl Tage des Gebiets und Zahl ohne Kartenpunkt | vorschlag |
