@@ -323,18 +323,18 @@ insert into public.service_catalog_items (id, organization_id, catalog_version_i
   -- pflichtig bis zur Antwort der Steuerberatung (ANN-269). Der Preis ist
   -- synthetisch, bis Jannes ihn festlegt (Blocker vor Block 5).
   ('cccccccc-cccc-4ccc-8ccc-000000000010', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001', 10, 'NSA',  'Nachsorge-Abo (Monat)',               'aftercare_month', null,                                  3900, 'taxable',           190, 'therapy'),
-  ('cccccccc-cccc-4ccc-8ccc-000000000011', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 1, 'KG',    'Krankengymnastik',                    'treatment',   'Krankengymnastik',                        4400, 'exempt_healthcare',   0, 'therapy'),
-  ('cccccccc-cccc-4ccc-8ccc-000000000012', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 2, 'AUS',   'Ausfallhonorar',                      'absence_fee', null,                                      5000, 'not_taxable',         0, 'therapy'),
+  ('cccccccc-cccc-4ccc-8ccc-000000000011', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 1, 'KG',    'Krankengymnastik',                    'treatment',   'Krankengymnastik',                        5500, 'exempt_healthcare',   0, 'therapy'),
+  ('cccccccc-cccc-4ccc-8ccc-000000000012', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 2, 'AUS',   'Ausfallhonorar',                      'absence_fee', null,                                      15000, 'not_taxable',         0, 'therapy'),
   ('cccccccc-cccc-4ccc-8ccc-000000000013', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 3, 'NSA',   'Nachsorge-Abo (Monat)',               'aftercare_month', null,                                  4900, 'taxable',           190, 'therapy');
 
 -- Preisliste 2027 (Entwurf): vorlaeufig (docs/product/preisblatt-entwurf.md),
--- Terminhonorar 150 Euro nach Jannes (ANN-866); die Heilmittel sind nur die
--- Gewichte der Aufteilung (ANN-233).
+-- Terminhonorar 150 Euro (ANN-866); die Heilmittel teilen es so auf, dass
+-- Doppelbehandlung und Hausbesuch glatt 110 und 40 Euro ergeben (ANN-867).
 insert into public.service_catalog_items (id, organization_id, catalog_version_id, sort_order, code, label, item_kind, remedy, unit_price_cents, tax_treatment, tax_rate_permille, service_area) values
-  ('cccccccc-cccc-4ccc-8ccc-000000000018', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 6, 'KG-D',  'Krankengymnastik als Doppelbehandlung', 'treatment', 'Krankengymnastik als Doppelbehandlung',   8800, 'exempt_healthcare',   0, 'therapy'),
-  ('cccccccc-cccc-4ccc-8ccc-000000000019', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 7, 'MT',    'Manuelle Therapie',                   'treatment',   'Manuelle Therapie',                       5300, 'exempt_healthcare',   0, 'therapy'),
-  ('cccccccc-cccc-4ccc-8ccc-000000000020', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 8, 'MT-D',  'Manuelle Therapie als Doppelbehandlung', 'treatment', 'Manuelle Therapie als Doppelbehandlung', 10600, 'exempt_healthcare',   0, 'therapy'),
-  ('cccccccc-cccc-4ccc-8ccc-000000000021', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 9, 'HB',    'Hausbesuchspauschale',                'treatment',   'Hausbesuch',                              3200, 'exempt_healthcare',   0, 'therapy'),
+  ('cccccccc-cccc-4ccc-8ccc-000000000018', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 6, 'KG-D',  'Krankengymnastik als Doppelbehandlung', 'treatment', 'Krankengymnastik als Doppelbehandlung',   11000, 'exempt_healthcare',   0, 'therapy'),
+  ('cccccccc-cccc-4ccc-8ccc-000000000019', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 7, 'MT',    'Manuelle Therapie',                   'treatment',   'Manuelle Therapie',                       5500, 'exempt_healthcare',   0, 'therapy'),
+  ('cccccccc-cccc-4ccc-8ccc-000000000020', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 8, 'MT-D',  'Manuelle Therapie als Doppelbehandlung', 'treatment', 'Manuelle Therapie als Doppelbehandlung', 11000, 'exempt_healthcare',   0, 'therapy'),
+  ('cccccccc-cccc-4ccc-8ccc-000000000021', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 9, 'HB',    'Hausbesuchspauschale',                'treatment',   'Hausbesuch',                              4000, 'exempt_healthcare',   0, 'therapy'),
   ('cccccccc-cccc-4ccc-8ccc-000000000022', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 10, 'WT',   'Waermetherapie',                      'treatment',   'Waermetherapie',                          2000, 'exempt_healthcare',   0, 'therapy'),
   ('cccccccc-cccc-4ccc-8ccc-000000000023', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 11, 'PT',   'Personal Training (Einzelstunde)',    'treatment',   null,                                     12000, 'taxable',           190, 'training');
 

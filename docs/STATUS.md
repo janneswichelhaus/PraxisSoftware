@@ -29,8 +29,8 @@ nennen die Steuerberatung.
   ANN-479 ansehen (Besuch).
 - Tübinger Standortvorlage für den Pannenablauf (bis dahin Köln mit Platzhaltern, ANN-554).
 - Widersprüche zwischen ADR-Wortlaut und Code oder Prinzipien (`development/BEFUNDE.md`, „Doku“).
-- Preise: Terminhonorar 150 € im Entwurf 2027 (ANN-866), mit der Steuerberatung besprechen (B4
-  Frage 9); übrige Preise kurz vor dem Start (`product/preisblatt-entwurf.md`); G13 Umsatzsteuer
+- Preise: Terminhonorar 150 € im Entwurf 2027 (ANN-866), Steuerberatung fragen (B4 Frage 9);
+  übrige Preise kurz vor dem Start (`product/preisblatt-entwurf.md`); G13 Umsatzsteuer
   vor M3 (ANN-541: ohne Verordnung 19 %? Kleinunternehmer?); B8 bis M3.
 - Bilder zu den Tests für FRB-EPIC-005.
 - LOG-EPIC-001: AV-Verträge Supabase und PTV; Nachweis `apply_retention()` per pg_cron;
@@ -43,4 +43,4 @@ nennen die Steuerberatung.
 
 ## Letzte Session
 
-19.11.: Terminhonorar 150 € im Entwurf 2027, Frage an die Steuerberatung.
+19.11.: Entwurf 2027: Honorar und Ausfall 150 €, glatte Einzelpreise.
