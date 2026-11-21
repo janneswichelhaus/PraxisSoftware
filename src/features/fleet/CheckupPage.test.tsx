@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
 import { testUser } from '@/test-utils';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
+import { richteAuswahlEin } from '@/components/ui/lastenrad3d/auswahl';
+import { mountLastenrad, type LastenradAnsicht } from '@/components/ui/lastenrad3d/viewer';
 import * as api from './api';
 import { CHECK_ITEMS, zoneLabel, type ZoneKey } from './zones';
 import { CheckupPage } from './CheckupPage';
@@ -31,6 +33,14 @@ vi.mock('@/components/ui/Kameradialog', () => ({
   ),
 }));
 
+// jsdom hat kein WebGL: Ansicht und Auswahl des Rads sind Attrappen, den Tipp aufs Rad löst der Test aus.
+vi.mock('@/components/ui/lastenrad3d/viewer', () => ({ mountLastenrad: vi.fn() }));
+vi.mock('@/components/ui/lastenrad3d/auswahl', () => ({ richteAuswahlEin: vi.fn() }));
+
+const radAnsicht = vi.mocked(mountLastenrad);
+const radAuswahl = vi.mocked(richteAuswahlEin);
+const radStand = vi.fn();
+const radFrei = vi.fn();
 const fetchFleet = vi.mocked(api.fetchFleet);
 const fetchBike = vi.mocked(api.fetchBike);
 const recordCheckup = vi.mocked(api.recordCheckup);
@@ -114,6 +124,8 @@ beforeEach(() => {
   );
   recordCheckup.mockResolvedValue({ checkupId: 'checkup-neu', spotIds: ['stelle-neu'] });
   uploadFleetPhoto.mockResolvedValue('foto-neu');
+  radAnsicht.mockResolvedValue({ dispose: vi.fn() } as unknown as LastenradAnsicht);
+  radAuswahl.mockReturnValue({ setze: radStand, punkt: vi.fn(), dispose: radFrei });
   let nummer = 0;
   vi.stubGlobal(
     'URL',
@@ -414,6 +426,78 @@ describe('Geführter Check-Up', () => {
     ]);
   });
 
+  it('zeigt auf „Wo genau?“ das Rad mit den Bauteilen des Punkts; ein Tipp darauf setzt die Stelle (ANN-870)', async () => {
+    const nutzer = userEvent.setup();
+    oeffne();
+    await inOrdnungBis(nutzer, 2);
+    // Ohne Befund lädt das Rad nie.
+    expect(radAnsicht).not.toHaveBeenCalled();
+    await nutzer.click(within(await fenster('Bremsen')).getByRole('button', { name: 'Problem' }));
+    await waitFor(() => expect(radStand).toHaveBeenCalled());
+    expect(radStand).toHaveBeenLastCalledWith({
+      waehlbar: ['bremse-vorne', 'bremse-hinten', 'bremsgriffe'],
+      marken: [],
+    });
+    const [, , zuordnen, amRad] = radAuswahl.mock.calls.at(-1)!;
+    expect(zuordnen('bremshebel_l')).toBe('bremsgriffe');
+
+    // Die Bauteile stehen als Knöpfe darunter: Unter dem Finger zählt das getroffene.
+    act(() => amRad(['bremse-hinten', 'bremse-vorne']));
+    const befund = within(await fenster('Bremsen'));
+    expect(befund.getByText('Bremse hinten')).toBeInTheDocument();
+    expect(befund.getByLabelText('Was ist aufgefallen?')).toBeInTheDocument();
+    // Neben Notiz und Fotos steht kein Rad mehr.
+    expect(radFrei).toHaveBeenCalledTimes(1);
+
+    // Zurück auf „Wo genau?“ trägt die Stelle am Rad die Farbe ihrer Einstufung.
+    await nutzer.click(befund.getByRole('button', { name: '← Zurück' }));
+    await waitFor(() => expect(radStand).toHaveBeenCalledTimes(2));
+    expect(radStand).toHaveBeenLastCalledWith({
+      waehlbar: ['bremse-vorne', 'bremse-hinten', 'bremsgriffe'],
+      marken: [{ gruppe: 'bremse-hinten', farbe: '' }],
+    });
+    // Nicht nur als Farbe: in Zeichen und Wort unter dem Rad, mit Haken am Knopf.
+    const wo = within(await fenster('Bremsen'));
+    expect(wo.getByRole('list', { name: 'Am Rad markiert' })).toHaveTextContent(
+      '× Problem · Bremse hinten',
+    );
+    expect(wo.getByRole('button', { name: 'Bremse hinten' })).toHaveTextContent('✓ Bremse hinten');
+    expect(wo.getByRole('button', { name: 'Bremse vorne' })).toHaveTextContent(/^Bremse vorne$/);
+  });
+
+  it('wählt eine weitere Stelle mit einem Tipp aufs Rad; die Liste zeigt dasselbe Bauteil', async () => {
+    const nutzer = userEvent.setup();
+    oeffne();
+    await inOrdnungBis(nutzer, 12);
+    await reinigenUndFotografieren(nutzer);
+    const abschluss = within(await fenster('Alles geprüft?'));
+    await nutzer.click(abschluss.getByText('Notiz, Fotos, weitere Stelle'));
+    await nutzer.click(abschluss.getByRole('button', { name: 'Weitere Stelle markieren' }));
+    // Hier steht das ganze Rad zur Wahl.
+    await waitFor(() => expect(radStand).toHaveBeenLastCalledWith({ waehlbar: null, marken: [] }));
+    // Erst das Bauteil, auf eigener Seite: Neben Notiz und Fotos hätte das Rad keinen Platz.
+    const wahl = within(await fenster('Weitere Stelle'));
+    expect(wahl.getByRole('combobox', { name: 'Bauteil' })).toHaveValue('');
+    expect(wahl.queryByRole('button', { name: 'Stelle setzen' })).toBeNull();
+    // Am Lenker liegen mehrere Bauteile unter dem Finger: Sie stehen als Knöpfe zur Wahl.
+    const amRad = radAuswahl.mock.calls.at(-1)![3];
+    act(() => amRad(['klingel', 'display', 'lenkung', 'lenker', 'transportbox']));
+    const kandidaten = within(
+      wahl.getByRole('group', { name: 'Bauteile an der getippten Stelle' }),
+    ).getAllByRole('button');
+    expect(kandidaten.map((knopf) => knopf.textContent)).toEqual([
+      'Klingel',
+      zoneLabel('display'),
+      zoneLabel('lenkung'),
+      zoneLabel('lenker'),
+    ]);
+    await nutzer.click(kandidaten[2]!);
+    const stelle = within(await fenster('Weitere Stelle'));
+    expect(stelle.getByRole('combobox', { name: 'Bauteil' })).toHaveValue('lenkung');
+    expect(stelle.getByRole('button', { name: 'Stelle setzen' })).toBeEnabled();
+    await waitFor(() => expect(radFrei).toHaveBeenCalledTimes(1));
+  });
+
   it('markiert im Abschluss eine weitere Stelle ohne Prüfpunkt', async () => {
     const nutzer = userEvent.setup();
     oeffne();
@@ -423,12 +507,14 @@ describe('Geführter Check-Up', () => {
     await nutzer.click(abschluss0.getByText('Notiz, Fotos, weitere Stelle'));
     await nutzer.click(abschluss0.getByRole('button', { name: 'Weitere Stelle markieren' }));
     // Alle Bauteile nach Prüfpunkt; „Stelle setzen“ erst mit einem Bauteil.
-    const stelle = within(await fenster('Weitere Stelle'));
-    const bauteil = stelle.getByRole('combobox', { name: 'Bauteil' });
+    const wahl = within(await fenster('Weitere Stelle'));
+    const bauteil = wahl.getByRole('combobox', { name: 'Bauteil' });
     expect(bauteil).toHaveFocus();
     expect(within(bauteil).getAllByRole('option')).toHaveLength(28);
-    expect(stelle.getByRole('button', { name: 'Stelle setzen' })).toBeDisabled();
+    expect(wahl.queryByRole('button', { name: 'Stelle setzen' })).toBeNull();
     await nutzer.selectOptions(bauteil, 'rahmen');
+    const stelle = within(await fenster('Weitere Stelle'));
+    expect(stelle.getByRole('combobox', { name: 'Bauteil' })).toHaveValue('rahmen');
     expect(
       stelle.getByText('Kein eigener Prüfpunkt. Wird als weitere Stelle festgehalten.'),
     ).toBeInTheDocument();

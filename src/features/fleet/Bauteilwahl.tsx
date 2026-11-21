@@ -2,8 +2,8 @@ import { Select } from '@/components/ui/Select';
 import { BIKE_ZONES, ZONE_GROUPS } from './zones';
 
 /**
- * Alle 27 Bauteile als Auswahlliste wie die Radwahl, nach Prüfpunkt gruppiert. Sie ersetzt das
- * 3D-Rad (ANN-555, ANN-556 verworfen): Die Liste des Telefons trifft man mit einer Hand.
+ * Alle 27 Bauteile als Auswahlliste wie die Radwahl, nach Prüfpunkt gruppiert. Sie steht neben dem
+ * Rad zum Antippen als gleicher Weg (ANN-556): mit einer Hand, ohne WebGL, mit der Tastatur.
  */
 export function Bauteilwahl({
   label,
