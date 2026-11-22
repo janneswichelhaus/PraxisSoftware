@@ -40,8 +40,7 @@ import {
   type Fussknopf,
 } from './pannenseiten';
 import { ersatzradName } from './rad';
-import { Bauteilrad } from './Bauteilrad';
-import { Stellenflaeche } from './Stellenerfassung';
+import { Stellenbuehne, Stellenflaeche } from './Stellenerfassung';
 import { useStellenerfassung, type Stelle } from './stellen';
 import {
   aktiveStandortvorlage,
@@ -270,19 +269,10 @@ export function Pannenfenster({
         // „Stelle setzen“ trifft nicht gleich „Weiter“.
         seite={entwurf ? 'schaden-stelle' : 'schaden'}
         stand={{ text: schrittText(1) }}
-        // Das Rad steht, bis ein Bauteil gewählt ist; neben Notiz und Fotos bliebe kein Platz.
-        // Die gesetzten Schäden nennt die Liste darunter.
-        inhaltUnten={!entwurf}
-        vorDemTitel={
-          entwurf ? undefined : (
-            <Bauteilrad
-              stellen={stellen}
-              entwurf={null}
-              legende={false}
-              onWahl={erfassung.waehle}
-            />
-          )
-        }
+        buehne={<Stellenbuehne zustand={erfassung} bestehend={offen} />}
+        // Höchstens 60 % hoch: Eine offene Stelle oder viele Schäden rollen unter dem Rad, statt
+        // „Weiter“ aus dem Fenster zu schieben.
+        flaecheKnapp
         fuss={
           // Weiter geht es auch ohne Stelle - nur nicht mit einer offenen.
           entwurf ? undefined : (
