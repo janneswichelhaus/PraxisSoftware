@@ -270,9 +270,10 @@ export function Pannenfenster({
         seite={entwurf ? 'schaden-stelle' : 'schaden'}
         stand={{ text: schrittText(1) }}
         buehne={<Stellenbuehne zustand={erfassung} bestehend={offen} />}
-        // Höchstens 60 % hoch: Eine offene Stelle oder viele Schäden rollen unter dem Rad, statt
-        // „Weiter“ aus dem Fenster zu schieben.
-        flaecheKnapp
+        // Am Telefon steht eine offene Stelle allein, sonst rollte das Formular; viele Schäden
+        // rollen unter dem Rad höchstens 60 % hoch, statt „Weiter“ aus dem Fenster zu schieben.
+        buehneAmTelefon={!entwurf}
+        flaecheKnapp={!entwurf}
         fuss={
           // Weiter geht es auch ohne Stelle - nur nicht mit einer offenen.
           entwurf ? undefined : (

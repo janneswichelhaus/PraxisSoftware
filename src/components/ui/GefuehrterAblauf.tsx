@@ -333,7 +333,7 @@ export function GefuehrterAblauf({
       ? 'flex min-h-0 flex-1 flex-col lg:flex-none'
       : `overflow-y-auto px-4 pt-2 pb-4 lg:pt-4 ${ROLLFLAECHE} ${
           flaecheKnapp ? 'max-h-ablauf-knapp shrink-0 lg:max-h-none' : 'shrink-0'
-        }`;
+        } ${buehneAmTelefon ? '' : 'max-lg:min-h-0 max-lg:flex-1'}`;
     return (
       <Dialogfenster
         vollbild

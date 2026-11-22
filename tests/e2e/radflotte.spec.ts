@@ -732,7 +732,8 @@ test('R4 am Rad: Bei „Transportbox“ fliegt das Rad zur Box, ein Tipp darauf 
 
   await tippeInDieMitte(page, rad(box));
   await expect(box.getByLabel('Was ist aufgefallen?')).toBeVisible();
-  await expect(box.getByText('Transportbox', { exact: true })).toBeVisible();
+  // Titel des Punkts und Bauteil der Stelle.
+  await expect(box.getByText('Transportbox', { exact: true })).toHaveCount(2);
   await expect(box.getByRole('radio', { name: 'Problem' })).toBeChecked();
   expect(await scrolltNicht(page), 'Was ist aufgefallen? mit Rad ohne Scrollen').toBe(true);
   await bild(page, 'checkup-rad-02-stelle');
@@ -792,7 +793,8 @@ test('R5 am Rad: ein Tipp aufs Rad öffnet den Schaden an diesem Bauteil, in dre
   await tippeInDieMitte(page, rad(schaden));
   z.tippeGezaehlt();
   await expect(schaden.getByLabel('Bauteil', { exact: true })).not.toHaveValue('');
-  await expect(schaden.getByText('Antippen versetzt die Nadel')).toBeVisible();
+  // Am Telefon steht die offene Stelle allein, ohne Rad und ohne Scrollen.
+  await expect(rad(schaden)).toBeHidden();
   expect(z.tipps).toBe(3);
   await schaden.getByLabel('Was ist passiert?').fill('klemmt');
   expect(await scrolltNicht(page), 'offene Stelle ohne Scrollen').toBe(true);
