@@ -1,6 +1,6 @@
 # ADR-018: Zustandsautomat des Termins
 ## Status
-Angenommen 2026-09-11 (Jannes), Fassung 5 (2026-10-14); Umkehr in Punkt 2 und 4; Protokoll: ADR-010.
+Angenommen 2026-09-11 (Jannes), Fassung 6 (2026-11-22); Umkehr in Punkt 2 und 4; Protokoll: ADR-010.
 
 ## Kontext
 Offen war der Automat (Punkt D, §8), von Jannes vollständig verlangt, nicht minimal (2026-09-05).
@@ -66,8 +66,8 @@ des Ausfallhonorars (ABR-001, ABR-003); Terminserie (CAL-007), Terminfenster (CA
    Szenarien, ohne Auswertung je Person (§20). Nr. 4: Rechnungstext und Rechtsgrundlage für Nr. 2
    (Vergütung ohne erbrachte Behandlung) klärt B4.
 10. **Der Haken am Behandlungstermin** (Fassung 5, BEF-154, BEF-157): Dokumentieren und Abhaken sind
-    getrennt, abgehakt wird in Übersicht oder Kalender, der Haken heißt „Leistung erbracht“. Nr. 1:
-    Ein Merkmal, kein neunter Zustand (`completed_at`, `completed_by`); `completed` heißt abgehakt,
+    getrennt, abgehakt wird in Übersicht, Kalender oder auf „Danach“ (eigener Tipp, Fassung 6), der
+    Haken heißt „Leistung erbracht“. Nr. 1: Ein Merkmal, kein neunter Zustand (`completed_at`, `completed_by`); `completed` heißt abgehakt,
     nicht dokumentiert, `documented` steht mit oder ohne Haken. Nr. 2: Die Finalisierung hakt nicht
     ab (ADR-016 Punkt 4). Nr. 3: Zurücknehmen geht jederzeit (Punkt 2); wer und wann: `reopened_by`,
     `reopened_at`. Nr. 4: Mit dem Haken entsteht die Leistung, mit der Rücknahme fällt sie (ADR-009
@@ -90,4 +90,5 @@ Override; abhaken geht ohne Dokumentation, die Sperre sitzt an der Rechnung (ANN
   `confirmed → documented`, Storno-Rückweg.
 - Fassung 4 (2026-10-02, Jannes, BEF-094): Punkt 8 Nr. 4, Verlegung mit Gebühr, und Nr. 6, Verzicht.
 - Fassung 5 (2026-10-14, Jannes): Punkt 10 Haken (B4, B7); Umkehr in Punkt 2: Doku hakt nicht ab.
+- Fassung 6 (2026-11-22, Jannes): Punkt 10, Haken auch auf „Danach“.
 - Verdichtet 2026-10-27 (Aufräumen 5), Inhalt unverändert; früherer Wortlaut: `git log -p`.

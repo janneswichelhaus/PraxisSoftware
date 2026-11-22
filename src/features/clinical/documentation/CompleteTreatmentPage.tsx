@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Aktionsleiste } from '@/components/ui/Aktionsleiste';
 import { symbolknopfKlassen } from '@/components/ui/buttonStile';
 import { EmptyState } from '@/components/ui/Feedback';
-import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
+import { mitRueckweg } from '@/lib/rueckweg';
 import {
   type Abrechnungslage,
   type Appointment,
@@ -27,7 +27,7 @@ import { useEinfuegen } from './einfuegen';
 import { statuswechselText, type Statuswechsel } from './format';
 import { useTextverlustschutz } from '@/app/Textverlustschutz';
 import { TextbausteinLeiste } from './TextbausteinLeiste';
-import { entwurfMeldung, useGesicherteBefundangaben } from './befundangaben';
+import { useGesicherteBefundangaben } from './befundangaben';
 import { BereitsFinalisiert, TextUebernehmen } from './Zustaende';
 import { Danach } from './Danach';
 import { WieZuletzt } from './WieZuletzt';
@@ -103,7 +103,6 @@ function Abschluss({
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [suche] = useSearchParams();
   const zone = appointment.organization_time_zone;
   const feldId = useId();
   const folgeId = useId();
@@ -307,16 +306,6 @@ function Abschluss({
   }
 
   /**
-   * Zurück zum Termin - samt Rückweg (DOK-01, ZST-17) und dem, was geschehen
-   * ist (DOK-15): Der Termin kann es oben melden, statt dass es nur im
-   * Doku-Abschnitt weit unten steht.
-   */
-  function weiterZumTermin(meldung: string) {
-    freigeben();
-    void navigate(zumTermin, { state: { meldung } });
-  }
-
-  /**
    * Gemeinsame Eingabeprüfung beider Wege. Verbindlich prüft der Server.
    *
    * Geschrieben wird nur, was im Feld steht und gelesen wurde (ADR-016
@@ -357,8 +346,8 @@ function Abschluss({
       fehlertitel: 'Nicht eingetragen',
       danach: () => {
         freigeben();
-        // Festschreiben hakt nicht ab - abgehakt wird in der Übersicht oder
-        // im Kalender.
+        // Eintragen hakt nicht ab - abgehakt wird auf „Danach“, in der
+        // Übersicht oder im Kalender (ADR-018 Punkt 10).
         onFestgeschrieben(ohneBehandlung ? 'Mit Vermerk eingetragen.' : 'In die Akte eingetragen.');
       },
     }).finally(() => setSchreibtAbschluss(false));
@@ -384,7 +373,8 @@ function Abschluss({
 
   // Der Pfeil führt dorthin, woher die Seite kam - sonst zum Termin. Er läuft
   // wie jeder Weg hinaus durch den Textverlustschutz.
-  const zurueck = leseRueckweg(suche, zumTermin);
+  // Zum Termin samt Rückweg: im Kalender bleibt der Termin gewählt.
+  const zurueck = zumTermin;
   const kopfzeile = kopfzeileFuer(appointment, lage, ohneBehandlung);
   const hierher = mitRueckweg(`/termine/${appointment.id}/abschluss`, zurueck);
   const anzahlBefund = Object.keys(bausteine.auswahl).length;
@@ -701,39 +691,9 @@ function Abschluss({
               <span aria-hidden="true">{verlaufOffen ? '▾' : '▴'}</span>
             </Button>
             <Button
-              type="button"
-              variant="quiet"
-              groesse="kompakt"
-              className="ml-auto"
-              disabled={laeuft || diktat.beschaeftigt || !geaendert}
-              onClick={() => {
-                // Ein Vorschlag aus der Aufnahme lässt sich nicht sichern: Er
-                // hält den Entwurf an, bis er übernommen oder verworfen ist.
-                if (diktat.wartet) {
-                  diktat.hinweisen();
-                  return;
-                }
-                // Ein nicht übernommener Vorschlag hält den Entwurf nicht an:
-                // Er geht nicht in den Text, seine Angaben werden daneben
-                // gesichert (ABN-015).
-                if (textGeaendert) {
-                  const meldung = inhaltFehler(wert);
-                  setFehler(meldung);
-                  if (meldung) return;
-                }
-                const meldung = entwurfMeldung(textGeaendert, bausteine.text !== '');
-                void schreiben({
-                  ausfuehren: entwurfSichern,
-                  fehlertitel: 'Nicht gespeichert',
-                  danach: () => weiterZumTermin(meldung),
-                });
-              }}
-            >
-              {laeuft && !schreibtAbschluss ? 'Wird gespeichert …' : 'Entwurf'}
-            </Button>
-            <Button
               type="submit"
               variant={festschreibenHaupt ? 'primary' : 'secondary'}
+              className="ml-auto"
               groesse="kompakt"
               disabled={laeuft || diktat.beschaeftigt}
               aria-describedby={folgeId}
@@ -805,14 +765,14 @@ function DanachSeite({
   ohneBehandlung: boolean;
   zumTermin: string;
 }) {
-  const [suche] = useSearchParams();
   const { data: lage } = useQuery({
     queryKey: ['appointment', appointment.id, 'abrechnungslage'],
     queryFn: () => fetchAbrechnungslage(appointment.id),
     enabled: appointment.kind === 'therapy',
     retry: false,
   });
-  const zurueck = leseRueckweg(suche, zumTermin);
+  // Zum Termin samt Rückweg: im Kalender bleibt der Termin gewählt.
+  const zurueck = zumTermin;
   return (
     <Danach
       user={user}
