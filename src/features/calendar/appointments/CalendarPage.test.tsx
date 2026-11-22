@@ -2634,7 +2634,7 @@ describe('CalendarPage: Doku offen und Terminpanel', () => {
     fetchLocations.mockResolvedValue([{ id: ORT, name: 'Hauptstandort Tuebingen' }]);
   });
 
-  it('kennzeichnet einen abgeschlossenen Termin ohne festgeschriebene Doku', async () => {
+  it('kennzeichnet einen abgeschlossenen Termin ohne eingetragene Doku', async () => {
     fetchAppointments.mockResolvedValue([
       eintrag({ status: 'completed', documentation_status: 'none' }),
     ]);

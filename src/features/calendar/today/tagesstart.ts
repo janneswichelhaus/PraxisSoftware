@@ -16,6 +16,17 @@ import type { DayPlanEntry } from '@/features/calendar/day-plan/api';
 // -----------------------------------------------------------------------------
 
 /**
+ * Wartet heute noch ein Termin auf den Haken (ANN-871)? Solange ja,
+ * bleibt die Übersicht in Uhrzeitfolge stehen; abgesagt und nicht angetroffen
+ * gelten als bearbeitet, eine Fehlzeit verlangt nichts.
+ */
+export function tagLaeuft(plan: readonly DayPlanEntry[]): boolean {
+  return plan.some(
+    (termin) => termin.kind !== 'internal' && hakenFehlt(termin.status, termin.checked_at),
+  );
+}
+
+/**
  * Die Behandlungsbesuche des Tages in Uhrzeitfolge, ohne Absagen.
  *
  * ANN-117: Nach dieser Liste wird gezählt, wenn die Übersicht „ab dem 2.
@@ -155,7 +166,7 @@ export interface Tagesfortschritt {
   erledigt: number;
   /** Besuche des Tages ohne Absagen (`besucheDesTages`). */
   gesamt: number;
-  /** Davon mit festgeschriebener Dokumentation. */
+  /** Davon mit eingetragener Dokumentation. */
   dokumentiert: number;
 }
 

@@ -22,6 +22,7 @@ import { Funktionssuche } from './Funktionssuche';
 import { useAbmeldeanfrage, useAbmeldung } from './abmeldeschutz';
 import {
   aktiverBereich,
+  bereichsPfad,
   arbeitsbereiche,
   chatOhneUnterleiste,
   istChatflaeche,
@@ -190,7 +191,7 @@ export function AppShell({
   onSignOut: () => void;
   children: ReactNode;
 }) {
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
   const navigate = useNavigate();
   const anfordern = useAbmeldeanfrage();
   /**
@@ -211,7 +212,7 @@ export function AppShell({
     onSignOut();
   };
   const bereiche = arbeitsbereiche(user);
-  const aktuell = aktiverBereich(bereiche, pathname);
+  const aktuell = aktiverBereich(bereiche, bereichsPfad(pathname, search));
   const { sichtbar, weitere } = tableiste(bereiche, leistenvorrang(user.roles));
   // Die Ansichten unter dem offenen Reiter (ORG-001): Pillen unter der SubNav.
   const ansichten =

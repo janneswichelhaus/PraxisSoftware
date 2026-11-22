@@ -211,11 +211,11 @@ function Editor({
         }
         return true;
       },
-      fehlertitel: 'Nicht festgeschrieben',
+      fehlertitel: 'Nicht eingetragen',
       danach: () => {
         freigeben();
         void navigate(zumTermin, {
-          state: { meldung: 'Nachtrag als Version 1 festgeschrieben.' },
+          state: { meldung: 'Nachtrag in die Akte eingetragen.' },
         });
       },
     }).finally(() => setSchreibtFest(false));
@@ -354,8 +354,8 @@ function Editor({
             Schreibseite (ADR-016 Punkt 4, BEF-056, DOK-20). */}
         {nachtragFestschreibbar ? (
           <p id={folgeId} className="sr-only">
-            Festschreiben macht den Nachtrag als Version 1 zum Teil der Akte. Danach ist er nur noch
-            mit Begründung änderbar.
+            Eintragen macht den Nachtrag als Version 1 zum Teil der Akte. Danach ist er nur noch mit
+            Begründung änderbar.
           </p>
         ) : null}
 
@@ -391,7 +391,7 @@ function Editor({
               aria-describedby={folgeId}
               onClick={nachtragAbschliessen}
             >
-              {schreibtFest ? 'Wird festgeschrieben …' : 'Festschreiben'}
+              {schreibtFest ? 'Wird eingetragen …' : 'Eintragen'}
             </Button>
           ) : null}
         </Aktionsleiste>

@@ -43,7 +43,7 @@ import { patientName } from '@/lib/termin';
 const KORREKTURTEXTE: Verlustschutztexte = {
   ...DOKUMENTATIONSTEXTE,
   ohneSpeichern:
-    'Eine Korrektur lässt sich nicht zwischenspeichern: Sie wird erst mit „Korrektur festschreiben“ Teil der Akte. Zum Festschreiben hier bleiben; beim Weitergehen gehen Text und Begründung verloren.',
+    'Eine Korrektur lässt sich nicht zwischenspeichern: Sie wird erst mit „Korrektur eintragen“ Teil der Akte. Zum Eintragen hier bleiben; beim Weitergehen gehen Text und Begründung verloren.',
 };
 
 /**
@@ -140,12 +140,12 @@ function Formular({
     const version = note.version_count + 1;
     void schreiben({
       ausfuehren: korrekturSchreiben,
-      fehlertitel: 'Nicht festgeschrieben',
+      fehlertitel: 'Nicht eingetragen',
       danach: () => {
         freigeben();
         // Der Termin erfährt, was geschehen ist (DOK-15).
         void navigate(zumTermin, {
-          state: { meldung: `Korrektur als Version ${version} festgeschrieben.` },
+          state: { meldung: `Korrektur als Version ${version} eingetragen.` },
         });
       },
     });
@@ -175,7 +175,7 @@ function Formular({
 
       {uebernommen !== undefined ? (
         <Statusmeldung className="shrink-0 px-4 py-2">
-          Ihr Text aus dem Entwurf steht im Feld – ohne Festschreiben geht er verloren.
+          Ihr Text aus dem Entwurf steht im Feld – ohne Eintragen geht er verloren.
         </Statusmeldung>
       ) : null}
 
@@ -210,7 +210,7 @@ function Formular({
         </div>
 
         <Kleingedrucktes id={folgeId} className="shrink-0 px-4 pb-3">
-          Jede Korrektur wird als neue Version festgeschrieben und protokolliert. Frühere Versionen
+          Jede Korrektur wird als neue Version eingetragen und protokolliert. Frühere Versionen
           werden nicht überschrieben.
         </Kleingedrucktes>
 
@@ -230,7 +230,7 @@ function Formular({
             disabled={laeuft || !geaendert}
             aria-describedby={folgeId}
           >
-            {laeuft ? 'Wird festgeschrieben …' : 'Korrektur festschreiben'}
+            {laeuft ? 'Wird eingetragen …' : 'Korrektur eintragen'}
           </Button>
         </Aktionsleiste>
       </form>

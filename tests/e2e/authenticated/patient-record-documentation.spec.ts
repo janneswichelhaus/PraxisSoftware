@@ -61,7 +61,7 @@ async function finalisierterEintrag(page: Page, tag: string): Promise<string> {
   await page.getByRole('button', { name: 'Ja, jetzt finalisieren' }).click();
   // Der Zustand ist seit UIK-18 ein Etikett mit Zeichen: Das ✓ ist für
   // Vorlesesoftware ausgeblendet, steht aber im Text des Etiketts.
-  await expect(page.getByText('✓ Festgeschrieben · Version 1', { exact: true })).toBeVisible();
+  await expect(page.getByText('✓ Eingetragen · Version 1', { exact: true })).toBeVisible();
 
   return terminId;
 }

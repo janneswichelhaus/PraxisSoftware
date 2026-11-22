@@ -12,6 +12,7 @@ import {
   liegeText,
   naechsterWeg,
   nichtAbgeschlossen,
+  tagLaeuft,
   tagesfortschritt,
   terminName,
   wegeDesTages,
@@ -369,7 +370,7 @@ describe('Tagesfortschritt (Design-Handoff 2026-10-01, 5a Punkt 3)', () => {
     expect(tagesfortschritt(plan, null).punkte).not.toContain('naechster');
   });
 
-  it('bildet Ein- und Mehrzahl und zaehlt festgeschriebene Dokus', () => {
+  it('bildet Ein- und Mehrzahl und zaehlt eingetragene Dokus', () => {
     const einer = tagesfortschritt([eintrag({ id: 'a', um: '07:00' })], 'a');
     expect(fortschrittText(einer)).toBe('0 von 1 Besuch erledigt');
     expect(einer.dokumentiert).toBe(0);
@@ -649,5 +650,25 @@ describe('Name und Einordnung eines Termins', () => {
     expect(einordnung(eintrag({ id: 't', um: '07:00', kind: 'training', patient_id: null }))).toBe(
       'Training',
     );
+  });
+});
+
+describe('tagLaeuft', () => {
+  it('bleibt wahr, solange ein Termin auf den Haken wartet - auch dokumentiert', () => {
+    expect(tagLaeuft([eintrag({ id: 'a', um: '07:00' })])).toBe(true);
+    const ohneHaken = eintrag({ id: 'a', um: '07:00', status: 'documented', checked_at: null });
+    expect(tagLaeuft([ohneHaken])).toBe(true);
+  });
+
+  it('endet, wenn alles abgehakt, abgesagt oder nicht angetroffen ist', () => {
+    expect(
+      tagLaeuft([
+        eintrag({ id: 'a', um: '07:00', status: 'completed' }),
+        eintrag({ id: 'b', um: '08:00', status: 'cancelled' }),
+        eintrag({ id: 'c', um: '09:00', status: 'no_show' }),
+        eintrag({ id: 'd', um: '10:00', status: 'documented', checked_at: `${HEUTE}T10:00:00Z` }),
+        eintrag({ id: 'e', um: '11:00', kind: 'internal', patient_id: null }),
+      ]),
+    ).toBe(false);
   });
 });

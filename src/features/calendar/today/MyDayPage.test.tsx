@@ -138,7 +138,7 @@ function zweiterBesuch(teil: Partial<Tagesplan.DayPlanEntry> = {}): Tagesplan.Da
   });
 }
 
-/** Ein offener Besuch in einer Stunde, davor ein erledigter mit festgeschriebener Doku. */
+/** Ein offener Besuch in einer Stunde, davor ein erledigter mit eingetragener Doku. */
 function tagesplan(): Tagesplan.DayPlanEntry[] {
   return [
     tagesEintrag({ id: 't1' }),
@@ -619,12 +619,9 @@ describe('Übersicht', () => {
     expect(screen.queryByText(/^Erledigt heute/)).toBeNull();
     const erledigt = zeileImStrahl(/Petra Platzhalter/);
     expect(within(erledigt).getByText('Abgeschlossen')).toBeInTheDocument();
-    // Am Telefon unter „Erledigt (1)" zusammengefasst, im Dokument an seiner Stelle.
-    expect(erledigt.closest('li')).toHaveClass('max-sm:hidden');
-    expect(imStrahl().getByRole('button', { name: /^Erledigt \(1\)/ })).toHaveAttribute(
-      'aria-expanded',
-      'false',
-    );
+    // Auch am Telefon an seiner Stelle, nicht zusammengefasst (Jannes 2026-11-22).
+    expect(erledigt.closest('li')).not.toHaveClass('max-sm:hidden');
+    expect(imStrahl().queryByRole('button', { name: /^Erledigt \(\d+\)/ })).toBeNull();
   });
 
   it('traegt Anschrift und Rufnummer als Waehlziel, den Zugangshinweis einen Tipp entfernt', async () => {
@@ -1068,24 +1065,19 @@ describe('Übersicht', () => {
       fetchDayPlan.mockResolvedValue([vorbei]);
       renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
 
-      // Kein Weg mehr: Oben steht, was heute noch offen ist (Auftrag C1).
-      const offen = (await screen.findByRole('heading', { name: 'Heute noch offen (1)' })).closest(
-        'section',
-      )!;
-      expect(offen).toHaveTextContent('Nicht abgeschlossen');
-      expect(within(offen).getByRole('link', { name: /^Doku/ })).toHaveAttribute(
-        'href',
-        `/termine/t1/abschluss?zurueck=${encodeURIComponent('/')}`,
-      );
-      // Im Strahl trägt die Zeile den Haken; aufgeklappt sagt sie, seit wann.
-      expect(imStrahl().getByRole('button', { name: /^Termin abschließen/ })).toBeInTheDocument();
-      await userEvent.setup().click(zeileImStrahl(/Erika Beispiel/));
+      // Kein Weg mehr, aber ein Haken fehlt: Der Tag bleibt, wie er war, die
+      // Karte steht an ihrer Stelle und sagt, seit wann (Jannes 2026-11-22).
       const karte = await findeKarte();
+      expect(screen.queryByRole('heading', { name: /^Heute noch offen/ })).toBeNull();
       expect(
         within(karte).getByRole('heading', { name: `Seit ${uhr(vorbei.ends_at)} offen` }),
       ).toBeInTheDocument();
+      expect(within(karte).getByRole('link', { name: 'Doku zu diesem Termin' })).toHaveAttribute(
+        'href',
+        `/termine/t1/abschluss?zurueck=${encodeURIComponent('/')}`,
+      );
       expect(
-        within(karte).getByRole('link', { name: 'Doku zu diesem Termin' }),
+        within(karte).getByRole('button', { name: /^Termin abschließen/ }),
       ).toBeInTheDocument();
     });
 
@@ -1128,7 +1120,7 @@ describe('Übersicht', () => {
 
       expect(screen.queryByText('Liege heute')).toBeNull();
       expect(screen.queryByRole('article')).toBeNull();
-      expect(imStrahl().getByRole('link', { name: /Erika Beispiel/ })).toBeInTheDocument();
+      expect(zeileImStrahl(/Erika Beispiel/)).toBeInTheDocument();
       // Ein Rhythmus: Morgen und der Strahl sind Geschwister mit demselben
       // Abstand, ohne eigenen Außenabstand (Jannes, 2026-10-15).
       const strahl = screen.getByRole('heading', { name: STRAHL }).closest('section')!;
@@ -1513,7 +1505,7 @@ describe('Übersicht', () => {
       renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
 
       expect(await screen.findByText(/^1 von 1 abgehakt · /)).toBeInTheDocument();
-      expect(imStrahl().getByRole('link', { name: /Erika Beispiel/ })).toBeInTheDocument();
+      expect(zeileImStrahl(/Erika Beispiel/)).toBeInTheDocument();
       expect(screen.queryByText('Heute sind Ihnen keine Besuche zugeordnet')).toBeNull();
     });
 
@@ -1588,7 +1580,7 @@ describe('Übersicht', () => {
     });
 
     // B4 (BEF-154): Festschreiben hakt nicht ab. Am Tagesende steht der Besuch
-    // mit festgeschriebener Doku, aber ohne Haken, als „Haken fehlt“ - mit dem
+    // mit eingetragener Doku, aber ohne Haken, als „Haken fehlt“ - mit dem
     // Haken als Aktion. Heilmittel bestätigt seit B7 niemand mehr.
     it('nennt am Tagesende einen festgeschriebenen Besuch ohne Haken (B4, B7)', async () => {
       fetchDayPlan.mockResolvedValue([
@@ -1609,13 +1601,13 @@ describe('Übersicht', () => {
       ]);
       renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
 
-      const offen = (await screen.findByRole('heading', { name: 'Heute noch offen (1)' })).closest(
-        'section',
-      )!;
+      // Solange der Haken fehlt, steht die Karte in der Uhrzeitfolge.
+      const offen = await findeKarte();
+      expect(screen.queryByRole('heading', { name: /^Heute noch offen/ })).toBeNull();
       expect(offen).toHaveTextContent('Max Mustermann');
-      expect(offen).toHaveTextContent('Haken fehlt');
+      expect(offen).toHaveTextContent('Seit');
       expect(
-        within(offen).getByRole('button', { name: 'Termin abschließen: Max Mustermann' }),
+        within(offen).getByRole('button', { name: /^Termin abschließen/ }),
       ).toBeInTheDocument();
       expect(offen).not.toHaveTextContent('Heilmittel');
       expect(fetchLeistungenAmTermin).not.toHaveBeenCalled();
@@ -1802,14 +1794,11 @@ describe('Übersicht', () => {
       renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
       await findeKarte();
 
-      // Zugeklappt: Doku und Anruf an der Zeile, kein Haken - einen späteren
-      // Besuch hakt niemand vorab ab.
+      // Zugeklappt: nur Doku an der Zeile, kein Haken - einen späteren Besuch
+      // hakt niemand vorab ab; der Anruf steht in der Karte (Jannes 2026-11-22).
       const zeile = zeileImStrahl(/Max Mustermann/);
       const li = zeile.closest('li')!;
-      expect(within(li).getByRole('link', { name: 'Anrufen: Max Mustermann' })).toHaveAttribute(
-        'href',
-        'tel:+491600000006',
-      );
+      expect(within(li).queryByRole('link', { name: 'Anrufen: Max Mustermann' })).toBeNull();
       expect(within(li).queryByRole('button', { name: /^Termin abschließen/ })).toBeNull();
 
       await user.click(zeile);
@@ -1823,9 +1812,10 @@ describe('Übersicht', () => {
         'href',
         `/patienten/p2/doku?termin=t2&zurueck=${encodeURIComponent('/')}`,
       );
-      expect(
-        within(karte).getByRole('link', { name: 'Anrufen: Max Mustermann' }),
-      ).toBeInTheDocument();
+      expect(within(karte).getByRole('link', { name: 'Anrufen: Max Mustermann' })).toHaveAttribute(
+        'href',
+        'tel:+491600000006',
+      );
       const zu = within(karte).getByRole('button', { name: 'Zuklappen: Max Mustermann' });
       expect(zu).toHaveFocus();
 
@@ -1955,15 +1945,13 @@ describe('Übersicht', () => {
       renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
 
       expect(await screen.findByText(/^1 von 2 abgehakt · /)).toBeInTheDocument();
-      // Der liegengebliebene steht unter „Heute noch offen" - zum Abschließen
-      // über die Schreibseite, im Strahl mit dem Haken.
-      const offen = (await screen.findByRole('heading', { name: 'Heute noch offen (1)' })).closest(
-        'section',
-      )!;
+      // Der liegengebliebene bleibt an seiner Stelle im Tag, als Karte mit
+      // dem Haken; „Heute noch offen" kommt erst, wenn alles abgehakt ist.
+      const offen = await findeKarte();
+      expect(screen.queryByRole('heading', { name: /^Heute noch offen/ })).toBeNull();
       expect(offen).toHaveTextContent('Max Mustermann');
-      expect(offen).toHaveTextContent('Nicht abgeschlossen');
       expect(
-        imStrahl().getByRole('button', { name: /^Termin abschließen.*Max Mustermann/ }),
+        within(offen).getByRole('button', { name: /^Termin abschließen/ }),
       ).toBeInTheDocument();
     });
 
@@ -2275,14 +2263,14 @@ describe('Übersicht', () => {
     it('steht nur für die Rollen der Terminverwaltung - auch für das Büro', async () => {
       fetchDayPlan.mockResolvedValue([anna]);
       const { unmount } = renderMitVorschau(<MyDayPage user={testUser(['trainer'])} />);
-      await imStrahlFinden(/Anna Ausfall/);
+      await screen.findByRole('heading', { name: STRAHL });
+      await waitFor(() => expect(screen.getAllByText(/Anna Ausfall/).length).toBeGreaterThan(0));
       expect(screen.queryByRole('button', { name: AUSFALL })).toBeNull();
       unmount();
 
+      // Allein am Tag und ohne Haken steht Anna als Karte, mit „Ausfall“.
       renderMitVorschau(<MyDayPage user={testUser(['office'])} />);
-      expect(
-        within(await eintragVon(/Anna Ausfall/)).getByRole('button', { name: AUSFALL }),
-      ).toBeInTheDocument();
+      expect(within(await findeKarte()).getByRole('button', { name: AUSFALL })).toBeInTheDocument();
     });
 
     it('führt am Hausbesuch durch das Protokoll - die Gebühr erst nach allen drei Schritten', async () => {

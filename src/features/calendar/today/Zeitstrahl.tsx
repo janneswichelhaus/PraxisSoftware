@@ -1,8 +1,6 @@
-import { Fragment, useId, useState, type ReactNode } from 'react';
+import { Fragment, useId, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
-import { Aufklappzeichen } from '@/components/ui/Card';
 import { NowMarker } from '@/components/ui/NowMarker';
 import { TravelBar } from '@/components/ui/TravelBar';
 import { zeitstrahlRaster, zeitstrahlSchiene } from '@/components/ui/timelineStile';
@@ -162,7 +160,6 @@ export function Zeitstrahl({
   aktionen,
   ausfall,
   aufklappen,
-  fruehereZusammenfassen = false,
 }: {
   /** Die Überschrift für Vorlesesoftware; die Morgen-Vorschau hat ihre eigene. */
   titel?: string;
@@ -215,30 +212,12 @@ export function Zeitstrahl({
     umschalten: (id: string) => void;
     karte: (termin: DayPlanEntry) => ReactNode;
   };
-  /**
-   * Am Telefon stehen die erledigten oder ausgefallenen Termine vor
-   * dem ausgeklappten als eine Zeile „Erledigt (n)“ (Auftrag C1): Die Karte
-   * des nächsten Wegs bleibt mit ihrem Hauptknopf über der Tableiste, auch
-   * am dritten Besuch des Tages. Ein Tipp zeigt sie; ab 640 px stehen sie
-   * immer da. Liegengebliebenes bleibt sichtbar - es verlangt etwas.
-   */
-  fruehereZusammenfassen?: boolean;
 }) {
   const jetztText = jetztMarke ? formatLocalTime(new Date(jetzt).toISOString(), zeitzone) : '';
   const vorIndex = plan.findIndex((termin) => Date.parse(termin.starts_at) > jetzt);
   // Ohne Marke steht sie hinter dem letzten Termin - und wird dort nicht gezeichnet.
   const markeVor = !jetztMarke || vorIndex < 0 ? plan.length : vorIndex;
   const titelId = useId();
-  const [fruehereOffen, setFruehereOffen] = useState(false);
-  const fokusIndex = fokusId === null ? -1 : plan.findIndex((termin) => termin.id === fokusId);
-  const vorbei = fruehereZusammenfassen
-    ? plan.slice(0, Math.max(0, fokusIndex)).filter((termin) => {
-        const stand = standVon(termin, jetzt);
-        return stand === 'erledigt' || stand === 'ausgefallen';
-      })
-    : [];
-  const zusammengefasst = new Set(vorbei.map((termin) => termin.id));
-  const alleErledigt = vorbei.every((termin) => standVon(termin, jetzt) === 'erledigt');
 
   return (
     <section aria-labelledby={titelId}>
@@ -330,34 +309,8 @@ export function Zeitstrahl({
 
           return (
             <Fragment key={termin.id}>
-              {zusammengefasst.has(termin.id) && vorbei[0]?.id === termin.id ? (
-                <li className={`${zeitstrahlRaster} sm:hidden`}>
-                  <span />
-                  <span aria-hidden="true" className="relative flex justify-center">
-                    <span className={zeitstrahlSchiene} />
-                  </span>
-                  <div className="-ml-2 pb-1.5">
-                    <Button
-                      type="button"
-                      variant="quiet"
-                      groesse="kompakt"
-                      aria-expanded={fruehereOffen}
-                      onClick={() => setFruehereOffen((bisher) => !bisher)}
-                      className="px-2"
-                    >
-                      <Aufklappzeichen offen={fruehereOffen} />
-                      {alleErledigt ? 'Erledigt' : 'Vorbei'} ({vorbei.length})
-                    </Button>
-                  </div>
-                </li>
-              ) : null}
               {index === markeVor ? <NowMarker zeit={jetztText} /> : null}
-              <li
-                className={`${zeitstrahlRaster} ${
-                  zusammengefasst.has(termin.id) && !fruehereOffen ? 'max-sm:hidden' : ''
-                }`.trim()}
-                data-termin={termin.id}
-              >
+              <li className={zeitstrahlRaster} data-termin={termin.id}>
                 <span
                   className={`text-liste font-semibold tabular-nums ${zeitOben} ${
                     stand === 'kommt' || stand === 'liegengeblieben' ? 'text-ink' : 'text-ink-muted'

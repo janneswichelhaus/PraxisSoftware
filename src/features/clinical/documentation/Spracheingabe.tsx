@@ -175,7 +175,7 @@ export function VorschlagAusAufnahme({
   gesperrt: boolean;
   onUebernehmen: (text: string) => void;
   /**
-   * Übernehmen und festschreiben in einem Tipp (ANN-840); nur, wo die Seite
+   * Übernehmen und eintragen in einem Tipp (ANN-840); nur, wo die Seite
    * dann genau diesen Text festschreibt. Sonst nur „In die Doku übernehmen“.
    */
   onFestschreiben?: (() => void) | undefined;
@@ -239,7 +239,7 @@ export function VorschlagAusAufnahme({
                 aria-describedby={folgeId}
                 onClick={onFestschreiben}
               >
-                Übernehmen und festschreiben
+                Übernehmen und eintragen
               </Button>
             ) : null}
             <Button

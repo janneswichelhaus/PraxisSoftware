@@ -243,11 +243,8 @@ function Abschluss({
       ? undefined
       : (diktat.offen ?? (skalen.text ? SKALEN_OFFEN : undefined)),
     kompakt: true,
-    // Von selbst gesichert wird nur der Text einer Behandlung (BEF-056,
-    // ANN-319). Am Vermerk „Tür geöffnet, nicht behandelt“ nicht: Ein so
-    // entstandener Entwurf trüge den Vermerk nicht, und mit der Frist würde
-    // er als gewöhnliche Behandlung festgeschrieben (ADR-016 Punkt 7) - der
-    // Vermerk entsteht nur mit „Mit Vermerk festschreiben“ (ANN-055).
+    // Am Vermerk sichert nichts von selbst: Der Entwurf trüge ihn nicht und
+    // würde mit der Frist als Behandlung finalisiert (ADR-016 Punkt 7, ANN-055).
     selbst: ohneBehandlung
       ? undefined
       : {
@@ -357,22 +354,18 @@ function Abschluss({
     setSchreibtAbschluss(true);
     void schreiben({
       ausfuehren: abschlussSchreiben,
-      fehlertitel: 'Nicht festgeschrieben',
+      fehlertitel: 'Nicht eingetragen',
       danach: () => {
         freigeben();
         // Festschreiben hakt nicht ab - abgehakt wird in der Übersicht oder
         // im Kalender.
-        onFestgeschrieben(
-          ohneBehandlung
-            ? 'Mit Vermerk festgeschrieben.'
-            : 'Eintrag als Version 1 festgeschrieben.',
-        );
+        onFestgeschrieben(ohneBehandlung ? 'Mit Vermerk eingetragen.' : 'In die Akte eingetragen.');
       },
     }).finally(() => setSchreibtAbschluss(false));
   }
 
   /**
-   * Übernehmen und festschreiben in einem ausdrücklichen Tipp (ANN-840), nur am leeren
+   * Übernehmen und eintragen in einem ausdrücklichen Tipp (ANN-840), nur am leeren
    * Feld: Festgeschrieben wird genau der geprüfte Vorschlag. Die Refs tragen den neuen Stand.
    */
   function uebernehmenUndFestschreiben() {
@@ -664,8 +657,8 @@ function Abschluss({
               nach dem, was er tut (ADR-016 Punkt 4), die Folge hört man mit
               (DOK-20). Seit B4 hakt das Festschreiben den Termin nicht ab. */}
           <p id={folgeId} className="sr-only">
-            Schreibt den Eintrag als Version 1 fest; abgehakt wird der Termin getrennt. Danach nur
-            mit Begründung änderbar.
+            Trägt den Text als Version 1 in die Akte ein; abgehakt wird der Termin getrennt. Danach
+            nur mit Begründung änderbar.
           </p>
 
           {/* Fußleiste: bleibt beim Scrollen stehen, am Telefon über der
@@ -746,10 +739,10 @@ function Abschluss({
               aria-describedby={folgeId}
             >
               {schreibtAbschluss
-                ? 'Wird festgeschrieben …'
+                ? 'Wird eingetragen …'
                 : ohneBehandlung
-                  ? 'Mit Vermerk festschreiben'
-                  : 'Festschreiben'}
+                  ? 'Mit Vermerk eintragen'
+                  : 'Eintragen'}
             </Button>
           </Aktionsleiste>
         </form>

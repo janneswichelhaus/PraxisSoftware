@@ -199,7 +199,7 @@ describe('NochOffen: zurückgewiesener Freizeitausgleich (BEF-179)', () => {
 });
 
 describe('NochOffen (Auftrag C1, B4, B7)', () => {
-  it('nennt eine festgeschriebene Doku ohne Haken „Haken fehlt“ und bietet den Haken an', async () => {
+  it('nennt eine eingetragene Doku ohne Haken „Haken fehlt“ und bietet den Haken an', async () => {
     renderMitVorschau(
       <NochOffen
         plan={[
