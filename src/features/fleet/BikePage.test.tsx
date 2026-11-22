@@ -3,6 +3,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { testUser } from '@/test-utils';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
+import { richteAuswahlEin } from '@/components/ui/lastenrad3d/auswahl';
 import { mountLastenrad, type LastenradAnsicht } from '@/components/ui/lastenrad3d/viewer';
 import * as api from './api';
 import { BikePage } from './BikePage';
@@ -22,8 +23,11 @@ vi.mock('./api', async (importOriginal) => ({
 
 // jsdom hat kein WebGL: three bleibt aus den Seitentests heraus.
 vi.mock('@/components/ui/lastenrad3d/viewer', () => ({ mountLastenrad: vi.fn() }));
+vi.mock('@/components/ui/lastenrad3d/auswahl', () => ({ richteAuswahlEin: vi.fn() }));
 
 const ansicht = vi.mocked(mountLastenrad);
+const auswahl = vi.mocked(richteAuswahlEin);
+const radStand = vi.fn();
 const fetchFleet = vi.mocked(api.fetchFleet);
 const fetchBike = vi.mocked(api.fetchBike);
 const fetchFleetPhotos = vi.mocked(api.fetchFleetPhotos);
@@ -44,6 +48,7 @@ beforeEach(() => {
   releaseBike.mockResolvedValue({ released: true, resolvedSpots: 3 });
   blockBike.mockResolvedValue();
   ansicht.mockResolvedValue({ dispose: vi.fn() } as unknown as LastenradAnsicht);
+  auswahl.mockReturnValue({ setze: radStand, punkt: vi.fn(), dispose: vi.fn() });
 });
 
 /**
@@ -149,10 +154,42 @@ describe('Rad', () => {
     expect(ansicht).not.toHaveBeenCalled();
     unmount();
 
+    // Ohne offene Stelle dreht sich das Rad wie bisher.
+    const ohne = testDetail();
+    fetchBike.mockResolvedValue({
+      ...ohne,
+      spots: ohne.spots.map((spot) => ({ ...spot, resolved_at: '2026-10-15T08:00:00+00:00' })),
+    });
     oeffne(`${RAD3}?bereich=angaben`);
     await screen.findByText('Load 60 · Riemenantrieb mit Nabenschaltung');
     await waitFor(() => expect(ansicht).toHaveBeenCalledTimes(1));
     expect(ansicht).toHaveBeenCalledWith(expect.any(HTMLElement), { zoom: false });
+    expect(auswahl).not.toHaveBeenCalled();
+    expect(screen.queryByRole('list', { name: 'Am Rad markiert' })).toBeNull();
+  });
+
+  it('markiert in „Angaben“ die offenen Stellen am Rad, in Farbe und in Zeichen und Wort (ANN-868)', async () => {
+    oeffne(`${RAD3}?bereich=angaben`);
+    await screen.findByText('Load 60 · Riemenantrieb mit Nabenschaltung');
+    await waitFor(() => expect(radStand).toHaveBeenCalled());
+    expect(ansicht).toHaveBeenCalledWith(expect.any(HTMLElement), {
+      zoom: false,
+      label: 'Lastenrad, offene Stellen markiert',
+      merge: false,
+      autoRotate: false,
+    });
+    // Das ganze Rad, nichts tritt zurück; die Farben kommen aus den Tokens (in jsdom leer).
+    expect(radStand).toHaveBeenLastCalledWith({
+      waehlbar: null,
+      marken: [
+        { gruppe: 'bremse-vorne', farbe: '' },
+        { gruppe: 'reifen-hinten', farbe: '' },
+        { gruppe: 'riemen', farbe: '' },
+      ],
+    });
+    expect(screen.getByRole('list', { name: 'Am Rad markiert' })).toHaveTextContent(
+      /Problem · Bremse vorne.*Beobachten · Reifen hinten.*Problem · Riemen/,
+    );
   });
 
   it('sperrt ein Rad von Hand nur mit Grund', async () => {
