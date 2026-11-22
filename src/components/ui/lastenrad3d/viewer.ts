@@ -48,8 +48,6 @@ export interface LastenradAnsicht {
   controls: OrbitControls;
   /** Neu zeichnen, falls Kamera oder Modell von außen verändert wurden. */
   render: () => void;
-  /** Hängt die Zeichenfläche samt Kamera in eine andere Bühne. */
-  umziehen: (container: HTMLElement) => void;
   /** Hält alles an und gibt Speicher und Grafikkontext frei. */
   dispose: () => void;
 }
@@ -190,10 +188,9 @@ export async function mountLastenrad(
   });
 
   // Größe folgt dem Container; neu gerahmt wird, bis jemand selbst dreht oder zoomt
-  let ort = container;
   const groesse = new ResizeObserver(() => {
-    const w = ort.clientWidth,
-      h = ort.clientHeight;
+    const w = container.clientWidth,
+      h = container.clientHeight;
     if (!w || !h) return;
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
@@ -213,9 +210,9 @@ export async function mountLastenrad(
   canvas.addEventListener('webglcontextrestored', wiederDa);
 
   renderer.shadowMap.needsUpdate = true;
-  ort.appendChild(canvas);
-  groesse.observe(ort);
-  blickfeld.observe(ort);
+  container.appendChild(canvas);
+  groesse.observe(container);
+  blickfeld.observe(container);
 
   return {
     canvas,
@@ -224,14 +221,6 @@ export async function mountLastenrad(
     controls,
     /** Neu zeichnen, falls Kamera oder Modell von außen verändert wurden. */
     render: anfordern,
-    umziehen(neu) {
-      groesse.unobserve(ort);
-      blickfeld.unobserve(ort);
-      ort = neu;
-      ort.appendChild(canvas);
-      groesse.observe(ort);
-      blickfeld.observe(ort);
-    },
     /** Hält alles an und gibt Speicher und Grafikkontext frei. */
     dispose() {
       sichtbar = false;

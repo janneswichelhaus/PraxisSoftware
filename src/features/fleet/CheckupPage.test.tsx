@@ -125,12 +125,7 @@ beforeEach(() => {
   recordCheckup.mockResolvedValue({ checkupId: 'checkup-neu', spotIds: ['stelle-neu'] });
   uploadFleetPhoto.mockResolvedValue('foto-neu');
   radAnsicht.mockResolvedValue({ dispose: vi.fn() } as unknown as LastenradAnsicht);
-  radAuswahl.mockReturnValue({
-    setze: radStand,
-    punkt: vi.fn(),
-    umziehen: vi.fn(),
-    dispose: radFrei,
-  });
+  radAuswahl.mockReturnValue({ setze: radStand, punkt: vi.fn(), dispose: radFrei });
   let nummer = 0;
   vi.stubGlobal(
     'URL',

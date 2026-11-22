@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Lastenrad3D, type Markenton } from '@/components/ui/Lastenrad3D';
 import { Einstufung } from './Einstufung';
-import { bauteilVonTeil, blickAufBauteil } from './radteile';
+import { bauteilVonTeil } from './radteile';
 import type { Entwurf, Stelle } from './stellen';
 import { isZoneKey, zoneLabel, type Severity, type ZoneKey } from './zones';
 
@@ -21,7 +21,7 @@ export function Bauteilrad({
   onWahl,
   legende = true,
 }: {
-  /** Nur diese Bauteile stehen zur Wahl; sie leuchten, die Kamera zeigt sie. Ohne Angabe alle. */
+  /** Nur diese Bauteile stehen zur Wahl, der Rest des Rads tritt zurück; ohne Angabe alle. */
   waehlbar?: readonly ZoneKey[] | undefined;
   stellen: readonly Stelle[];
   entwurf: Entwurf | null;
@@ -40,11 +40,8 @@ export function Bauteilrad({
       <Lastenrad3D
         className="min-h-36 flex-1 lg:h-72 lg:flex-none"
         label="Lastenrad, Bauteil antippen"
-        // Von Seite zu Seite eines Ablaufs bleibt das Rad stehen und fliegt zum nächsten Bauteil.
-        fortsetzen="bauteilrad"
         auswahl={{
           gruppeVon: bauteilVonTeil,
-          blickVon: blickAufBauteil,
           waehlbar,
           marken: marken(markiert),
           onWahl: (gruppen) => {

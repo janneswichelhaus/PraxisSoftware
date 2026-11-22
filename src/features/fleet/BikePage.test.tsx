@@ -48,7 +48,7 @@ beforeEach(() => {
   releaseBike.mockResolvedValue({ released: true, resolvedSpots: 3 });
   blockBike.mockResolvedValue();
   ansicht.mockResolvedValue({ dispose: vi.fn() } as unknown as LastenradAnsicht);
-  auswahl.mockReturnValue({ setze: radStand, punkt: vi.fn(), umziehen: vi.fn(), dispose: vi.fn() });
+  auswahl.mockReturnValue({ setze: radStand, punkt: vi.fn(), dispose: vi.fn() });
 });
 
 /**

@@ -1,4 +1,4 @@
-import { isZoneKey, type ZoneKey } from './zones';
+import type { ZoneKey } from './zones';
 
 /**
  * Welche Teile des 3D-Modells zu welchem Bauteil gehören (ANN-870). Das Modell zeigt eine Kette;
@@ -127,43 +127,4 @@ const BAUTEIL_JE_TEIL = new Map<string, ZoneKey>(
 /** Das Bauteil, zu dem ein Teil des Modells gehört. */
 export function bauteilVonTeil(teil: string): ZoneKey | null {
   return BAUTEIL_JE_TEIL.get(teil) ?? null;
-}
-
-/**
- * Aus welchem Blick ein Bauteil am Rad am besten zu sehen ist (θ ab rechts um die Hochachse, φ ab
- * der Senkrechten, in Grad), aus dem ersten Entwurf des Rads (FLT-003). Mehrere Bauteile zeigt die
- * Kamera aus dem Mittel ihrer Blicke.
- */
-export const BLICK_JE_BAUTEIL: Record<ZoneKey, readonly [number, number]> = {
-  'reifen-vorne': [60, 76],
-  'reifen-hinten': [-40, 76],
-  'laufrad-vorne': [60, 78],
-  'laufrad-hinten': [-40, 78],
-  'bremse-vorne': [150, 80],
-  'bremse-hinten': [-150, 80],
-  bremsgriffe: [-90, 48],
-  riemen: [-6, 82],
-  nabenschaltung: [-30, 80],
-  kurbeln: [25, 80],
-  motor: [20, 82],
-  akku: [15, 74],
-  'licht-vorne': [70, 72],
-  'licht-hinten': [-110, 72],
-  sattel: [-35, 62],
-  klingel: [-140, 50],
-  'schutzblech-vorne': [65, 66],
-  'schutzblech-hinten': [-60, 66],
-  staender: [30, 84],
-  transportbox: [45, 64],
-  rahmen: [20, 74],
-  lenker: [-110, 52],
-  display: [-90, 42],
-  lenkung: [25, 86],
-  gabel: [70, 78],
-  daempfer: [10, 72],
-  gepaecktraeger: [-55, 55],
-};
-
-export function blickAufBauteil(gruppe: string): readonly [number, number] | undefined {
-  return isZoneKey(gruppe) ? BLICK_JE_BAUTEIL[gruppe] : undefined;
 }
