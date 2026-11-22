@@ -321,14 +321,7 @@ function Rad({
         {offen === 'verlauf' ? (
           <RadVerlauf detail={detail} fotos={fotos.data ?? []} zone={zone} />
         ) : null}
-        {offen === 'angaben' ? (
-          <RadAngaben
-            rad={bike}
-            flotte={flotte}
-            offen={detail.spots.filter((spot) => spot.resolved_at === null)}
-            onMeldung={melde}
-          />
-        ) : null}
+        {offen === 'angaben' ? <RadAngaben rad={bike} flotte={flotte} onMeldung={melde} /> : null}
       </div>
     </>
   );

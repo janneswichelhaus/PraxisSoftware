@@ -38,6 +38,8 @@ export interface ZoneParts {
   materials: MeshStandardMaterial[];
   center: Vector3;
   box: Box3;
+  /** Wo eine Nadel ohne Punkt sitzt: auf der Fläche, nicht in der Mitte eines Rings (Reifen). */
+  anker: Vector3;
 }
 
 export interface CargoBike {
@@ -64,6 +66,7 @@ export async function buildCargoBike({
       materials: [],
       center: new Vector3(),
       box: new Box3(),
+      anker: new Vector3(),
     });
     eintrag.meshes.push(mesh);
     // Trefferflächen zählen beim Umriss mit, nicht beim Leuchten.
@@ -74,7 +77,24 @@ export async function buildCargoBike({
       eintrag.materials.push(mesh.material);
     }
   });
-  for (const eintrag of Object.values(zones)) eintrag.box.getCenter(eintrag.center);
+  const ecke = new Vector3();
+  for (const eintrag of Object.values(zones)) {
+    eintrag.box.getCenter(eintrag.center);
+    eintrag.anker.copy(eintrag.center);
+    let naehe = Infinity;
+    for (const mesh of eintrag.meshes) {
+      if (mesh.userData.trefferflaeche) continue;
+      const ecken = mesh.geometry.getAttribute('position');
+      for (let i = 0; i < ecken.count; i += 1) {
+        ecke.fromBufferAttribute(ecken, i).applyMatrix4(mesh.matrixWorld);
+        const abstand = ecke.distanceToSquared(eintrag.center);
+        if (abstand < naehe) {
+          naehe = abstand;
+          eintrag.anker.copy(ecke);
+        }
+      }
+    }
+  }
   return { root, zones };
 }
 

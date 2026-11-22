@@ -12,25 +12,9 @@ import { isZoneKey } from '../zones';
 import { BIKE_CENTER, type ModelPoint } from './ansichten';
 
 /**
- * Die Bilder der Unterlage für die Werkstatt (Handoff Lastenrad 3D,
- * Abschnitt 4): die rechte Seite mit dem Antrieb, die linke Seite und je
- * Stelle ein Ausschnitt am Modell - gerechnet in einem Zeichenkontext ohne
- * Bildschirm, als PNG.
- *
- * Die Nadeln zeichnet die Seite als SVG über das Bild, an der projizierten
- * Stelle des Punkts (in Prozent von Breite und Höhe), damit Nummer und Form
- * scharf drucken. Diese Datei liefert dafür die Lage und sagt, auf welcher
- * Seitenansicht eine Stelle steht:
- *
- *   * nach der z-Koordinate (z ≥ 0 rechte Seite mit Antrieb, sonst links),
- *   * per Strahl auf Verdeckung geprüft; verdeckt dort, die andere Seite,
- *     auf beiden verdeckt nur im Ausschnitt;
- *   * höchstens eine Seitenansicht je Stelle.
- *
- * Der Ausschnitt nimmt die Kamera des Bauteils; die Bremse vorne abweichend
- * von links, damit kein angeschnittener Aufkleber im Bild steht.
- *
- * Geladen wird die Datei wie der Betrachter nur auf Abruf (ANN-556).
+ * Bilder der Werkstatt-Unterlage, ohne Bildschirm als PNG gerechnet; die Nadeln zeichnet die Seite
+ * als SVG darüber, damit sie scharf drucken. Je Stelle höchstens eine Seitenansicht, verdeckt die
+ * andere, auf beiden verdeckt nur im Ausschnitt. Wie der Betrachter nur auf Abruf (ANN-556).
  */
 
 export interface Bildstelle {
@@ -131,8 +115,36 @@ export async function zeichneWerkstattbilder(
 
     function punktVon(stelle: Bildstelle): Vector3 | null {
       if (stelle.point) return new Vector3(...stelle.point);
-      const mitte = isZoneKey(stelle.zone) ? bike.zones[stelle.zone]?.center : undefined;
-      return mitte ? mitte.clone() : null;
+      const anker = isZoneKey(stelle.zone) ? bike.zones[stelle.zone]?.anker : undefined;
+      return anker ? anker.clone() : null;
+    }
+
+    // Ohne Punkt die Ecken des Bauteils, die nächsten am Anker zuerst: Davon zählt die erste freie.
+    const eckenJeZone = new Map<string, Vector3[]>();
+    function kandidaten(stelle: Bildstelle): Vector3[] {
+      const anker = punktVon(stelle);
+      if (!anker) return [];
+      if (stelle.point) return [anker];
+      let ecken = eckenJeZone.get(stelle.zone);
+      if (!ecken) {
+        ecken = [];
+        for (const mesh of bike.zones[stelle.zone]?.meshes ?? []) {
+          if (mesh.userData.trefferflaeche) continue;
+          const lage = mesh.geometry.getAttribute('position');
+          const schritt = Math.max(1, Math.floor(lage.count / 400));
+          for (let i = 0; i < lage.count; i += schritt) {
+            ecken.push(new Vector3().fromBufferAttribute(lage, i).applyMatrix4(mesh.matrixWorld));
+          }
+        }
+        ecken.sort((a, b) => a.distanceToSquared(anker) - b.distanceToSquared(anker));
+        eckenJeZone.set(stelle.zone, ecken);
+      }
+      return ecken.slice(0, 300);
+    }
+
+    /** Der Punkt der Stelle, den die aktuelle Kamera frei sieht, oder `null`. */
+    function sichtbarerPunkt(stelle: Bildstelle): Vector3 | null {
+      return kandidaten(stelle).find((punkt) => !verdeckt(punkt, stelle.zone)) ?? null;
     }
 
     const [seitenBreite, seitenHoehe] = masse.seite;
@@ -145,12 +157,12 @@ export async function zeichneWerkstattbilder(
     });
 
     // Welche Stelle auf welcher Seite steht, entscheidet die Verdeckung.
-    const sichtbar = { rechts: new Set<string>(), links: new Set<string>() };
+    const sichtbar = { rechts: new Map<string, Vector3>(), links: new Map<string, Vector3>() };
     for (const seite of ['rechts', 'links'] as const) {
       kamera(seitenBreite, seitenHoehe, seitenOrbit(seite));
       for (const stelle of stellen) {
-        const punkt = punktVon(stelle);
-        if (punkt && !verdeckt(punkt, stelle.zone)) sichtbar[seite].add(stelle.id);
+        const punkt = sichtbarerPunkt(stelle);
+        if (punkt) sichtbar[seite].set(stelle.id, punkt);
       }
     }
     const zuordnung = new Map<string, 'rechts' | 'links'>();
@@ -167,7 +179,7 @@ export async function zeichneWerkstattbilder(
       kamera(seitenBreite, seitenHoehe, seitenOrbit(seite));
       const punkte: Bildpunkt[] = [];
       for (const stelle of stellen) {
-        const punkt = punktVon(stelle);
+        const punkt = sichtbar[seite].get(stelle.id);
         if (punkt && zuordnung.get(stelle.id) === seite)
           punkte.push({ id: stelle.id, ...lage(punkt) });
       }
@@ -187,7 +199,7 @@ export async function zeichneWerkstattbilder(
           : zoneOrbit(bike, [stelle.zone], ausschnittBreite / ausschnittHoehe);
       if (!orbit) continue;
       kamera(ausschnittBreite, ausschnittHoehe, orbit);
-      const punkt = punktVon(stelle);
+      const punkt = sichtbarerPunkt(stelle) ?? punktVon(stelle);
       ausschnitte[stelle.id] = {
         url: bild(),
         punkte: punkt ? [{ id: stelle.id, ...lage(punkt) }] : [],
