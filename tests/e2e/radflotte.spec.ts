@@ -34,7 +34,7 @@ test.use({
   permissions: ['camera'],
   // Gezählt werden Tipps und Wege, nicht Bewegung: Puls und Flug des Rads prüft rad3d.spec.ts. Ohne
   // Grafikkarte zeichnet die CI jedes Bild in Software, die Abläufe liefen sonst ins Zeitlimit.
-  reducedMotion: 'reduce',
+  contextOptions: { reducedMotion: 'reduce' },
 });
 
 function nachbildung(rolle: 'therapie' | 'teamleitung' = 'therapie', weitere: Bike[] = []) {
@@ -360,6 +360,9 @@ test('R3: geführter Check-Up ohne Befund in höchstens 25 Tipps, jede Seite ohn
   await oeffne(page, server);
   // Das kleinste übliche Telefon: 375 × 667.
   await page.setViewportSize({ width: 375, height: 667 });
+  expect(await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches)).toBe(
+    true,
+  );
   const z = zaehler();
   await z.tippe(page.getByRole('link', { name: 'Check-Up', exact: true }));
   await expect(page.getByRole('combobox', { name: 'Rad' })).toHaveValue('rad-1');
