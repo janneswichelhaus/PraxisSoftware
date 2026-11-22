@@ -13,6 +13,7 @@ import {
   aktionenOeffnen,
   terminImKalender,
   terminNeuLaden,
+  entwurfSichernUndZurueck,
 } from './helpers';
 
 /**
@@ -63,7 +64,7 @@ async function finalisierterEintrag(page: Page, tag: string): Promise<string> {
   // `/dokumentation` leitet ebenfalls dorthin.
   await page.goto(`/termine/${terminId}/abschluss`);
   await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
-  await page.getByRole('button', { name: 'Entwurf', exact: true }).click();
+  await entwurfSichernUndZurueck(page);
   await expect(page).toHaveURL(terminImKalender(terminId));
   await aktionenOeffnen(page);
 
@@ -87,7 +88,7 @@ test.describe('DOK-002: Finalisieren', () => {
     // `/dokumentation` leitet ebenfalls dorthin.
     await page.goto(`/termine/${terminId}/abschluss`);
     await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
-    await page.getByRole('button', { name: 'Entwurf', exact: true }).click();
+    await entwurfSichernUndZurueck(page);
     await expect(page).toHaveURL(terminImKalender(terminId));
     await aktionenOeffnen(page);
     await expect(page.getByText(/^!? ?Entwurf/).first()).toBeVisible();

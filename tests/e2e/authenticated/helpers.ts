@@ -293,6 +293,15 @@ export function terminAusAdresse(page: Page): string {
 }
 
 /**
+ * Die Schreibseite hat keinen Knopf „Entwurf“ mehr (Jannes 2026-11-22): Der Text
+ * sichert sich von selbst; danach führt der Pfeil ohne Rückfrage zurück.
+ */
+export async function entwurfSichernUndZurueck(page: Page): Promise<void> {
+  await expect(page.getByText(/^Als Entwurf gesichert um /)).toBeVisible({ timeout: 15_000 });
+  await page.getByRole('link', { name: 'Zurück', exact: true }).click();
+}
+
+/**
  * Oeffnet das Fenster „Aktionen" des im Kalender gewaehlten Termins - der
  * Ersatz fuer die fruehere Terminseite (Akte entschlacken, 2026-10-03).
  */

@@ -1,12 +1,25 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Aktionsleiste } from '@/components/ui/Aktionsleiste';
 import { Button } from '@/components/ui/Button';
 import { Rueckmeldung } from '@/components/ui/Rueckmeldung';
 import { Textlink } from '@/components/ui/Textlink';
 import { Zwischentitel } from '@/components/ui/Zwischentitel';
-import { type Appointment, FolgeterminVorschlaege, LeistungAmTermin } from '@/features/calendar';
-import { canReadExercisePlans, canRecordAtAppointment, type CurrentUser } from '@/features/core';
+import {
+  type Appointment,
+  FolgeterminVorschlaege,
+  hakenFehlt,
+  LeistungAmTermin,
+  TerminAbschliessenKnopf,
+} from '@/features/calendar';
+import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { dayKey, todayInTimeZone } from '@/lib/datum';
+import {
+  canManageAppointments,
+  canReadExercisePlans,
+  canRecordAtAppointment,
+  type CurrentUser,
+} from '@/features/core';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { PLAENE_ANKER } from './sprungmarke';
 import { Schreibflaeche } from './Schreibflaeche';
@@ -106,11 +119,22 @@ export function Danach({
   hierher: string;
 }) {
   const navigate = useNavigate();
+  const [hakenFehler, setHakenFehler] = useState<string | null>(null);
+  const zone = appointment.organization_time_zone;
+  // ADR-018 Punkt 10 Fassung 6: Der Haken steht hier als eigener, ausdrücklicher
+  // Schritt; das Eintragen selbst hakt nicht ab. Ein künftiger Tag wird nicht abgehakt.
+  const mitHaken =
+    appointment.kind === 'therapy' &&
+    canManageAppointments(user.roles) &&
+    hakenFehlt(appointment.status, appointment.completed_at) &&
+    dayKey(appointment.starts_at, zone) <= todayInTimeZone(zone);
+  const fertig = () => void navigate(zumTermin, meldung ? { state: { meldung } } : undefined);
   return (
     <Schreibflaeche zurueck={zurueck} titel={patientName(appointment)} kopfzeile={kopfzeile}>
       <div className="flex-1 px-4 py-4">
         <div className="max-w-spalte flex flex-col gap-6">
           {meldung ? <Rueckmeldung>{meldung}</Rueckmeldung> : kopf}
+          {hakenFehler ? <Statusmeldung ton="fehler">{hakenFehler}</Statusmeldung> : null}
           <DanachTeile
             appointment={appointment}
             user={user}
@@ -120,13 +144,32 @@ export function Danach({
         </div>
       </div>
       <Aktionsleiste einbettung="flaeche">
-        <Button
-          type="button"
-          className="ml-auto"
-          onClick={() => void navigate(zumTermin, meldung ? { state: { meldung } } : undefined)}
-        >
-          Fertig
-        </Button>
+        {mitHaken ? (
+          <>
+            <Button
+              type="button"
+              variant="secondary"
+              groesse="kompakt"
+              className="ml-auto"
+              onClick={fertig}
+            >
+              Fertig
+            </Button>
+            {/* Abhaken und zurück an die Zeile in einem Tipp (Jannes 2026-11-22). */}
+            <TerminAbschliessenKnopf
+              appointmentId={appointment.id}
+              stand={appointment.updated_at}
+              variant="primary"
+              text="Leistung erbracht"
+              onAbgeschlossen={fertig}
+              onFehler={setHakenFehler}
+            />
+          </>
+        ) : (
+          <Button type="button" className="ml-auto" onClick={fertig}>
+            Fertig
+          </Button>
+        )}
       </Aktionsleiste>
     </Schreibflaeche>
   );
