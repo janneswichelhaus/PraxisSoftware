@@ -186,7 +186,7 @@ describe('Modell mit Bauteilen', () => {
       (teil) => teil.userData.trefferflaeche === true,
     );
     expect(treffer.every(({ material }) => !material.visible)).toBe(true);
-    expect(new Set(treffer.map((teil) => teil.userData.zone))).toEqual(
+    expect(new Set(treffer.map((teil) => teil.userData.zone as unknown))).toEqual(
       new Set([
         'laufrad-vorne',
         'laufrad-hinten',

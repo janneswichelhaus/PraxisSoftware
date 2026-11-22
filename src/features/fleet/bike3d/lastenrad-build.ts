@@ -1142,8 +1142,9 @@ export async function buildLastenrad({
         0,
       ]).rotation.x = Math.PI / 2;
     }
-    for (const s of ['r', 'l']) {
-      kasten('bremsgriffe', new RegExp('^(bremsgeber|bremshebel)_' + s), 0.02);
+    // Je Seite ein Kasten, wie im Entwurf `new RegExp('^(bremsgeber|bremshebel)_' + s)`.
+    for (const regel of [/^(bremsgeber|bremshebel)_r/, /^(bremsgeber|bremshebel)_l/]) {
+      kasten('bremsgriffe', regel, 0.02);
     }
     kasten('klingel', /^klingel/, 0.025);
     kasten('lenkung', /^lenkgestaenge/, 0.025);
@@ -1217,7 +1218,10 @@ function verschmelzen(model: Group): Group {
     const mesh = new Mesh(geo, mat);
     mesh.name = mat.name;
     // Bauteil nur übernehmen, wenn alle zusammengefassten Teile dasselbe haben (Option bauteile)
-    const { zone, trefferflaeche } = teile[0]!.userData;
+    const { zone, trefferflaeche } = teile[0]!.userData as {
+      zone?: string;
+      trefferflaeche?: boolean;
+    };
     if (teile.every((t) => t.userData.zone === zone)) mesh.userData.zone = zone;
     if (trefferflaeche) mesh.userData.trefferflaeche = true;
     ganz.add(mesh);

@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { isZoneKey, type Severity } from './zones';
+import type { BikeMarker } from './bike3d/ansichten';
 
 /**
  * Die Stellen einer Meldung ohne Oberfläche: Check-Up und Panne führen denselben Zustand,
@@ -106,4 +107,52 @@ export function useStellenerfassung({ art }: { art: Erfassungsart }): Stellenzus
       setEntwurf((vorher) => (vorher?.key && keys.includes(vorher.key) ? null : vorher));
     },
   };
+}
+
+/** Die Nummer einer neuen Stelle: nach den schon offenen des Rads. */
+export function nummerDerStelle(index: number, bestehend: number): number {
+  return bestehend + index + 1;
+}
+
+/**
+ * Was das 3D-Rad zu einer Meldung zeigt: die schon offenen Stellen mit ihrer Nummer, die neuen
+ * dahinter, die offene Stelle als neue Nadel. Jede Nadel steht in der Mitte ihres Bauteils, weil
+ * nur das Bauteil gespeichert wird (ANN-871).
+ */
+export function radBild(
+  zustand: Pick<Stellenzustand, 'stellen' | 'entwurf'>,
+  bestehend: readonly { id: string; zone: string; severity: Severity; number: number | null }[],
+) {
+  const { stellen, entwurf } = zustand;
+  const offene = bestehend.filter((spot) => spot.number !== null);
+  const aktivNummer = entwurf?.key
+    ? nummerDerStelle(
+        stellen.findIndex((stelle) => stelle.key === entwurf.key),
+        offene.length,
+      )
+    : nummerDerStelle(stellen.length, offene.length);
+  const markers: BikeMarker[] = [
+    ...offene.map((spot) => ({
+      id: `offen-${spot.id}`,
+      zone: spot.zone,
+      point: null,
+      severity: spot.severity,
+      number: spot.number ?? 0,
+    })),
+    ...stellen.map((stelle, index) => {
+      const quelle = entwurf?.key === stelle.key ? entwurf : stelle;
+      return {
+        id: stelle.key,
+        zone: quelle.zone,
+        point: null,
+        severity: quelle.severity,
+        number: nummerDerStelle(index, offene.length),
+      };
+    }),
+  ];
+  const draft =
+    entwurf && !entwurf.key && isZoneKey(entwurf.zone)
+      ? { zone: entwurf.zone, point: null, number: aktivNummer }
+      : null;
+  return { offene, aktivNummer, markers, draft };
 }

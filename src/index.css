@@ -373,6 +373,10 @@
      376 px, im Teamchat wie in der Radflotte dieselbe Spalte. */
   --spacing-gespraechsspalte: 18rem;
   --spacing-threadspalte: 21rem;
+  /* Der geführte Ablauf mit Bühne (3D-Rad): ab 1024 px steht die Frage in einer Spalte von 384 px
+     neben der Bühne; am Telefon nimmt eine lange Frage höchstens 60 % der Höhe. */
+  --spacing-ablaufspalte: 24rem;
+  --spacing-ablauf-knapp: 60%;
   /* Der Tag in „Diese Woche“ der Plattform, links neben seinen Einträgen (ANN-777). */
   --spacing-tagesspalte: 6.5rem;
 

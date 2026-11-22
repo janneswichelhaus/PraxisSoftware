@@ -59,6 +59,9 @@ export function GefuehrterAblauf({
   onZurueck,
   ansage,
   schutz,
+  buehne,
+  buehneAmTelefon = true,
+  flaecheKnapp = false,
   abschluss = false,
   fuss,
   tippsperre = true,
@@ -93,6 +96,15 @@ export function GefuehrterAblauf({
   ansage?: string | undefined;
   /** Hinweise und Rückfrage des Textverlustschutzes. */
   schutz?: ReactNode;
+  /**
+   * Oben, über der Frage: das 3D-Rad. Es bleibt über alle Seiten stehen, nur die Frage wechselt; ab
+   * 1024 px stehen beide nebeneinander. Nicht mit `vorDemTitel` oder `plattform`.
+   */
+  buehne?: ReactNode;
+  /** Am Telefon die Bühne zeigen; im Abschluss des Check-Ups nicht. */
+  buehneAmTelefon?: boolean;
+  /** Mit Bühne: die Fläche der Frage höchstens 60 % hoch (lange Stelle). */
+  flaecheKnapp?: boolean;
   /** Der Abschluss: Inhalt rollt, der Fuß steht fest mit Linie darüber. */
   abschluss?: boolean;
   /** Die Antworten oder der Hauptknopf, fest unten. */
@@ -313,6 +325,70 @@ export function GefuehrterAblauf({
       {fussLeiste}
     </div>
   );
+
+  if (buehne) {
+    // Bühne und Frage teilen sich die Höhe; die Bühne liegt außerhalb der wechselnden Seite, damit
+    // das Rad stehen bleibt und die Kamera zum nächsten Bauteil fliegt (Stand cc3ebbbb).
+    const flaeche = abschluss
+      ? 'flex min-h-0 flex-1 flex-col lg:flex-none'
+      : `overflow-y-auto px-4 pt-2 pb-4 lg:pt-4 ${ROLLFLAECHE} ${
+          flaecheKnapp ? 'max-h-ablauf-knapp shrink-0 lg:max-h-none' : 'shrink-0'
+        }`;
+    return (
+      <Dialogfenster
+        vollbild
+        titel={titel}
+        beschreibung={objekt}
+        onSchliessen={onSchliessen}
+        schliessenBeschriftung={schliessen}
+        titelImInhalt
+        ohneKopfzeile={spaeter}
+      >
+        {kopf}
+        <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+          <div
+            className={`flex-col px-4 pt-3 pb-2 lg:p-4 ${
+              buehneAmTelefon
+                ? 'flex min-h-36 flex-1 lg:min-h-0'
+                : 'hidden lg:flex lg:min-h-0 lg:flex-1'
+            }`}
+          >
+            {buehne}
+          </div>
+          <div
+            key={seite}
+            ref={schritt}
+            className={`lg:border-line lg:w-ablaufspalte lg:shrink-0 lg:border-l ${flaeche} ${sperre}`.trim()}
+            {...(abschluss ? {} : rollflaeche)}
+          >
+            {abschluss ? (
+              <>
+                <div className="shrink-0 px-4 pt-3 lg:pt-4">
+                  <Fenstertitel stufe={titelStufe} />
+                </div>
+                <div
+                  className={`min-h-0 flex-1 overflow-y-auto px-4 pt-2 pb-4 lg:pt-4 ${ROLLFLAECHE}`}
+                  {...rollflaeche}
+                >
+                  {children}
+                </div>
+                {fussLeiste}
+              </>
+            ) : (
+              <>
+                {/* Die Frage unter der Bühne, direkt über den Antworten: dort, wo der Daumen ist. */}
+                <div className="mb-3">
+                  <Fenstertitel stufe={titelStufe} />
+                </div>
+                <div className="flex flex-col gap-4">{children}</div>
+                {mitFuss ? <div className="pt-4">{fuss}</div> : null}
+              </>
+            )}
+          </div>
+        </div>
+      </Dialogfenster>
+    );
+  }
 
   return (
     <Dialogfenster
