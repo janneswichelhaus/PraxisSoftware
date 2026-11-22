@@ -517,7 +517,7 @@ function nachbildung() {
   return { stand, aufrufe, beantworte, kartendienst };
 }
 
-test('ein Besuch in einem Zug: höchstens 6 Tipps und 2 Wechsel bis zur Navigation (K5)', async ({
+test('ein Besuch in einem Zug: höchstens 5 Tipps und 2 Wechsel bis zur Navigation (K5)', async ({
   page,
   context,
 }) => {
@@ -545,7 +545,7 @@ test('ein Besuch in einem Zug: höchstens 6 Tipps und 2 Wechsel bis zur Navigati
   await tippe(karte.getByRole('link', { name: 'Doku zu diesem Termin' }));
   await page.getByLabel('Eintrag zur Behandlung').fill('Synthetisch: Hausbesuch durchgeführt.');
 
-  // 2. Festschreiben - die Seite bleibt stehen und zeigt „Danach". Es hakt
+  // 2. Eintragen - die Seite bleibt stehen und zeigt „Danach". Es hakt
   // nicht ab (B4), und Heilmittel bestätigt niemand (B7).
   await tippe(page.getByRole('button', { name: 'Eintragen' }));
   await expect(page.getByText('In die Akte eingetragen.', { exact: false })).toBeVisible();
@@ -559,19 +559,13 @@ test('ein Besuch in einem Zug: höchstens 6 Tipps und 2 Wechsel bis zur Navigati
   await tippe(gleich);
   await expect(page.getByText(/Folgetermin angelegt: /)).toBeVisible();
 
-  // 4. Fertig - zurück in den Tag.
-  await tippe(page.getByRole('button', { name: 'Fertig' }));
+  // 4. „Leistung erbracht“ hakt ab und führt zurück in den Tag (ADR-018
+  // Punkt 10 Fassung 6) - ein eigener, ausdrücklicher Tipp.
+  await tippe(page.getByRole('button', { name: 'Leistung erbracht' }));
   const naechste = page.getByRole('article');
   await expect(naechste.getByRole('link', { name: 'Max Mustermann', exact: true })).toBeVisible();
 
-  // 5. Abhaken an der Zeile des eben dokumentierten Besuchs - gleich, nicht
-  // erst nach seinem Ende (B4).
-  await tippe(page.getByRole('button', { name: 'Termin abschließen: Erika Beispiel' }));
-  await expect(page.getByRole('status').filter({ hasText: 'abgeschlossen' })).toHaveText(
-    /Erika Beispiel abgeschlossen\./,
-  );
-
-  // 6. Navigation zum nächsten Besuch, Übergabe an die Karten-App.
+  // 5. Navigation zum nächsten Besuch, Übergabe an die Karten-App.
   const karten = page.waitForEvent('popup');
   await tippe(naechste.getByRole('button', { name: 'Navigation starten' }));
   expect((await karten).url()).toMatch(/^https:\/\/www\.google\.com\/maps\/dir\//);
@@ -581,7 +575,7 @@ test('ein Besuch in einem Zug: höchstens 6 Tipps und 2 Wechsel bis zur Navigati
   // Festgehalten für den Bericht: vorher ≈ 12 Tipps, 8 Wechsel; mit Heilmittel-
   // bestätigung 6 Tipps (ANN-475), seit B4/B7 der Haken statt der Heilmittel.
   test.info().annotations.push({ type: 'K5', description: `${tipps} Tipps, ${wechsel} Wechsel` });
-  expect(tipps).toBeLessThanOrEqual(6);
+  expect(tipps).toBeLessThanOrEqual(5);
   expect(wechsel).toBeLessThanOrEqual(2);
   expect(wege).toEqual(['/', `/termine/${BESUCH_1}/abschluss?zurueck=%2F`, '/']);
 

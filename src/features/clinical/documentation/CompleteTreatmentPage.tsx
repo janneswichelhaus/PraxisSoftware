@@ -27,7 +27,7 @@ import { useEinfuegen } from './einfuegen';
 import { statuswechselText, type Statuswechsel } from './format';
 import { useTextverlustschutz } from '@/app/Textverlustschutz';
 import { TextbausteinLeiste } from './TextbausteinLeiste';
-import { entwurfMeldung, useGesicherteBefundangaben } from './befundangaben';
+import { useGesicherteBefundangaben } from './befundangaben';
 import { BereitsFinalisiert, TextUebernehmen } from './Zustaende';
 import { Danach } from './Danach';
 import { WieZuletzt } from './WieZuletzt';
@@ -304,16 +304,6 @@ function Abschluss({
     // Feld, Textbausteine und Bausteinfeld sind währenddessen gesperrt; was
     // gesendet wurde, ist, was auf dem Bildschirm steht.
     return true;
-  }
-
-  /**
-   * Zurück zum Termin - samt Rückweg (DOK-01, ZST-17) und dem, was geschehen
-   * ist (DOK-15): Der Termin kann es oben melden, statt dass es nur im
-   * Doku-Abschnitt weit unten steht.
-   */
-  function weiterZumTermin(meldung: string) {
-    freigeben();
-    void navigate(zumTermin, { state: { meldung } });
   }
 
   /**
@@ -701,39 +691,9 @@ function Abschluss({
               <span aria-hidden="true">{verlaufOffen ? '▾' : '▴'}</span>
             </Button>
             <Button
-              type="button"
-              variant="quiet"
-              groesse="kompakt"
-              className="ml-auto"
-              disabled={laeuft || diktat.beschaeftigt || !geaendert}
-              onClick={() => {
-                // Ein Vorschlag aus der Aufnahme lässt sich nicht sichern: Er
-                // hält den Entwurf an, bis er übernommen oder verworfen ist.
-                if (diktat.wartet) {
-                  diktat.hinweisen();
-                  return;
-                }
-                // Ein nicht übernommener Vorschlag hält den Entwurf nicht an:
-                // Er geht nicht in den Text, seine Angaben werden daneben
-                // gesichert (ABN-015).
-                if (textGeaendert) {
-                  const meldung = inhaltFehler(wert);
-                  setFehler(meldung);
-                  if (meldung) return;
-                }
-                const meldung = entwurfMeldung(textGeaendert, bausteine.text !== '');
-                void schreiben({
-                  ausfuehren: entwurfSichern,
-                  fehlertitel: 'Nicht gespeichert',
-                  danach: () => weiterZumTermin(meldung),
-                });
-              }}
-            >
-              {laeuft && !schreibtAbschluss ? 'Wird gespeichert …' : 'Entwurf'}
-            </Button>
-            <Button
               type="submit"
               variant={festschreibenHaupt ? 'primary' : 'secondary'}
+              className="ml-auto"
               groesse="kompakt"
               disabled={laeuft || diktat.beschaeftigt}
               aria-describedby={folgeId}

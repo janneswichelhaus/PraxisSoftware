@@ -59,6 +59,7 @@ const entwurf: DokumentationApi.TreatmentNote = {
 const fetchAppointment = vi.fn();
 const fetchTreatmentDocumentation = vi.fn();
 const completeTreatment = vi.fn();
+const completeAppointment = vi.fn();
 const createTreatmentNote = vi.fn();
 const updateTreatmentNote = vi.fn();
 const navigate = vi.fn();
@@ -132,6 +133,7 @@ vi.mock('@/features/calendar/appointments/api', async (importOriginal) => {
       fetchAppointment(id) as Promise<AppointmentsApi.Appointment | null>,
     fetchUpcomingAppointments: (id: string) =>
       fetchUpcomingAppointments(id) as Promise<AppointmentsApi.UpcomingAppointment[]>,
+    completeAppointment: (id: string, stand: string) => completeAppointment(id, stand),
   };
 });
 
@@ -218,6 +220,8 @@ describe('CompleteTreatmentPage', () => {
     fetchAppointment.mockReset();
     fetchTreatmentDocumentation.mockReset();
     completeTreatment.mockReset();
+    completeAppointment.mockReset();
+    completeAppointment.mockResolvedValue(undefined);
     createTreatmentNote.mockReset();
     updateTreatmentNote.mockReset();
     navigate.mockReset();
@@ -256,11 +260,12 @@ describe('CompleteTreatmentPage', () => {
     fetchKurzblick.mockReset();
   });
 
-  it('ist eine Schreibfläche: Name im Kopf, Feld, Fußleiste mit Entwurf und Festschreiben (Handoff 6a)', async () => {
+  it('ist eine Schreibfläche: Name im Kopf, Feld, Fußleiste mit „Eintragen“ (Handoff 6a)', async () => {
     rendern();
     expect(await screen.findByRole('heading', { level: 1, name: 'Max Mustermann' })).toBeVisible();
     expect(screen.getByText(/^Dokumentation · \S+ \d{2}\.\d{2}\. · /)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Entwurf' })).toBeInTheDocument();
+    // Kein Knopf „Entwurf“: Der Text sichert sich von selbst (Jannes 2026-11-22).
+    expect(screen.queryByRole('button', { name: 'Entwurf' })).toBeNull();
     expect(screen.getByRole('button', { name: 'Eintragen' })).toBeInTheDocument();
     // Keine Hinweise, keine Folgen-Kästen, kein „Abbrechen" neben dem Pfeil.
     expect(screen.queryByText(/geschieht zweierlei/)).toBeNull();
@@ -456,6 +461,52 @@ describe('CompleteTreatmentPage', () => {
       expect(navigate).toHaveBeenCalledWith('/', { state: { meldung: FESTGESCHRIEBEN } });
     });
 
+    // ADR-018 Punkt 10 Fassung 6: Der Haken als eigener Tipp auf „Danach“,
+    // danach zurück an die Zeile der Übersicht (Jannes 2026-11-22).
+    it('hakt mit „Leistung erbracht“ ab und führt zurück (ADR-018 Punkt 10)', async () => {
+      const user = userEvent.setup();
+      const gestern = new Date(Date.now() - 86_400_000).toISOString();
+      const vergangen = { ...termin, starts_at: gestern, ends_at: gestern };
+      fetchAppointment.mockResolvedValue(vergangen);
+      completeTreatment.mockImplementation(() => {
+        fetchAppointment.mockResolvedValue({ ...vergangen, status: 'documented' as const });
+        return Promise.resolve();
+      });
+      fetchAbrechnungslage.mockResolvedValue(lage());
+      fetchLeistungenAmTermin.mockResolvedValue(stand(false));
+      rendern(['therapist'], '?zurueck=%2F');
+
+      await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Heute geübt.');
+      await user.click(screen.getByRole('button', { name: 'Eintragen' }));
+      // Das Eintragen selbst hakt nicht ab (ADR-016 Punkt 4).
+      expect(completeAppointment).not.toHaveBeenCalled();
+      const haken = await screen.findByRole('button', { name: 'Leistung erbracht' });
+      expect(haken).toHaveClass('bg-accent');
+      expect(screen.getByRole('button', { name: 'Fertig' })).not.toHaveClass('bg-accent');
+
+      await user.click(haken);
+      await waitFor(() =>
+        expect(completeAppointment).toHaveBeenCalledWith(TERMIN_ID, vergangen.updated_at),
+      );
+      expect(navigate).toHaveBeenCalledWith('/', { state: { meldung: FESTGESCHRIEBEN } });
+    });
+
+    it('bietet keinen Haken an einem künftigen Tag oder ohne Terminrecht', async () => {
+      const user = userEvent.setup();
+      completeTreatment.mockImplementation(() => {
+        fetchAppointment.mockResolvedValue(dokumentiert);
+        return Promise.resolve();
+      });
+      fetchAbrechnungslage.mockResolvedValue(lage());
+      fetchLeistungenAmTermin.mockResolvedValue(stand(false));
+      rendern(['therapist'], '?zurueck=%2F');
+
+      await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Heute geübt.');
+      await user.click(screen.getByRole('button', { name: 'Eintragen' }));
+      expect(await screen.findByRole('button', { name: 'Fertig' })).toHaveClass('bg-accent');
+      expect(screen.queryByRole('button', { name: 'Leistung erbracht' })).toBeNull();
+    });
+
     it('schlägt am letzten Termin „In die Abrechnung stellen“ vor - ein Tipp (B7)', async () => {
       const user = userEvent.setup();
       fetchAppointment.mockResolvedValue({
@@ -617,20 +668,16 @@ describe('CompleteTreatmentPage', () => {
     expect(completeTreatment).not.toHaveBeenCalled();
   });
 
-  it('bietet daneben weiter den Weg "nur speichern"', async () => {
+  it('sichert den Text ohne eigenen Knopf als Entwurf und bleibt auf der Seite', async () => {
     const user = userEvent.setup();
     rendern();
 
     await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Nur ein Entwurf.');
-    await user.click(screen.getByRole('button', { name: 'Entwurf' }));
 
-    await waitFor(() => expect(createTreatmentNote).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(createTreatmentNote).toHaveBeenCalledTimes(1), { timeout: 5000 });
+    expect(createTreatmentNote).toHaveBeenCalledWith(TERMIN_ID, 'Nur ein Entwurf.', false);
     expect(completeTreatment).not.toHaveBeenCalled();
-    await waitFor(() =>
-      expect(navigate).toHaveBeenCalledWith(`/kalender?termin=${TERMIN_ID}`, {
-        state: { meldung: 'Entwurf gespeichert – noch nicht finalisiert.' },
-      }),
-    );
+    expect(navigate).not.toHaveBeenCalled();
   });
 
   it('schuetzt einen ungespeicherten Text beim Zurückgehen', async () => {
@@ -1262,29 +1309,24 @@ describe('CompleteTreatmentPage', () => {
       expect(completeTreatment).not.toHaveBeenCalled();
     });
 
-    it('sichert bei „Entwurf“ den Text ohne den Vorschlag und die Angaben daneben (BEF-103)', async () => {
+    it('sichert den Entwurf ohne den Vorschlag, die Angaben daneben (BEF-103)', async () => {
       // Ungesehener Text im Entwurf käme über die automatische Finalisierung
       // (ADR-016 Punkt 7) in die Akte (Zweitreview S1).
       const user = userEvent.setup();
       rendern();
       await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Befund:');
       await lachmannPositiv(user);
-      await user.click(screen.getByRole('button', { name: 'Entwurf' }));
 
-      await waitFor(() =>
-        expect(createTreatmentNote).toHaveBeenCalledWith(TERMIN_ID, 'Befund:', false),
-      );
-      expect(befundangabenSichern).toHaveBeenCalledWith(
-        TERMIN_ID,
-        expect.objectContaining({ seitenwahl: { knie: 'rechts' } }),
+      // Die Sicherung von selbst nimmt denselben Weg wie früher „Entwurf“.
+      await waitFor(
+        () => expect(createTreatmentNote).toHaveBeenCalledWith(TERMIN_ID, 'Befund:', false),
+        { timeout: 5000 },
       );
       await waitFor(() =>
-        expect(navigate).toHaveBeenCalledWith(`/kalender?termin=${TERMIN_ID}`, {
-          state: {
-            meldung:
-              'Entwurf gespeichert – noch nicht finalisiert. Der Vorschlag aus den Bausteinen ist nicht übernommen; seine Angaben bleiben gesichert.',
-          },
-        }),
+        expect(befundangabenSichern).toHaveBeenCalledWith(
+          TERMIN_ID,
+          expect.objectContaining({ seitenwahl: { knie: 'rechts' } }),
+        ),
       );
     });
 
@@ -1425,9 +1467,9 @@ describe('CompleteTreatmentPage', () => {
 
     const feld = await screen.findByLabelText('Eintrag zur Behandlung');
     await user.type(feld, ' Zusatz.');
-    await user.click(screen.getByRole('button', { name: 'Entwurf' }));
 
-    const gruppe = await screen.findByRole('group', { name: 'Text übernehmen' });
+    // Die Sicherung von selbst stößt auf den finalisierten Stand.
+    const gruppe = await screen.findByRole('group', { name: 'Text übernehmen' }, { timeout: 5000 });
     expect(within(gruppe).getByRole('button', { name: 'Als Nachtrag übernehmen' })).toBeEnabled();
     expect(within(gruppe).getByRole('button', { name: 'In Korrektur übernehmen' })).toBeEnabled();
     expect(feld).toHaveValue(`${entwurf.content} Zusatz.`);
@@ -1761,7 +1803,6 @@ describe('CompleteTreatmentPage', () => {
 
       await user.click(screen.getByRole('button', { name: 'Eintragen' }));
       expect(screen.getByText(DIKTAT_OFFEN)).toBeInTheDocument();
-      await user.click(screen.getByRole('button', { name: 'Entwurf' }));
       expect(completeTreatment).not.toHaveBeenCalled();
       expect(createTreatmentNote).not.toHaveBeenCalled();
     });

@@ -13,6 +13,7 @@ import {
   terminOeffnen,
   aktionenOeffnen,
   terminImKalender,
+  entwurfSichernUndZurueck,
 } from './helpers';
 
 /**
@@ -53,7 +54,7 @@ async function finalisierterEintrag(page: Page, tag: string): Promise<string> {
   // `/dokumentation` leitet ebenfalls dorthin.
   await page.goto(`/termine/${terminId}/abschluss`);
   await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
-  await page.getByRole('button', { name: 'Entwurf', exact: true }).click();
+  await entwurfSichernUndZurueck(page);
   await expect(page).toHaveURL(terminImKalender(terminId));
   await aktionenOeffnen(page);
 

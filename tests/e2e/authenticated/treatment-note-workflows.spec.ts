@@ -19,6 +19,7 @@ import {
   TERMIN_IM_KALENDER,
   fensterSchliessen,
   nurTerminAbschliessen,
+  entwurfSichernUndZurueck,
 } from './helpers';
 
 /**
@@ -61,7 +62,7 @@ test.describe('DOK-001: Entwurf anlegen und bearbeiten', () => {
     await expect(page).toHaveURL(`/termine/${terminId}/abschluss`);
 
     await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
-    await page.getByRole('button', { name: 'Entwurf', exact: true }).click();
+    await entwurfSichernUndZurueck(page);
 
     await expect(page).toHaveURL(terminImKalender(terminId));
     await aktionenOeffnen(page);
@@ -81,7 +82,7 @@ test.describe('DOK-001: Entwurf anlegen und bearbeiten', () => {
     // `/dokumentation` leitet ebenfalls dorthin.
     await page.goto(`/termine/${terminId}/abschluss`);
     await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
-    await page.getByRole('button', { name: 'Entwurf', exact: true }).click();
+    await entwurfSichernUndZurueck(page);
     await expect(page).toHaveURL(terminImKalender(terminId));
     await aktionenOeffnen(page);
 
@@ -90,7 +91,7 @@ test.describe('DOK-001: Entwurf anlegen und bearbeiten', () => {
     await expect(page.getByLabel('Eintrag zur Behandlung')).toHaveValue(ENTWURF);
 
     await page.getByLabel('Eintrag zur Behandlung').fill(ERGAENZT);
-    await page.getByRole('button', { name: 'Entwurf', exact: true }).click();
+    await entwurfSichernUndZurueck(page);
 
     await expect(page).toHaveURL(terminImKalender(terminId));
     await aktionenOeffnen(page);
@@ -150,7 +151,7 @@ test.describe('DOK-001: Entwurf anlegen und bearbeiten', () => {
     await expect(page.getByText('Dokumentation fehlt')).toBeVisible();
     await page.getByRole('link', { name: 'Doku schreiben' }).click();
     await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
-    await page.getByRole('button', { name: 'Entwurf', exact: true }).click();
+    await entwurfSichernUndZurueck(page);
     await expect(page).toHaveURL(TERMIN_IM_KALENDER);
     await aktionenOeffnen(page);
 
@@ -166,7 +167,7 @@ test.describe('DOK-001, ROL-001: Office liest den Eintrag, schreibt ihn nicht', 
     // `/dokumentation` leitet ebenfalls dorthin.
     await page.goto(`/termine/${terminId}/abschluss`);
     await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
-    await page.getByRole('button', { name: 'Entwurf', exact: true }).click();
+    await entwurfSichernUndZurueck(page);
     await expect(page).toHaveURL(TERMIN_IM_KALENDER);
     await aktionenOeffnen(page);
     await expect(page.getByText(ENTWURF)).toBeVisible();
@@ -194,7 +195,7 @@ test.describe('DOK-001: Serverseitige Grenzen', () => {
     // `/dokumentation` leitet ebenfalls dorthin.
     await page.goto(`/termine/${terminId}/abschluss`);
     await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
-    await page.getByRole('button', { name: 'Entwurf', exact: true }).click();
+    await entwurfSichernUndZurueck(page);
     await expect(page).toHaveURL(TERMIN_IM_KALENDER);
     await aktionenOeffnen(page);
     await expect(page.getByText(ENTWURF)).toBeVisible();
@@ -239,7 +240,7 @@ test.describe('DOK-001: Serverseitige Grenzen', () => {
     // `/dokumentation` leitet ebenfalls dorthin.
     await page.goto(`/termine/${terminId}/abschluss`);
     await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
-    await page.getByRole('button', { name: 'Entwurf', exact: true }).click();
+    await entwurfSichernUndZurueck(page);
     await expect(page).toHaveURL(TERMIN_IM_KALENDER);
     await aktionenOeffnen(page);
     await expect(page.getByText(ENTWURF)).toBeVisible();
