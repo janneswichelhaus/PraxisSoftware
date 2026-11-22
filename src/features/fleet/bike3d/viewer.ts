@@ -44,6 +44,7 @@ import { kopfUeberSpitze, naechsteNadel, type Nadelkopf } from './nadeltreffer';
  */
 
 const DEG = Math.PI / 180;
+const PULS_BILDABSTAND = 50; // Millisekunden
 const BACKGROUND = 0xf4f5f7; // --color-surface-sunken
 
 /**
@@ -250,6 +251,7 @@ export class BikeViewer {
   private anim: { t0: number; ms: number; from: Orbit; to: Orbit } | null = null;
   private dirty = true;
   private glowDirty = false;
+  private letzterPuls = 0;
   private disposed = false;
   private readonly pointers = new Map<number, { x: number; y: number }>();
   private press: Press | null = null;
@@ -362,10 +364,12 @@ export class BikeViewer {
       const hit = this.raycast(at.x, at.y);
       this.setHover(hit && !hit.markerId ? hit.zone : null);
     }
+    // Der Puls (1,6 s) bleibt mit 20 Bildern je Sekunde ruhig; mehr kostet nur Akku und Rechenzeit.
     const pulsing = this.highlight.length > 0 && !this.reduced;
-    if (pulsing || this.glowDirty) {
+    if (this.glowDirty || (pulsing && now - this.letzterPuls >= PULS_BILDABSTAND)) {
       this.applyGlow(now);
       this.glowDirty = false;
+      this.letzterPuls = now;
       busy = true;
     }
     if (this.dirty || busy) {

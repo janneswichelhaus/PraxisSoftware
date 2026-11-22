@@ -84,6 +84,8 @@ test('Antippen trifft das Bauteil unter dem Finger (AC 1)', async ({ page }) => 
 test('Antippen trifft dünne Teile über ihre unsichtbare Trefferfläche (Übergabe 2)', async ({
   page,
 }) => {
+  // Zwei Ansichten nacheinander laden: in der CI ohne Grafikkarte mehr als die üblichen 30 s.
+  test.setTimeout(90_000);
   await page.setViewportSize({ width: 375, height: 812 });
   // Die Klingel ist klein, der Gepäckträger hat gar keine sichtbaren Teile: Beide trifft man nur
   // über ihre Trefferfläche, auf die die Kamera bei „Am Rad zeigen“ schaut.

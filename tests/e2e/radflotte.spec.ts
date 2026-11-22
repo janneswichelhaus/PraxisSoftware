@@ -785,7 +785,10 @@ test('R5 am Rad: ein Tipp aufs Rad öffnet den Schaden an diesem Bauteil, in dre
   await z.tippe(page.getByRole('button', { name: 'Weiter' }));
 
   const schaden = fenster(page, 'Wo ist der Schaden?');
-  await expect(schaden.getByText('Ziehen dreht · Antippen markiert')).toBeVisible();
+  // Das Modell lädt auf Abruf; ohne Grafikkarte dauert das in der CI länger.
+  await expect(schaden.getByText('Ziehen dreht · Antippen markiert')).toBeVisible({
+    timeout: 20_000,
+  });
   expect(await scrolltNicht(page), 'Wo ist der Schaden? mit Rad ohne Scrollen').toBe(true);
   expect(await axeVerstoesse(page)).toEqual([]);
   await bild(page, 'panne-rad-01-schaden', true);
@@ -1127,7 +1130,8 @@ test('R7: Unterlage für die Werkstatt in zwei Tipps bis zum Druckdialog, zwei A
   const z = zaehler();
   await z.tippe(page.getByRole('link', { name: 'Unterlage für die Werkstatt' }));
   const drucken = page.getByRole('button', { name: 'Drucken oder als PDF sichern' });
-  await expect(drucken).toBeEnabled();
+  // Erst nach den Bildern vom Modell; ohne Grafikkarte rechnet die CI sie in Software.
+  await expect(drucken).toBeEnabled({ timeout: 20_000 });
   expect(await ueberlaeuft(page)).toBe(false);
   // Bauteilnamen statt gerenderter Ansichten des Rads.
   const tabelle = page.getByRole('region', { name: 'Seite 1 von 2' }).getByRole('table');
