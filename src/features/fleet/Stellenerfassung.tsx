@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Disclosure } from '@/components/ui/Card';
 import { Field } from '@/components/ui/Field';
@@ -5,15 +6,66 @@ import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Wahlreihe } from '@/components/ui/Wahlreihe';
 import { BIKE_ZONES, checkItemLabels, isZoneKey, zoneCheckItem, zoneLabel } from './zones';
 import type { Spot } from './api';
+import type { BikePick } from './bike3d/ansichten';
+import { BikeModel3D, type BikeFocus } from './bike3d/BikeModel3D';
 import { Bauteilwahl } from './Bauteilwahl';
 import { Einstufung } from './Einstufung';
 import { Fotovormerkung } from './Fotovormerkung';
-import type { Entwurf, Stellenzustand } from './stellen';
+import { radBild, type Entwurf, type Stellenzustand } from './stellen';
 
 /**
  * Stellen erfassen in Check-Up und Panne: Bauteil, Einstufung, Notiz, Fotos.
  * Schon offene Stellen werden nicht übernommen; erst die Freigabe erledigt sie (ANN-555).
  */
+
+/**
+ * Das 3D-Rad als Bühne der Panne (Stand cc3ebbbb): Antippen setzt eine Nadel oder versetzt die
+ * offene, die Kamera fliegt zum gewählten Bauteil. Schon offene Stellen stehen mit ihrer Nummer.
+ */
+export function Stellenbuehne({
+  zustand,
+  bestehend,
+}: {
+  zustand: Stellenzustand;
+  /** Die offenen Stellen des Rads aus früheren Meldungen, mit ihrer Nummer. */
+  bestehend: readonly Spot[];
+}) {
+  const { entwurf, stellen } = zustand;
+  const { markers, draft } = radBild(zustand, bestehend);
+  const zone = entwurf && isZoneKey(entwurf.zone) ? entwurf.zone : null;
+  const [fokus, setFokus] = useState<BikeFocus | null>(null);
+  const [gezeigt, setGezeigt] = useState<string | null>(null);
+  if (zone !== gezeigt) {
+    setGezeigt(zone);
+    if (zone) setFokus((vorher) => ({ zones: [zone], token: (vorher?.token ?? 0) + 1 }));
+  }
+
+  function tippen(treffer: BikePick | null) {
+    if (!treffer || !isZoneKey(treffer.zone)) return;
+    // Eine Nadel dieser Meldung öffnet ihre Stelle; die früherer Meldungen bleiben, wie sie sind.
+    if (treffer.markerId) {
+      if (stellen.some((stelle) => stelle.key === treffer.markerId)) {
+        zustand.bearbeite(treffer.markerId);
+      }
+      return;
+    }
+    zustand.waehle(treffer.zone);
+  }
+
+  return (
+    <BikeModel3D
+      hoehe="100%"
+      markers={markers}
+      draft={draft}
+      activeMarkerId={entwurf?.key ?? null}
+      highlight={zone ? [zone] : []}
+      focus={fokus}
+      hinweis={entwurf ? 'Antippen versetzt die Nadel' : 'Ziehen dreht · Antippen markiert'}
+      neuLaden={false}
+      onPick={tippen}
+    />
+  );
+}
 
 /**
  * Ohne offene Stelle: die gesetzten Stellen mit „Ändern“, darunter die Liste für die nächste.

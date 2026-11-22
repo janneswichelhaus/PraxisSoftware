@@ -1,0 +1,214 @@
+import { Mesh, PerspectiveCamera, Raycaster, Vector3, type Material, type Object3D } from 'three';
+import {
+  createRenderer,
+  createScene,
+  disposeScene,
+  fitRadius,
+  placeCamera,
+  zoneOrbit,
+  type Orbit,
+} from './viewer';
+import { isZoneKey } from '../zones';
+import { BIKE_CENTER, type ModelPoint } from './ansichten';
+
+/**
+ * Bilder der Werkstatt-Unterlage, ohne Bildschirm als PNG gerechnet; die Nadeln zeichnet die Seite
+ * als SVG darüber, damit sie scharf drucken. Je Stelle höchstens eine Seitenansicht, verdeckt die
+ * andere, auf beiden verdeckt nur im Ausschnitt. Wie der Betrachter nur auf Abruf (ANN-556).
+ */
+
+export interface Bildstelle {
+  id: string;
+  zone: string;
+  point: ModelPoint | null;
+}
+
+export interface Bildpunkt {
+  id: string;
+  /** Lage in Prozent der Bildbreite und -höhe. */
+  x: number;
+  y: number;
+}
+
+export interface Werkstattbild {
+  url: string;
+  punkte: Bildpunkt[];
+}
+
+export interface Werkstattbilder {
+  rechts: Werkstattbild;
+  links: Werkstattbild;
+  ausschnitte: Record<string, Werkstattbild>;
+}
+
+const DEG = Math.PI / 180;
+
+const SEITEN = {
+  rechts: { theta: 0, phi: 84 },
+  links: { theta: 180, phi: 84 },
+} as const;
+
+/** Die Bremse vorne von links (Handoff, Abschnitt 4), auf die Mitte ihres Bauteils. */
+const BREMSE_VORNE = { theta: 180 * DEG, phi: 84 * DEG, radius: 1.05 } as const;
+
+function sichtbarerStoff(objekt: Object3D): boolean {
+  if (!(objekt instanceof Mesh) || !objekt.visible) return false;
+  const stoffe = [objekt.material as Material | Material[]].flat();
+  return stoffe.some((stoff) => stoff.visible);
+}
+
+export async function zeichneWerkstattbilder(
+  stellen: readonly Bildstelle[],
+  // Die Seitenansichten stehen auf Seite 1 nebeneinander, je 341 : 200 wie
+  // im Entwurf; die Ausschnitte 3 : 2. Dreifach gerechnet, damit sie auf
+  // Papier scharf bleiben.
+  masse: { seite: [number, number]; ausschnitt: [number, number] } = {
+    seite: [1023, 600],
+    ausschnitt: [900, 600],
+  },
+): Promise<Werkstattbilder> {
+  const renderer = createRenderer();
+  renderer.setPixelRatio(1);
+  const { scene, bike } = await createScene(renderer);
+  const camera = new PerspectiveCamera(30, 1, 0.03, 60);
+  const raycaster = new Raycaster();
+  const koerper: Object3D[] = [];
+  bike.root.traverse((objekt) => {
+    if (sichtbarerStoff(objekt)) koerper.push(objekt);
+  });
+
+  try {
+    function kamera(breite: number, hoehe: number, orbit: Orbit) {
+      renderer.setSize(breite, hoehe, false);
+      camera.aspect = breite / hoehe;
+      camera.updateProjectionMatrix();
+      placeCamera(camera, orbit);
+      camera.updateMatrixWorld();
+    }
+
+    function bild(): string {
+      renderer.render(scene, camera);
+      return renderer.domElement.toDataURL('image/png');
+    }
+
+    function lage(punkt: Vector3): { x: number; y: number } {
+      const ndc = punkt.clone().project(camera);
+      return { x: ((ndc.x + 1) / 2) * 100, y: ((1 - ndc.y) / 2) * 100 };
+    }
+
+    /**
+     * Trifft der Strahl von der Kamera vor dem Punkt auf ein anderes Bauteil?
+     * Das eigene zählt nicht: Ohne gespeicherten Punkt steht die Nadel auf
+     * dem Bauteil, seine Fläche läge sonst immer davor.
+     */
+    function verdeckt(punkt: Vector3, zone: string): boolean {
+      const richtung = punkt.clone().sub(camera.position);
+      const abstand = richtung.length();
+      raycaster.set(camera.position, richtung.normalize());
+      raycaster.far = abstand;
+      return raycaster
+        .intersectObjects(koerper, false)
+        .some(
+          (treffer) => treffer.distance < abstand - 0.025 && treffer.object.userData.zone !== zone,
+        );
+    }
+
+    function punktVon(stelle: Bildstelle): Vector3 | null {
+      if (stelle.point) return new Vector3(...stelle.point);
+      const anker = isZoneKey(stelle.zone) ? bike.zones[stelle.zone]?.anker : undefined;
+      return anker ? anker.clone() : null;
+    }
+
+    // Ohne Punkt die Ecken des Bauteils, die nächsten am Anker zuerst: Davon zählt die erste freie.
+    const eckenJeZone = new Map<string, Vector3[]>();
+    function kandidaten(stelle: Bildstelle): Vector3[] {
+      const anker = punktVon(stelle);
+      if (!anker) return [];
+      if (stelle.point) return [anker];
+      let ecken = eckenJeZone.get(stelle.zone);
+      if (!ecken) {
+        ecken = [];
+        for (const mesh of bike.zones[stelle.zone]?.meshes ?? []) {
+          if (mesh.userData.trefferflaeche) continue;
+          const lage = mesh.geometry.getAttribute('position');
+          const schritt = Math.max(1, Math.floor(lage.count / 400));
+          for (let i = 0; i < lage.count; i += schritt) {
+            ecken.push(new Vector3().fromBufferAttribute(lage, i).applyMatrix4(mesh.matrixWorld));
+          }
+        }
+        ecken.sort((a, b) => a.distanceToSquared(anker) - b.distanceToSquared(anker));
+        eckenJeZone.set(stelle.zone, ecken);
+      }
+      return ecken.slice(0, 300);
+    }
+
+    /** Der Punkt der Stelle, den die aktuelle Kamera frei sieht, oder `null`. */
+    function sichtbarerPunkt(stelle: Bildstelle): Vector3 | null {
+      return kandidaten(stelle).find((punkt) => !verdeckt(punkt, stelle.zone)) ?? null;
+    }
+
+    const [seitenBreite, seitenHoehe] = masse.seite;
+    const seitenOrbit = (seite: keyof typeof SEITEN): Orbit => ({
+      theta: SEITEN[seite].theta * DEG,
+      phi: SEITEN[seite].phi * DEG,
+      // Enger als im Betrachter: Auf Papier liegen keine Knöpfe über dem Rad.
+      radius: fitRadius(seitenBreite / seitenHoehe) * 0.95,
+      target: new Vector3(...BIKE_CENTER),
+    });
+
+    // Welche Stelle auf welcher Seite steht, entscheidet die Verdeckung.
+    const sichtbar = { rechts: new Map<string, Vector3>(), links: new Map<string, Vector3>() };
+    for (const seite of ['rechts', 'links'] as const) {
+      kamera(seitenBreite, seitenHoehe, seitenOrbit(seite));
+      for (const stelle of stellen) {
+        const punkt = sichtbarerPunkt(stelle);
+        if (punkt) sichtbar[seite].set(stelle.id, punkt);
+      }
+    }
+    const zuordnung = new Map<string, 'rechts' | 'links'>();
+    for (const stelle of stellen) {
+      const punkt = punktVon(stelle);
+      if (!punkt) continue;
+      const zuerst = punkt.z >= 0 ? 'rechts' : 'links';
+      const sonst = zuerst === 'rechts' ? 'links' : 'rechts';
+      if (sichtbar[zuerst].has(stelle.id)) zuordnung.set(stelle.id, zuerst);
+      else if (sichtbar[sonst].has(stelle.id)) zuordnung.set(stelle.id, sonst);
+    }
+
+    function seitenbild(seite: 'rechts' | 'links'): Werkstattbild {
+      kamera(seitenBreite, seitenHoehe, seitenOrbit(seite));
+      const punkte: Bildpunkt[] = [];
+      for (const stelle of stellen) {
+        const punkt = sichtbar[seite].get(stelle.id);
+        if (punkt && zuordnung.get(stelle.id) === seite)
+          punkte.push({ id: stelle.id, ...lage(punkt) });
+      }
+      return { url: bild(), punkte };
+    }
+
+    const rechts = seitenbild('rechts');
+    const links = seitenbild('links');
+
+    const [ausschnittBreite, ausschnittHoehe] = masse.ausschnitt;
+    const ausschnitte: Record<string, Werkstattbild> = {};
+    for (const stelle of stellen) {
+      const bremse = bike.zones['bremse-vorne']?.center;
+      const orbit =
+        stelle.zone === 'bremse-vorne' && bremse
+          ? { ...BREMSE_VORNE, target: bremse.clone() }
+          : zoneOrbit(bike, [stelle.zone], ausschnittBreite / ausschnittHoehe);
+      if (!orbit) continue;
+      kamera(ausschnittBreite, ausschnittHoehe, orbit);
+      const punkt = sichtbarerPunkt(stelle) ?? punktVon(stelle);
+      ausschnitte[stelle.id] = {
+        url: bild(),
+        punkte: punkt ? [{ id: stelle.id, ...lage(punkt) }] : [],
+      };
+    }
+
+    return { rechts, links, ausschnitte };
+  } finally {
+    disposeScene(scene);
+    renderer.dispose();
+  }
+}

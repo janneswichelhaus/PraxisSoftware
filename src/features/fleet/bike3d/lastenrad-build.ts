@@ -3,6 +3,7 @@
 // Namen kommen aus dem Entwurf und werden in diesem Repository nicht geändert.
 
 import {
+  Box3,
   BoxGeometry,
   BufferAttribute,
   BufferGeometry,
@@ -42,17 +43,91 @@ type Laufrad = { x: number; y: number; r: number };
 
 const istTeil = (o: Object3D): o is Teil => (o as Partial<Mesh>).isMesh === true;
 
+/* Bauteile der Praxissoftware. Jedes Teil gehört zu genau einem Bauteil; dessen Schlüssel steht in
+   mesh.userData.zone. Geprüft wird von oben nach unten, die erste passende Regel gilt.
+   Der Gepäckträger hat keine eigenen Teile, nur eine Trefferfläche (siehe unten). */
+const BAUTEIL_REGELN: readonly (readonly [string, RegExp])[] = [
+  ['reifen-vorne', /^vorderrad_reifen/],
+  ['reifen-hinten', /^hinterrad_reifen/],
+  ['bremse-vorne', /^(vorderrad_bremsscheibe|bremssattel_vorn)/],
+  ['bremse-hinten', /^hinterrad_bremsscheibe/],
+  ['laufrad-vorne', /^vorderrad_/],
+  ['laufrad-hinten', /^hinterrad_/],
+  ['bremsgriffe', /^(bremsgeber|bremshebel|bremsleitung)_/],
+  ['riemen', /^kette_/],
+  ['nabenschaltung', /^(kassette|schaltwerk|schaltroellchen)/],
+  ['kurbeln', /^((kurbel|pedal)_|tretlager|kettenblatt|kettenschutz)/],
+  ['motor', /^mittelmotor/],
+  ['akku', /^akku/],
+  ['licht-vorne', /^scheinwerfer/],
+  ['licht-hinten', /^ruecklicht/],
+  ['sattel', /^sattel/],
+  ['klingel', /^klingel/],
+  ['schutzblech-vorne', /^(schutzblech_vorn|spritzlappen)/],
+  ['schutzblech-hinten', /^schutzblech/],
+  ['staender', /^staender_/],
+  ['transportbox', /^(transportbox|box_|werbeflaeche_)/],
+  ['display', /^(display|bedieneinheit)/],
+  ['lenker', /^(lenker$|vorbau|griff_|schalthebel)/],
+  ['lenkung', /^(lenkhebel|lenkgestaenge|lenkplatte|steuersatz_)/],
+  ['gabel', /^(gabel|standrohr_|tauchrohr_)/],
+  ['daempfer', /^daempfer(_|feder|bolzen)/],
+  [
+    'rahmen',
+    /^(sitzrohr|oberrohr|lenksaeule|haupttraeger|motorhalter|schwinge|ausfallende_|daempferhalter|reling|bodenholm_|strebe_|bug_|rueckstrahler_|quertraeger_|ladeboden|steuerrohr)/,
+  ],
+];
+const bauteilVon = (name: string) => BAUTEIL_REGELN.find(([, regel]) => regel.test(name))?.[0];
+
+/** Die Schlüssel aller Bauteile, wie sie in mesh.userData.zone vorkommen (Reihenfolge wie in der Praxissoftware). */
+export const BAUTEILE = [
+  'reifen-vorne',
+  'reifen-hinten',
+  'laufrad-vorne',
+  'laufrad-hinten',
+  'bremse-vorne',
+  'bremse-hinten',
+  'bremsgriffe',
+  'riemen',
+  'nabenschaltung',
+  'kurbeln',
+  'motor',
+  'akku',
+  'licht-vorne',
+  'licht-hinten',
+  'sattel',
+  'klingel',
+  'schutzblech-vorne',
+  'schutzblech-hinten',
+  'staender',
+  'transportbox',
+  'rahmen',
+  'lenker',
+  'display',
+  'lenkung',
+  'gabel',
+  'daempfer',
+  'gepaecktraeger',
+] as const;
+
 export interface BuildOptions {
   /** Andere Adresse für die Wortmarke (SVG oder PNG). */
   logoUrl?: string | undefined;
   /** Teile je Material zusammenfassen: nur für die Anzeige, die Teilenamen entfallen dabei. */
   merge?: boolean | undefined;
+  /**
+   * Für die Praxissoftware: Jedes Bauteil bekommt eigene Materialien (Name „bauteil|material“),
+   * damit es einzeln leuchten kann, und dünne Teile bekommen unsichtbare Trefferflächen
+   * (userData.trefferflaeche). Mit merge bleibt dann ein Mesh je Bauteil und Material.
+   */
+  bauteile?: boolean | undefined;
 }
 
 /** Baut das Lastenrad als Gruppe benannter Meshes mit benannten Materialien. */
 export async function buildLastenrad({
   logoUrl,
   merge = false,
+  bauteile = false,
 }: BuildOptions = {}): Promise<Group> {
   // Wortmarke als Bild laden (nie neu gesetzt). Fehlt sie, bleibt die Box ohne Aufdruck.
   const logoImg = await new Promise<HTMLImageElement | null>((res) => {
@@ -117,6 +192,7 @@ export async function buildLastenrad({
 
   const part = <T extends Object3D>(mesh: T, name: string, group?: Group): T => {
     mesh.name = name;
+    mesh.userData.zone = bauteilVon(name);
     (group || model).add(mesh);
     return mesh;
   };
@@ -1026,6 +1102,73 @@ export async function buildLastenrad({
     d.rotation.x = -Math.PI / 2;
   }
 
+  if (bauteile) {
+    /* Unsichtbare Trefferflächen: Dünne Teile lassen sich so sicher antippen. Sie werden nie
+       gezeichnet und werfen keinen Schatten, zählen aber beim Antippen und beim Umriss ihres Bauteils. */
+    model.updateMatrixWorld(true);
+    const unsichtbar: Record<string, Stoff> = {};
+    const treffer = (zone: string, geo: BufferGeometry, mitte: P3) => {
+      const m = new Mesh(
+        geo,
+        (unsichtbar[zone] ??= new MeshStandardMaterial({
+          name: zone + '|trefferflaeche',
+          visible: false,
+        })),
+      );
+      m.position.set(...mitte);
+      m.name = 'trefferflaeche_' + zone;
+      m.userData = { zone, trefferflaeche: true };
+      model.add(m);
+      return m;
+    };
+    // Kasten um alle Teile, deren Name passt, mit etwas Rand
+    const kasten = (zone: string, regel: RegExp, rand: number) => {
+      const b = new Box3();
+      model.traverse((o) => {
+        if (istTeil(o) && regel.test(o.name)) b.expandByObject(o, true);
+      });
+      const g = b.expandByScalar(rand).getSize(new Vector3());
+      const c = b.getCenter(new Vector3());
+      treffer(zone, new BoxGeometry(g.x, g.y, g.z), [c.x, c.y, c.z]);
+    };
+    // Scheibe über den Speichen, zwischen Nabe und Felge
+    for (const [zone, w] of [
+      ['laufrad-hinten', REAR],
+      ['laufrad-vorne', FRONT],
+    ] as const) {
+      treffer(zone, new CylinderGeometry(w.r - 2 * TB, w.r - 2 * TB, 0.04, 32), [
+        w.x,
+        w.y,
+        0,
+      ]).rotation.x = Math.PI / 2;
+    }
+    // Je Seite ein Kasten, wie im Entwurf `new RegExp('^(bremsgeber|bremshebel)_' + s)`.
+    for (const regel of [/^(bremsgeber|bremshebel)_r/, /^(bremsgeber|bremshebel)_l/]) {
+      kasten('bremsgriffe', regel, 0.02);
+    }
+    kasten('klingel', /^klingel/, 0.025);
+    kasten('lenkung', /^lenkgestaenge/, 0.025);
+    kasten('licht-vorne', /^scheinwerfer/, 0.02);
+    kasten('licht-hinten', /^ruecklicht/, 0.025);
+    kasten('staender', /^staender_/, 0.01);
+    // Gepäckträger: Das Rad hat keinen. Die Fläche über dem hinteren Schutzblech hält das Bauteil antippbar.
+    treffer('gepaecktraeger', new BoxGeometry(0.4, 0.06, 0.14), [
+      REAR.x - 0.05,
+      REAR.y + REAR.r + 0.07,
+      0,
+    ]);
+
+    // Eigene Materialien je Bauteil: Leuchtet eines, bleiben die anderen unverändert
+    const eigen = new Map<string, Stoff>();
+    model.traverse((o) => {
+      if (!istTeil(o) || o.userData.trefferflaeche) return;
+      const key = `${String(o.userData.zone)}|${o.material.name}`;
+      if (!eigen.has(key)) eigen.set(key, Object.assign(o.material.clone(), { name: key }));
+      o.material = eigen.get(key)!;
+    });
+    Object.values(MAT).forEach((m) => m.dispose());
+  }
+
   return merge ? verschmelzen(model) : model;
 }
 
@@ -1074,6 +1217,13 @@ function verschmelzen(model: Group): Group {
     geo.setIndex(index);
     const mesh = new Mesh(geo, mat);
     mesh.name = mat.name;
+    // Bauteil nur übernehmen, wenn alle zusammengefassten Teile dasselbe haben (Option bauteile)
+    const { zone, trefferflaeche } = teile[0]!.userData as {
+      zone?: string;
+      trefferflaeche?: boolean;
+    };
+    if (teile.every((t) => t.userData.zone === zone)) mesh.userData.zone = zone;
+    if (trefferflaeche) mesh.userData.trefferflaeche = true;
     ganz.add(mesh);
   }
   return ganz;

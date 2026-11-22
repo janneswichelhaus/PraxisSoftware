@@ -5,16 +5,7 @@ import { Inhaltsflaeche } from '@/components/ui/Card';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { Field } from '@/components/ui/Field';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
-import { Zweispalter } from '@/components/ui/Zweispalter';
-import {
-  FLOTTE_SCHLUESSEL,
-  blockBike,
-  removeBike,
-  type Bike,
-  type BikeDetail,
-  type Fleet,
-} from './api';
-import { Stellenrad } from './Bauteilrad';
+import { FLOTTE_SCHLUESSEL, blockBike, removeBike, type Bike, type Fleet } from './api';
 import { bikeTypeLabels } from './zones';
 import { BikeForm } from './BikeForm';
 import { wochentageKurz } from './format';
@@ -30,13 +21,10 @@ import { depotName, standort } from './rad';
 export function RadAngaben({
   rad,
   flotte,
-  offen,
   onMeldung,
 }: {
   rad: Bike;
   flotte: Fleet;
-  /** Die offenen Stellen des Rads, am 3D-Rad markiert. */
-  offen: BikeDetail['spots'];
   onMeldung: (text: string) => void;
 }) {
   const queryClient = useQueryClient();
@@ -73,51 +61,35 @@ export function RadAngaben({
 
   return (
     <>
-      {/* ANN-868: Das Rad zum Ansehen mit den offenen Stellen; bearbeitet werden sie im Reiter. */}
-      <Zweispalter
-        kontextBreite="schmal"
-        // Einspaltig so breit wie das Formular darüber, nicht breiter.
-        kontext={
-          <Stellenrad
-            offen={offen}
-            className={flotte.can_manage ? 'max-w-formular h-64' : 'h-64'}
-          />
-        }
-      >
-        {flotte.can_manage ? (
-          <BikeForm
-            // Nach dem Speichern steht der neue Stand im Formular.
-            key={rad.updated_at}
-            rad={rad}
-            flotte={flotte}
-            abbrechenZiel="/betrieb/flotte"
-            onGespeichert={(_id, freigeben) => {
-              freigeben();
-              onMeldung('Angaben gespeichert.');
-            }}
-          />
-        ) : (
-          <Inhaltsflaeche className="lg:max-w-spalte">
-            <DetailList>
-              <DetailRow label="Bauart">{bikeTypeLabels[rad.bike_type].lang}</DetailRow>
-              <DetailRow label="Stammdepot">
-                {depotName(flotte.depots, rad.home_depot_id)}
-              </DetailRow>
-              <DetailRow label="Steht gerade">{standort(rad, flotte.depots)}</DetailRow>
-              <DetailRow label="Stammnutzer:in">
-                {rad.is_spare ? 'Ersatzrad' : (rad.regular_rider?.name ?? 'Keine')}
-              </DetailRow>
-              {!rad.is_spare && rad.planned_weekdays.length > 0 ? (
-                <DetailRow label="Fährt das Rad am">
-                  {wochentageKurz(rad.planned_weekdays)}
-                </DetailRow>
-              ) : null}
-              {rad.battery ? <DetailRow label="Akku">{rad.battery}</DetailRow> : null}
-              {rad.note ? <DetailRow label="Notiz">{rad.note}</DetailRow> : null}
-            </DetailList>
-          </Inhaltsflaeche>
-        )}
-      </Zweispalter>
+      {flotte.can_manage ? (
+        <BikeForm
+          // Nach dem Speichern steht der neue Stand im Formular.
+          key={rad.updated_at}
+          rad={rad}
+          flotte={flotte}
+          abbrechenZiel="/betrieb/flotte"
+          onGespeichert={(_id, freigeben) => {
+            freigeben();
+            onMeldung('Angaben gespeichert.');
+          }}
+        />
+      ) : (
+        <Inhaltsflaeche className="lg:max-w-spalte">
+          <DetailList>
+            <DetailRow label="Bauart">{bikeTypeLabels[rad.bike_type].lang}</DetailRow>
+            <DetailRow label="Stammdepot">{depotName(flotte.depots, rad.home_depot_id)}</DetailRow>
+            <DetailRow label="Steht gerade">{standort(rad, flotte.depots)}</DetailRow>
+            <DetailRow label="Stammnutzer:in">
+              {rad.is_spare ? 'Ersatzrad' : (rad.regular_rider?.name ?? 'Keine')}
+            </DetailRow>
+            {!rad.is_spare && rad.planned_weekdays.length > 0 ? (
+              <DetailRow label="Fährt das Rad am">{wochentageKurz(rad.planned_weekdays)}</DetailRow>
+            ) : null}
+            {rad.battery ? <DetailRow label="Akku">{rad.battery}</DetailRow> : null}
+            {rad.note ? <DetailRow label="Notiz">{rad.note}</DetailRow> : null}
+          </DetailList>
+        </Inhaltsflaeche>
+      )}
 
       {flotte.can_release && !rad.block ? (
         <div className="border-line max-w-formular mt-8 border-t pt-6">

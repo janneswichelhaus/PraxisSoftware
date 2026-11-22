@@ -30,6 +30,7 @@ import {
   zoneCheckItem,
   zoneLabel,
   zonesOfCheckItem,
+  ZONE_KEYS,
   type CheckItemKey,
   type CheckRating,
   type Severity,
@@ -62,14 +63,14 @@ import {
   type Teil,
   type Werbeflaechen,
 } from './checkupablauf';
-import { Bauteilrad } from './Bauteilrad';
-import { Bauteilwahl } from './Bauteilwahl';
+import { CHECK_ITEM_VIEWS, type BikePick, type ZoneView } from './bike3d/ansichten';
+import { BikeModel3D, type BikeFocus } from './bike3d/BikeModel3D';
 import { Einstufung } from './Einstufung';
 import { fotoText, fotosVerlorenText, uebertrageFotos, type Fotoauftrag } from './fotoauftraege';
 import { Fotovormerkung } from './Fotovormerkung';
 import { useObjektadressen } from './objektadressen';
 import { Entwurfsfeld, SchonOffen } from './Stellenerfassung';
-import { useStellenerfassung, type Stelle } from './stellen';
+import { radBild, useStellenerfassung, type Stelle } from './stellen';
 
 /**
  * Der geführte Check-Up (ANN-563, ANN-568): eine Seite je Prüfpunkt, keiner vorbelegt, damit am
@@ -93,6 +94,9 @@ export function CheckupFenster({
   const erfassung = useStellenerfassung({ art: 'checkup' });
   const { stellen, entwurf } = erfassung;
   const [seite, setSeite] = useState<Seite>(START);
+  const [fokus, setFokus] = useState<BikeFocus>(() => fokusFuer(START, 1));
+  // Ein Tipp auf ein Bauteil eines anderen Prüfpunkts: Die Hinweiszeile sagt es.
+  const [fremd, setFremd] = useState<string | null>(null);
   const [antworten, setAntworten] = useState<Antworten>({});
   // Die Antwort auf den Punkt, solange „Wo genau?“ und „Was ist aufgefallen?“
   // laufen. Sie gilt erst mit „Weiter“; wer zurückgeht, nimmt sie nicht mit.
@@ -208,6 +212,12 @@ export function CheckupFenster({
   // ---------------------------------------------------------------------------
 
   function gehe(neu: Seite) {
+    setFremd(null);
+    const andererOrt =
+      neu.art !== seite.art ||
+      (neu.art === 'punkt' && seite.art === 'punkt' && neu.index !== seite.index) ||
+      (neu.art === 'foto' && seite.art === 'foto' && neu.index !== seite.index);
+    if (andererOrt) setFokus((vorher) => fokusFuer(neu, vorher.token + 1));
     if (neu.art === 'abschluss') setZurUebersicht(false);
     setSeite(neu);
   }
@@ -312,28 +322,67 @@ export function CheckupFenster({
       severity: vorlaeufig?.rating ?? 'problem',
       ...(entwurf ? {} : { note: vorlaeufig?.note ?? '' }),
     });
+    zumBauteil(zone);
     gehe(wasSeite(index, true));
   }
 
-  /** Ein Tipp aufs Rad auf der Frage: eine Stelle an diesem Bauteil, die Einstufung folgt. */
-  function amRad(index: number, zone: ZoneKey) {
-    const item = CHECK_ITEMS[index]!;
-    const vorher = antworten[item.key];
-    const note = vorher && vorher.rating !== 'ok' ? vorher.note : '';
-    const erste = eigeneStellen(item.key)[0];
-    const rating: Severity =
-      erste?.severity ?? (vorher && vorher.rating !== 'ok' ? vorher.rating : 'problem');
-    setVorlaeufig({ rating, note });
-    if (erste) {
-      // Neu bewerten ersetzt die Stelle des Punkts: Sie wandert samt Notiz ans getippte Bauteil.
-      erfassung.bearbeite(erste.key);
-      erfassung.aendere({ zone });
-    } else {
-      erfassung.verwerfen();
-      erfassung.waehle(zone);
-      erfassung.aendere({ severity: rating, note });
+  /** Die Kamera an die gewählte Stelle. */
+  function zumBauteil(zone: string) {
+    setFokus((vorher) => ({ zones: [zone], token: vorher.token + 1 }));
+  }
+
+  /** Eine neue Stelle dieser Meldung wählt die Nadel aus, sonst gilt das Bauteil. */
+  function tippe(treffer: BikePick) {
+    if (treffer.markerId && stellen.some((stelle) => stelle.key === treffer.markerId)) {
+      erfassung.bearbeite(treffer.markerId);
+    } else erfassung.waehle(treffer.zone);
+  }
+
+  /** Ein Tipp aufs Rad: auf der Frage „Problem an dieser Stelle“, sonst setzt er die Stelle. */
+  function amRad(treffer: BikePick | null) {
+    if (
+      !treffer ||
+      !isZoneKey(treffer.zone) ||
+      seite.art === 'abschluss' ||
+      seite.art === 'werbung' ||
+      seite.art === 'foto'
+    ) {
+      return;
     }
-    gehe(wasSeite(index, false));
+    if (seite.art === 'weitere') {
+      if (entwurf) tippe(treffer);
+      return;
+    }
+    const item = CHECK_ITEMS[seite.index]!;
+    if (zoneCheckItem(treffer.zone) !== item.key) {
+      setFremd(treffer.zone);
+      return;
+    }
+    setFremd(null);
+    // Eine Nadel aus einer früheren Meldung bleibt, wie sie ist.
+    if (treffer.markerId && !stellen.some((stelle) => stelle.key === treffer.markerId)) return;
+    if (seite.teil === 'bewerten') {
+      const vorher = antworten[item.key];
+      const rating: Severity = vorher && vorher.rating !== 'ok' ? vorher.rating : 'problem';
+      setVorlaeufig({ rating, note: vorher && vorher.rating !== 'ok' ? vorher.note : '' });
+      const erste = eigeneStellen(item.key)[0];
+      if (!erste) erfassung.verwerfen();
+      else if (!treffer.markerId) erfassung.bearbeite(erste.key);
+      tippe(treffer);
+      erfassung.aendere({ severity: rating });
+      zumBauteil(treffer.zone);
+      gehe(wasSeite(seite.index, false));
+      return;
+    }
+    // „Wo genau?“ und „Was ist aufgefallen?“: setzt oder versetzt die Stelle;
+    // eine Notiz ohne Stelle wandert mit an sie.
+    tippe(treffer);
+    erfassung.aendere({
+      severity: vorlaeufig?.rating ?? 'problem',
+      ...(entwurf ? {} : { note: vorlaeufig?.note ?? '' }),
+    });
+    zumBauteil(treffer.zone);
+    if (seite.teil === 'wo') gehe(wasSeite(seite.index, true));
   }
 
   function ohneStelle(index: number) {
@@ -363,6 +412,8 @@ export function CheckupFenster({
     erfassung.verwerfen();
     setVorlaeufig(null);
     setQuittung(null);
+    setFremd(null);
+    setFokus((vorher) => fokusFuer(ziel, vorher.token + 1));
     setSeite(ziel);
   }
 
@@ -421,26 +472,33 @@ export function CheckupFenster({
   // Im Abschluss rollt die Zusammenfassung; Haken und Speichern stehen fest darunter.
   const abschlussZeigen = seite.art === 'abschluss' && !ausstehend;
 
-  // Das Rad zeigt je Prüfpunkt dessen Bauteile und steht, wo ein Bauteil zu wählen ist (ANN-870).
-  // Neben Notiz und Fotos bliebe am Telefon kein Platz; die weitere Stelle fragt es deshalb zuerst.
-  const bauteilZuerst = seite.art === 'weitere' && entwurf !== null && !isZoneKey(entwurf.zone);
-  const rad = ausstehend ? undefined : seite.art === 'punkt' && seite.teil !== 'was' ? (
-    <Bauteilrad
-      waehlbar={zonesOfCheckItem(punkt!.key)}
-      stellen={stellen}
-      entwurf={entwurf}
-      legende={seite.teil === 'wo'}
-      onWahl={(zone) =>
-        seite.teil === 'wo' ? waehleBauteil(seite.index, zone) : amRad(seite.index, zone)
-      }
-    />
-  ) : bauteilZuerst ? (
-    <Bauteilrad
-      stellen={stellen}
-      entwurf={entwurf}
-      onWahl={(zone) => erfassung.aendere({ zone })}
-    />
-  ) : undefined;
+  // Was das Rad zeigt: Nadeln aller Stellen, das Leuchten am Prüfpunkt oder an der offenen Stelle.
+  const { markers, draft } = radBild(erfassung, offen);
+  const highlight =
+    seite.art === 'punkt'
+      ? seite.teil === 'was' && entwurf?.zone
+        ? [entwurf.zone]
+        : zonesOfCheckItem(punkt!.key)
+      : seite.art === 'werbung'
+        ? ['transportbox']
+        : entwurf?.zone
+          ? [entwurf.zone]
+          : [];
+  const hinweis = fremd
+    ? `${zoneLabel(fremd)}: anderer Prüfpunkt`
+    : seite.art === 'punkt'
+      ? seite.teil === 'bewerten'
+        ? 'Problem? Stelle antippen'
+        : seite.teil === 'wo'
+          ? 'Betroffene Stelle antippen'
+          : entwurf
+            ? 'Andere Stelle? Antippen'
+            : 'Doch eine Stelle? Antippen'
+      : seite.art === 'weitere'
+        ? 'Bauteil am Rad antippen'
+        : seite.art === 'foto'
+          ? `So ungefähr: ${SEITEN[seite.index]!.label}`
+          : 'Ziehen dreht das Rad';
 
   return (
     <GefuehrterAblauf
@@ -448,14 +506,29 @@ export function CheckupFenster({
       objekt={`${bike.name} · ${bikeTypeLabels[bike.bike_type].kurz}`}
       schliessen="Check-Up abbrechen"
       onSchliessen={() => void navigate(zurueck)}
-      seite={bauteilZuerst ? 'weitere-bauteil' : seitenKennung(seite)}
+      seite={seitenKennung(seite)}
       stand={{ text: stand.text, wert: stand.wert, von: SCHRITTE }}
       onZurueck={zurueckZiel ? zurueckGehen : undefined}
       ansage={ansage}
       schutz={schutz}
+      buehne={
+        <BikeModel3D
+          hoehe="100%"
+          ansichten={seite.art === 'abschluss' || seite.art === 'weitere'}
+          ersatz="Alle Schritte auch über die Knöpfe"
+          neuLaden={false}
+          markers={markers}
+          draft={draft}
+          activeMarkerId={entwurf?.key ?? null}
+          highlight={highlight}
+          focus={fokus}
+          hinweis={hinweis}
+          onPick={amRad}
+        />
+      }
+      buehneAmTelefon={!abschlussZeigen}
+      flaecheKnapp={seite.art === 'weitere' && entwurf !== null}
       abschluss={abschlussZeigen}
-      inhaltUnten={!abschlussZeigen}
-      vorDemTitel={rad}
       fuss={
         abschlussZeigen ? (
           <AbschlussFuss
@@ -528,26 +601,6 @@ export function CheckupFenster({
           onAufnahme={(foto) => fotoAufgenommen(seite.index, foto)}
           onWeiter={() => fotoWeiter(seite.index)}
         />
-      ) : bauteilZuerst ? (
-        <div className="flex flex-col gap-3">
-          <Bauteilwahl
-            label="Bauteil"
-            wert=""
-            onWahl={(zone) => erfassung.aendere({ zone })}
-            autofokus
-          />
-          <div>
-            <Button
-              variant="quiet"
-              onClick={() => {
-                erfassung.verwerfen();
-                gehe(ABSCHLUSS);
-              }}
-            >
-              Verwerfen
-            </Button>
-          </div>
-        </div>
       ) : seite.art === 'weitere' ? (
         entwurf ? (
           <Entwurfsfeld
@@ -606,6 +659,28 @@ const CHECKUPTEXTE: Verlustschutztexte = {
     bleiben: 'Weiter prüfen',
   },
 };
+
+/** Das ganze Rad von der Seite, die fotografiert wird. */
+const FOTOBLICK: Record<(typeof SEITEN)[number]['key'], ZoneView> = {
+  left: [180, 82, null],
+  front: [90, 80, null],
+  right: [0, 82, null],
+  back: [-90, 80, null],
+};
+
+/** Wohin die Kamera auf einer Seite schaut: zum Punkt oder schräg aufs ganze Rad. */
+function fokusFuer(seite: Seite, token: number): BikeFocus {
+  if (seite.art === 'punkt') {
+    const item = CHECK_ITEMS[seite.index]!;
+    const ansicht = CHECK_ITEM_VIEWS[item.key];
+    return { zones: zonesOfCheckItem(item.key), ...(ansicht ? { view: ansicht } : {}), token };
+  }
+  if (seite.art === 'werbung') return { zones: ['transportbox'], token };
+  if (seite.art === 'foto') {
+    return { zones: ZONE_KEYS, view: FOTOBLICK[SEITEN[seite.index]!.key], token };
+  }
+  return { zones: [], preset: 'schraeg', token };
+}
 
 /**
  * Kennung jeder einzelnen Seite für den Baustein: Wechselt sie, nimmt die

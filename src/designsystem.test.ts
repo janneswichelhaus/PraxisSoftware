@@ -423,23 +423,6 @@ describe('Tokens aus dem Design-Handoff vom 2026-10-01', () => {
   });
 });
 
-describe('Bühne des 3D-Lastenrads (ANN-869)', () => {
-  // So hell wie in der Übergabe, im neutralen Ton der Linien: nur Fläche, nur im Baustein.
-  it('führt radbuehne als Token und verwendet es nur als Fläche des Bausteins', () => {
-    expect(css).toMatch(/--color-radbuehne:\s*oklch\(87\.9% 0\.0042 271\.4\);/);
-    const FREMD = /(?<![\w-])(?!bg-)[a-z][a-z-]*-radbuehne\b/g;
-    const finden = (zeile: string) => Array.from(zeile.matchAll(FREMD), (f) => f[0]);
-    expect(funde(finden)).toEqual([]);
-    const orte = quelldateien(join(stamm, 'src'))
-      .filter((datei) => /(?<![\w-])bg-radbuehne\b/.test(readFileSync(datei, 'utf8')))
-      .map((datei) => relative(join(stamm, 'src'), datei));
-    expect(orte).toEqual([join('components', 'ui', 'Lastenrad3D.tsx')]);
-    expect(finden('className="text-radbuehne"')).toEqual(['text-radbuehne']);
-    expect(finden('className="bg-radbuehne"')).toEqual([]);
-    expect(finden('  --color-radbuehne: oklch(87.9% 0.0042 271.4);')).toEqual([]);
-  });
-});
-
 describe('Farben des Übungsbilds (ANN-381)', () => {
   /**
    * Ferne Körperseite, Bewegungspfeil und Band sind Linien im Übungsbild,

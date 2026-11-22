@@ -111,9 +111,6 @@
   /* #767c84 — 4.2:1 auf Weiß, 3.9:1 auf der Vertiefung (bis Grundton B
      #6f7873). */
   --color-line-strong: oklch(58.4% 0.0142 255.6);
-  /* Bühne des 3D-Lastenrads #d6d7da: so hell wie #d7d8d2 der Übergabe, im neutralen Ton der
-     Linien (ANN-869). Auf Weiß und auf `line` ginge der Deckel der Box in Papier unter. */
-  --color-radbuehne: oklch(87.9% 0.0042 271.4);
   /* Spur #8c939b — die leere, ganze Länge eines Balkens (Wegbalken,
      Fortschritt). Leitfaden L4: Ein Balken zeigt leer und voll, mit
      mindestens 3:1 gegen den Grund (WCAG 1.4.11). Vorher trug der Wegbalken
@@ -210,6 +207,12 @@
   --color-figur-bewegung: oklch(58% 0.12 68);
   /* Terrakotta: das Übungsband. */
   --color-figur-band: oklch(57% 0.13 30);
+
+  /* Nadeln am 3D-Rad: Form, Farbe und Nummer tragen die Einstufung gemeinsam; die Kontur hebt das
+     Gelb auf 15:1 (WCAG 1.4.11). Nur an der Nadel; das Modell liest dieselben Werte aus `PIN_COLORS`. */
+  --color-nadel-problem: oklch(50.1% 0.1783 28.7);
+  --color-nadel-beobachten: oklch(80.6% 0.1469 80.6);
+  --color-nadel-beobachten-ink: oklch(24.3% 0.0497 87.2);
 
   /* --- Schrift und Maße ----------------------------------------------------- */
 
@@ -373,6 +376,10 @@
      376 px, im Teamchat wie in der Radflotte dieselbe Spalte. */
   --spacing-gespraechsspalte: 18rem;
   --spacing-threadspalte: 21rem;
+  /* Der geführte Ablauf mit Bühne (3D-Rad): ab 1024 px steht die Frage in einer Spalte von 384 px
+     neben der Bühne; am Telefon nimmt eine lange Frage höchstens 60 % der Höhe. */
+  --spacing-ablaufspalte: 24rem;
+  --spacing-ablauf-knapp: 60%;
   /* Der Tag in „Diese Woche“ der Plattform, links neben seinen Einträgen (ANN-777). */
   --spacing-tagesspalte: 6.5rem;
 

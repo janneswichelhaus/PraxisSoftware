@@ -5,6 +5,19 @@ import * as api from './api';
 import { WerkstattblattPage } from './WerkstattblattPage';
 import { rendereSeite } from './testseite';
 
+// In jsdom gibt es kein WebGL: Die Bilder kommen als kleine Daten-URLs.
+const zeichneWerkstattbilder = vi.hoisted(() => vi.fn());
+vi.mock('./bike3d/werkstattbilder', () => ({ zeichneWerkstattbilder }));
+
+const BILDER = {
+  rechts: { url: 'data:image/png;base64,cmVjaHRz', punkte: [{ id: 's2', x: 20, y: 70 }] },
+  links: { url: 'data:image/png;base64,bGlua3M=', punkte: [{ id: 's1', x: 15, y: 60 }] },
+  ausschnitte: {
+    s1: { url: 'data:image/png;base64,czE=', punkte: [{ id: 's1', x: 50, y: 40 }] },
+    s2: { url: 'data:image/png;base64,czI=', punkte: [{ id: 's2', x: 50, y: 40 }] },
+  },
+};
+
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof api>()),
   fetchWorkshopSheet: vi.fn(),
@@ -52,10 +65,12 @@ beforeEach(() => {
     ],
   });
   fetchFleetPhotos.mockResolvedValue([]);
+  zeichneWerkstattbilder.mockResolvedValue(BILDER);
 });
 
 /**
- * Die Unterlage für die Werkstatt: Übersicht und Stellen im Detail mit Bauteil und Fotos,
+ * Die Unterlage für die Werkstatt: Übersicht mit den Seiten des Rads und Stellen im Detail mit
+ * Ausschnitt am Modell und Fotos,
  * dieselben Nummern, keine Namen aus dem Team, der Dateiname aus Rad, Zweck und Tag.
  */
 describe('Unterlage für die Werkstatt', () => {
@@ -74,15 +89,73 @@ describe('Unterlage für die Werkstatt', () => {
     expect(zeilen[2]).toHaveTextContent(/^2\s*Reifen hinten/);
     expect(zeilen[2]).toHaveTextContent('Panne am 14.10.2026');
     expect(within(seite1).getAllByRole('img', { name: 'Erledigt, zum Abhaken' })).toHaveLength(2);
-    // Keine gerenderten Ansichten des Rads mehr.
-    expect(screen.queryByText(/am Modell|Wo am Rad/)).toBeNull();
+    expect(within(zeilen[1]!).getByRole('img', { name: 'Stelle 1, Problem' })).toBeInTheDocument();
+    expect(
+      within(zeilen[2]!).getByRole('img', { name: 'Stelle 2, Beobachten' }),
+    ).toBeInTheDocument();
+  });
+
+  it('zeigt rechte und linke Seite des Rads mit den Nadeln an ihrer Stelle', async () => {
+    oeffne();
+    const seite1 = await screen.findByRole('region', { name: 'Seite 1 von 2' });
+    expect(within(seite1).getByRole('heading', { name: 'Wo am Rad' })).toBeInTheDocument();
+    const rechts = await within(seite1).findByRole('img', {
+      name: 'Lastenrad 3, Rechte Seite mit Antrieb: Stelle 2',
+    });
+    expect(rechts).toHaveAttribute('src', BILDER.rechts.url);
+    expect(within(seite1).getByText('Rechte Seite mit Antrieb: Stelle 2')).toBeInTheDocument();
+    expect(within(seite1).getByText('Linke Seite: Stelle 1')).toBeInTheDocument();
+    const rahmenRechts = rechts.parentElement!;
+    const nadel = within(rahmenRechts).getByRole('img', { name: 'Stelle 2, Beobachten' });
+    expect(nadel.closest('span[style]')).toHaveStyle({ left: '20%', top: '70%' });
+    const links = within(seite1).getByRole('img', { name: 'Lastenrad 3, Linke Seite: Stelle 1' });
+    expect(
+      within(links.parentElement!).getByRole('img', { name: 'Stelle 1, Problem' }),
+    ).toBeInTheDocument();
+    // Ohne gespeicherte Punkte sucht das Modell selbst einen Punkt am Bauteil (ANN-870).
+    expect(zeichneWerkstattbilder).toHaveBeenCalledWith([
+      { id: 's1', zone: 'bremse-vorne', point: null },
+      { id: 's2', zone: 'reifen-hinten', point: null },
+    ]);
+  });
+
+  it('zeigt je Stelle den Ausschnitt am Modell mit ihrer Nadel', async () => {
+    oeffne();
+    const erste = await screen.findByRole('article', { name: 'Stelle 1' });
+    const ausschnitt = await within(erste).findByRole('img', {
+      name: 'Ausschnitt am Modell: Bremse vorne',
+    });
+    expect(ausschnitt).toHaveAttribute('src', BILDER.ausschnitte.s1.url);
+    expect(
+      within(ausschnitt.parentElement!).getByRole('img', { name: 'Stelle 1, Problem' }),
+    ).toBeInTheDocument();
+    const zweite = screen.getByRole('article', { name: 'Stelle 2' });
+    expect(
+      within(zweite).getByRole('img', { name: 'Ausschnitt am Modell: Reifen hinten' }),
+    ).toHaveAttribute('src', BILDER.ausschnitte.s2.url);
+  });
+
+  it('sagt, wenn sich die Bilder nicht zeichnen lassen, und lässt trotzdem drucken', async () => {
+    zeichneWerkstattbilder.mockRejectedValue(new Error('kein WebGL'));
+    oeffne();
+    expect(
+      await screen.findByText(
+        /Die Ansichten des Rads lassen sich in diesem Browser nicht zeichnen/,
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Drucken oder als PDF sichern' })).toBeEnabled();
+    expect(screen.queryByRole('img', { name: /^Ausschnitt am Modell/ })).toBeNull();
+    expect(screen.getByText('Rechte Seite mit Antrieb: keine Stelle')).toBeInTheDocument();
   });
 
   it('zeigt je Stelle Bauteil und Notiz mit derselben Nummer', async () => {
     oeffne();
     const seite2 = await screen.findByRole('region', { name: 'Seite 2 von 2' });
     const erste = within(seite2).getByRole('article', { name: 'Stelle 1' });
-    expect(within(erste).getByRole('heading', { name: '1 · Bremse vorne' })).toBeInTheDocument();
+    expect(within(erste).getByRole('heading', { name: 'Bremse vorne' })).toBeInTheDocument();
+    expect(within(erste).getAllByRole('img', { name: 'Stelle 1, Problem' }).length).toBeGreaterThan(
+      0,
+    );
     expect(erste).toHaveTextContent('Scheibe schleift beim Drehen');
     expect(within(seite2).getByRole('article', { name: 'Stelle 2' })).toHaveTextContent(
       'Ohne Notiz.',
@@ -137,6 +210,24 @@ describe('Unterlage für die Werkstatt', () => {
     expect(
       await screen.findByRole('button', { name: 'Drucken oder als PDF sichern' }),
     ).toBeEnabled();
+  });
+
+  it('lässt erst drucken, wenn die Bilder vom Modell gezeichnet sind', async () => {
+    let gezeichnet: (bilder: typeof BILDER) => void = () => undefined;
+    zeichneWerkstattbilder.mockReturnValue(
+      new Promise((resolve) => {
+        gezeichnet = resolve;
+      }),
+    );
+    oeffne();
+    await waitFor(() => expect(fetchFleetPhotos).toHaveBeenCalled());
+    await waitFor(() => expect(zeichneWerkstattbilder).toHaveBeenCalled());
+    expect(screen.getByRole('button', { name: 'Wird vorbereitet …' })).toBeDisabled();
+    gezeichnet(BILDER);
+    expect(
+      await screen.findByRole('button', { name: 'Drucken oder als PDF sichern' }),
+    ).toBeEnabled();
+    expect(screen.getByRole('img', { name: 'Ausschnitt am Modell: Bremse vorne' })).toBeVisible();
   });
 
   it('nennt keine Namen aus dem Team, keine Termine, keinen Pannenort (Vorschlag 5)', async () => {
