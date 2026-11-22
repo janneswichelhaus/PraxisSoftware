@@ -491,7 +491,7 @@ describe('CompleteTreatmentPage', () => {
       expect(navigate).toHaveBeenCalledWith('/', { state: { meldung: FESTGESCHRIEBEN } });
     });
 
-    it('bietet keinen Haken an einem künftigen Tag oder ohne Terminrecht', async () => {
+    it('bietet an einem künftigen Tag keinen Haken', async () => {
       const user = userEvent.setup();
       completeTreatment.mockImplementation(() => {
         fetchAppointment.mockResolvedValue(dokumentiert);

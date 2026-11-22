@@ -66,8 +66,8 @@ des Ausfallhonorars (ABR-001, ABR-003); Terminserie (CAL-007), Terminfenster (CA
    Szenarien, ohne Auswertung je Person (§20). Nr. 4: Rechnungstext und Rechtsgrundlage für Nr. 2
    (Vergütung ohne erbrachte Behandlung) klärt B4.
 10. **Der Haken am Behandlungstermin** (Fassung 5, BEF-154, BEF-157): Dokumentieren und Abhaken sind
-    getrennt, abgehakt wird in Übersicht, Kalender oder auf „Danach“ (eigener Tipp, Fassung 6), der Haken heißt „Leistung erbracht“. Nr. 1:
-    Ein Merkmal, kein neunter Zustand (`completed_at`, `completed_by`); `completed` heißt abgehakt,
+    getrennt, abgehakt wird in Übersicht, Kalender oder auf „Danach“ (eigener Tipp, Fassung 6), der
+    Haken heißt „Leistung erbracht“. Nr. 1: Ein Merkmal, kein neunter Zustand (`completed_at`, `completed_by`); `completed` heißt abgehakt,
     nicht dokumentiert, `documented` steht mit oder ohne Haken. Nr. 2: Die Finalisierung hakt nicht
     ab (ADR-016 Punkt 4). Nr. 3: Zurücknehmen geht jederzeit (Punkt 2); wer und wann: `reopened_by`,
     `reopened_at`. Nr. 4: Mit dem Haken entsteht die Leistung, mit der Rücknahme fällt sie (ADR-009

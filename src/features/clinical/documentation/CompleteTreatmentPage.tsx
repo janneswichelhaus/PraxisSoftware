@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Aktionsleiste } from '@/components/ui/Aktionsleiste';
 import { symbolknopfKlassen } from '@/components/ui/buttonStile';
 import { EmptyState } from '@/components/ui/Feedback';
-import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
+import { mitRueckweg } from '@/lib/rueckweg';
 import {
   type Abrechnungslage,
   type Appointment,
@@ -103,7 +103,6 @@ function Abschluss({
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [suche] = useSearchParams();
   const zone = appointment.organization_time_zone;
   const feldId = useId();
   const folgeId = useId();
@@ -347,8 +346,8 @@ function Abschluss({
       fehlertitel: 'Nicht eingetragen',
       danach: () => {
         freigeben();
-        // Festschreiben hakt nicht ab - abgehakt wird in der Übersicht oder
-        // im Kalender.
+        // Eintragen hakt nicht ab - abgehakt wird auf „Danach“, in der
+        // Übersicht oder im Kalender (ADR-018 Punkt 10).
         onFestgeschrieben(ohneBehandlung ? 'Mit Vermerk eingetragen.' : 'In die Akte eingetragen.');
       },
     }).finally(() => setSchreibtAbschluss(false));
@@ -374,7 +373,8 @@ function Abschluss({
 
   // Der Pfeil führt dorthin, woher die Seite kam - sonst zum Termin. Er läuft
   // wie jeder Weg hinaus durch den Textverlustschutz.
-  const zurueck = leseRueckweg(suche, zumTermin);
+  // Zum Termin samt Rückweg: im Kalender bleibt der Termin gewählt.
+  const zurueck = zumTermin;
   const kopfzeile = kopfzeileFuer(appointment, lage, ohneBehandlung);
   const hierher = mitRueckweg(`/termine/${appointment.id}/abschluss`, zurueck);
   const anzahlBefund = Object.keys(bausteine.auswahl).length;
@@ -765,14 +765,14 @@ function DanachSeite({
   ohneBehandlung: boolean;
   zumTermin: string;
 }) {
-  const [suche] = useSearchParams();
   const { data: lage } = useQuery({
     queryKey: ['appointment', appointment.id, 'abrechnungslage'],
     queryFn: () => fetchAbrechnungslage(appointment.id),
     enabled: appointment.kind === 'therapy',
     retry: false,
   });
-  const zurueck = leseRueckweg(suche, zumTermin);
+  // Zum Termin samt Rückweg: im Kalender bleibt der Termin gewählt.
+  const zurueck = zumTermin;
   return (
     <Danach
       user={user}
