@@ -28,7 +28,7 @@ describe('Bauteilrad', () => {
 
   it('wählt am ganzen Rad sofort, wenn unter dem Finger nur ein Bauteil liegt', () => {
     render(<Bauteilrad stellen={[]} entwurf={null} onWahl={onWahl} />);
-    act(() => auswahl.onWahl(['transportbox']));
+    act(() => auswahl.onWahl!(['transportbox']));
     expect(onWahl).toHaveBeenCalledWith('transportbox');
     expect(screen.queryByRole('group')).toBeNull();
   });
@@ -37,7 +37,7 @@ describe('Bauteilrad', () => {
     const nutzer = userEvent.setup();
     render(<Bauteilrad stellen={[]} entwurf={null} onWahl={onWahl} />);
     act(() =>
-      auswahl.onWahl(['reifen-hinten', 'bremse-hinten', 'riemen', 'nabenschaltung', 'rahmen']),
+      auswahl.onWahl!(['reifen-hinten', 'bremse-hinten', 'riemen', 'nabenschaltung', 'rahmen']),
     );
     expect(onWahl).not.toHaveBeenCalled();
     const knoepfe = within(
@@ -62,7 +62,7 @@ describe('Bauteilrad', () => {
         onWahl={onWahl}
       />,
     );
-    act(() => auswahl.onWahl(['kurbeln', 'motor', 'riemen']));
+    act(() => auswahl.onWahl!(['kurbeln', 'motor', 'riemen']));
     expect(onWahl).toHaveBeenCalledWith('kurbeln');
     expect(screen.queryByRole('group')).toBeNull();
   });

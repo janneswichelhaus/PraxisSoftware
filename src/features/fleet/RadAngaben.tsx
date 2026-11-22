@@ -4,10 +4,17 @@ import { useNavigate } from 'react-router-dom';
 import { Inhaltsflaeche } from '@/components/ui/Card';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { Field } from '@/components/ui/Field';
-import { Lastenrad3D } from '@/components/ui/Lastenrad3D';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Zweispalter } from '@/components/ui/Zweispalter';
-import { FLOTTE_SCHLUESSEL, blockBike, removeBike, type Bike, type Fleet } from './api';
+import {
+  FLOTTE_SCHLUESSEL,
+  blockBike,
+  removeBike,
+  type Bike,
+  type BikeDetail,
+  type Fleet,
+} from './api';
+import { Stellenrad } from './Bauteilrad';
 import { bikeTypeLabels } from './zones';
 import { BikeForm } from './BikeForm';
 import { wochentageKurz } from './format';
@@ -23,10 +30,13 @@ import { depotName, standort } from './rad';
 export function RadAngaben({
   rad,
   flotte,
+  offen,
   onMeldung,
 }: {
   rad: Bike;
   flotte: Fleet;
+  /** Die offenen Stellen des Rads, am 3D-Rad markiert. */
+  offen: BikeDetail['spots'];
   onMeldung: (text: string) => void;
 }) {
   const queryClient = useQueryClient();
@@ -63,11 +73,16 @@ export function RadAngaben({
 
   return (
     <>
-      {/* ANN-868: vorläufiger Ort der 3D-Ansicht, nur zum Ansehen; Bauteile bleiben die Liste. */}
+      {/* ANN-868: Das Rad zum Ansehen mit den offenen Stellen; bearbeitet werden sie im Reiter. */}
       <Zweispalter
         kontextBreite="schmal"
         // Einspaltig so breit wie das Formular darüber, nicht breiter.
-        kontext={<Lastenrad3D className={flotte.can_manage ? 'max-w-formular h-64' : 'h-64'} />}
+        kontext={
+          <Stellenrad
+            offen={offen}
+            className={flotte.can_manage ? 'max-w-formular h-64' : 'h-64'}
+          />
+        }
       >
         {flotte.can_manage ? (
           <BikeForm

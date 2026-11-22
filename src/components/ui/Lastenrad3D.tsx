@@ -17,8 +17,8 @@ export interface Radauswahl {
   waehlbar?: readonly string[] | undefined;
   /** Markierte Gruppen in der Farbe ihrer Bedeutung. */
   marken?: readonly { gruppe: string; ton: Markenton }[] | undefined;
-  /** Die Gruppen unter dem Finger, die getroffene zuerst; nie leer. */
-  onWahl: (gruppen: readonly string[]) => void;
+  /** Die Gruppen unter dem Finger, die getroffene zuerst; nie leer. Ohne Rückruf nur Marken. */
+  onWahl?: ((gruppen: readonly string[]) => void) | undefined;
 }
 
 /**
@@ -98,7 +98,7 @@ export function Lastenrad3D({
             fertig,
             container,
             (teil) => aktuell.current?.gruppeVon(teil) ?? null,
-            (gruppen) => aktuell.current?.onWahl(gruppen),
+            (gruppen) => aktuell.current?.onWahl?.(gruppen),
           );
           uebertragen.current();
         },

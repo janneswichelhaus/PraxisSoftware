@@ -8,7 +8,7 @@ import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import { richteAuswahlEin } from '@/components/ui/lastenrad3d/auswahl';
 import { mountLastenrad, type LastenradAnsicht } from '@/components/ui/lastenrad3d/viewer';
 import * as api from './api';
-import { CHECK_ITEMS, zoneLabel, type ZoneKey } from './zones';
+import { CHECK_ITEMS, zoneLabel, zonesOfCheckItem, type ZoneKey } from './zones';
 import { CheckupPage } from './CheckupPage';
 import { Zielanzeige } from './Testbausteine';
 import { testDetail, testFlotte, testRad, testStelle } from './testdaten';
@@ -426,20 +426,55 @@ describe('Geführter Check-Up', () => {
     ]);
   });
 
+  it('zeigt je Prüfpunkt das Rad mit dessen Bauteilen; ein Tipp auf der Frage öffnet die Stelle (ANN-870)', async () => {
+    const nutzer = userEvent.setup();
+    oeffne();
+    await fenster('Reifen und Luftdruck');
+    await waitFor(() =>
+      expect(radStand).toHaveBeenLastCalledWith({
+        waehlbar: zonesOfCheckItem('reifen'),
+        marken: [],
+      }),
+    );
+    await inOrdnungBis(nutzer, 2);
+    await waitFor(() =>
+      expect(radStand).toHaveBeenLastCalledWith({
+        waehlbar: ['bremse-vorne', 'bremse-hinten', 'bremsgriffe'],
+        marken: [],
+      }),
+    );
+    // Ein Tipp aufs Rad heißt: an diesem Bauteil ist etwas, die Einstufung folgt.
+    act(() => radAuswahl.mock.calls.at(-1)![3](['bremsgriffe']));
+    const getippt = within(await fenster('Bremsen'));
+    expect(getippt.getByText('Bremsgriffe')).toBeInTheDocument();
+    expect(getippt.getByLabelText('Was ist aufgefallen?')).toBeInTheDocument();
+    // Zurück gilt nichts davon: Die Frage steht wieder, mit dem Rad ohne Marke.
+    await nutzer.click(getippt.getByRole('button', { name: '← Zurück' }));
+    await within(await fenster('Bremsen')).findByRole('button', { name: 'In Ordnung' });
+    await waitFor(() =>
+      expect(radStand).toHaveBeenLastCalledWith({
+        waehlbar: ['bremse-vorne', 'bremse-hinten', 'bremsgriffe'],
+        marken: [],
+      }),
+    );
+  });
+
   it('zeigt auf „Wo genau?“ das Rad mit den Bauteilen des Punkts; ein Tipp darauf setzt die Stelle (ANN-870)', async () => {
     const nutzer = userEvent.setup();
     oeffne();
     await inOrdnungBis(nutzer, 2);
-    // Ohne Befund lädt das Rad nie.
-    expect(radAnsicht).not.toHaveBeenCalled();
     await nutzer.click(within(await fenster('Bremsen')).getByRole('button', { name: 'Problem' }));
-    await waitFor(() => expect(radStand).toHaveBeenCalled());
-    expect(radStand).toHaveBeenLastCalledWith({
-      waehlbar: ['bremse-vorne', 'bremse-hinten', 'bremsgriffe'],
-      marken: [],
-    });
+    await within(await fenster('Bremsen')).findByRole('button', { name: 'Ohne genaue Stelle' });
+    await waitFor(() =>
+      expect(radStand).toHaveBeenLastCalledWith({
+        waehlbar: ['bremse-vorne', 'bremse-hinten', 'bremsgriffe'],
+        marken: [],
+      }),
+    );
     const [, , zuordnen, amRad] = radAuswahl.mock.calls.at(-1)!;
     expect(zuordnen('bremshebel_l')).toBe('bremsgriffe');
+    radFrei.mockClear();
+    radStand.mockClear();
 
     // Die Bauteile stehen als Knöpfe darunter: Unter dem Finger zählt das getroffene.
     act(() => amRad(['bremse-hinten', 'bremse-vorne']));
@@ -451,7 +486,7 @@ describe('Geführter Check-Up', () => {
 
     // Zurück auf „Wo genau?“ trägt die Stelle am Rad die Farbe ihrer Einstufung.
     await nutzer.click(befund.getByRole('button', { name: '← Zurück' }));
-    await waitFor(() => expect(radStand).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(radStand).toHaveBeenCalledTimes(1));
     expect(radStand).toHaveBeenLastCalledWith({
       waehlbar: ['bremse-vorne', 'bremse-hinten', 'bremsgriffe'],
       marken: [{ gruppe: 'bremse-hinten', farbe: '' }],
@@ -472,6 +507,7 @@ describe('Geführter Check-Up', () => {
     await reinigenUndFotografieren(nutzer);
     const abschluss = within(await fenster('Alles geprüft?'));
     await nutzer.click(abschluss.getByText('Notiz, Fotos, weitere Stelle'));
+    radFrei.mockClear();
     await nutzer.click(abschluss.getByRole('button', { name: 'Weitere Stelle markieren' }));
     // Hier steht das ganze Rad zur Wahl.
     await waitFor(() => expect(radStand).toHaveBeenLastCalledWith({ waehlbar: null, marken: [] }));

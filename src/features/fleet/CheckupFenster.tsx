@@ -73,8 +73,8 @@ import { useStellenerfassung, type Stelle } from './stellen';
 
 /**
  * Der geführte Check-Up (ANN-563, ANN-568): eine Seite je Prüfpunkt, keiner vorbelegt, damit am
- * Rad nichts übersprungen wird. „Wo genau?“ wählt das Bauteil am Rad oder per Knopf (ANN-870);
- * gespeichert wird erst mit dem Haken (ANN-553, ANN-555).
+ * Rad nichts übersprungen wird. Das Rad zeigt die Bauteile des Punkts; „Wo genau?“ wählt eines
+ * am Rad oder per Knopf (ANN-870). Gespeichert wird erst mit dem Haken (ANN-553, ANN-555).
  */
 export function CheckupFenster({
   detail,
@@ -315,6 +315,27 @@ export function CheckupFenster({
     gehe(wasSeite(index, true));
   }
 
+  /** Ein Tipp aufs Rad auf der Frage: eine Stelle an diesem Bauteil, die Einstufung folgt. */
+  function amRad(index: number, zone: ZoneKey) {
+    const item = CHECK_ITEMS[index]!;
+    const vorher = antworten[item.key];
+    const note = vorher && vorher.rating !== 'ok' ? vorher.note : '';
+    const erste = eigeneStellen(item.key)[0];
+    const rating: Severity =
+      erste?.severity ?? (vorher && vorher.rating !== 'ok' ? vorher.rating : 'problem');
+    setVorlaeufig({ rating, note });
+    if (erste) {
+      // Neu bewerten ersetzt die Stelle des Punkts: Sie wandert samt Notiz ans getippte Bauteil.
+      erfassung.bearbeite(erste.key);
+      erfassung.aendere({ zone });
+    } else {
+      erfassung.verwerfen();
+      erfassung.waehle(zone);
+      erfassung.aendere({ severity: rating, note });
+    }
+    gehe(wasSeite(index, false));
+  }
+
   function ohneStelle(index: number) {
     if (entwurf) {
       // Was an der Stelle schon stand, bleibt: die Notiz am Punkt, die Fotos
@@ -400,16 +421,18 @@ export function CheckupFenster({
   // Im Abschluss rollt die Zusammenfassung; Haken und Speichern stehen fest darunter.
   const abschlussZeigen = seite.art === 'abschluss' && !ausstehend;
 
-  // Das Rad steht nur, solange ein Bauteil zu wählen ist: Ein Check-Up ohne Befund lädt es nie,
-  // und neben Notiz und Fotos bliebe am Telefon kein Platz. Die weitere Stelle fragt es deshalb
-  // zuerst, auf eigener Seite.
+  // Das Rad zeigt je Prüfpunkt dessen Bauteile und steht, wo ein Bauteil zu wählen ist (ANN-870).
+  // Neben Notiz und Fotos bliebe am Telefon kein Platz; die weitere Stelle fragt es deshalb zuerst.
   const bauteilZuerst = seite.art === 'weitere' && entwurf !== null && !isZoneKey(entwurf.zone);
-  const rad = ausstehend ? undefined : seite.art === 'punkt' && seite.teil === 'wo' ? (
+  const rad = ausstehend ? undefined : seite.art === 'punkt' && seite.teil !== 'was' ? (
     <Bauteilrad
       waehlbar={zonesOfCheckItem(punkt!.key)}
       stellen={stellen}
       entwurf={entwurf}
-      onWahl={(zone) => waehleBauteil(seite.index, zone)}
+      legende={seite.teil === 'wo'}
+      onWahl={(zone) =>
+        seite.teil === 'wo' ? waehleBauteil(seite.index, zone) : amRad(seite.index, zone)
+      }
     />
   ) : bauteilZuerst ? (
     <Bauteilrad

@@ -43,7 +43,7 @@ export function Bauteilrad({
         auswahl={{
           gruppeVon: bauteilVonTeil,
           waehlbar,
-          marken: markiert.map(({ zone, severity }) => ({ gruppe: zone, ton: TON[severity] })),
+          marken: marken(markiert),
           onWahl: (gruppen) => {
             const zonen = gruppen.filter(isZoneKey);
             const [getroffen] = zonen;
@@ -67,18 +67,54 @@ export function Bauteilrad({
           ))}
         </div>
       ) : null}
-      {legende && markiert.length > 0 ? (
-        <ul
-          aria-label="Am Rad markiert"
-          className="text-ink flex flex-wrap gap-x-4 gap-y-1 text-sm"
-        >
-          {markiert.map(({ zone, severity }, nummer) => (
-            <li key={`${zone}-${nummer}`}>
-              <Einstufung einstufung={severity} /> · {zoneLabel(zone)}
-            </li>
-          ))}
-        </ul>
-      ) : null}
+      {legende ? <Markenliste markiert={markiert} /> : null}
+    </div>
+  );
+}
+
+type Markiert = { zone: ZoneKey; severity: Severity };
+
+function marken(markiert: readonly Markiert[]) {
+  return markiert.map(({ zone, severity }) => ({ gruppe: zone, ton: TON[severity] }));
+}
+
+/** Die Marken in Zeichen und Wort: Die Farbe am Rad allein trägt keine Bedeutung. */
+function Markenliste({ markiert }: { markiert: readonly Markiert[] }) {
+  if (markiert.length === 0) return null;
+  return (
+    <ul aria-label="Am Rad markiert" className="text-ink flex flex-wrap gap-x-4 gap-y-1 text-sm">
+      {markiert.map(({ zone, severity }, nummer) => (
+        <li key={`${zone}-${nummer}`}>
+          <Einstufung einstufung={severity} /> · {zoneLabel(zone)}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/**
+ * Das Rad zum Ansehen mit den offenen Stellen in der Farbe ihrer Einstufung (ANN-868). Ohne offene
+ * Stelle dreht es sich wie bisher; mit Stellen steht es still, damit die Marken lesbar bleiben.
+ */
+export function Stellenrad({
+  offen,
+  className,
+}: {
+  offen: readonly { zone: string; severity: Severity }[];
+  className: string;
+}) {
+  const markiert = offen.flatMap(({ zone, severity }) =>
+    isZoneKey(zone) ? [{ zone, severity }] : [],
+  );
+  if (markiert.length === 0) return <Lastenrad3D className={className} />;
+  return (
+    <div className="flex flex-col gap-2">
+      <Lastenrad3D
+        className={className}
+        label="Lastenrad, offene Stellen markiert"
+        auswahl={{ gruppeVon: bauteilVonTeil, marken: marken(markiert) }}
+      />
+      <Markenliste markiert={markiert} />
     </div>
   );
 }
