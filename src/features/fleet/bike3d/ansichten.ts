@@ -90,7 +90,7 @@ export type ModelPoint = readonly [x: number, y: number, z: number];
 export interface BikeMarker {
   id: string;
   zone: string;
-  /** Ohne Punkt sitzt die Nadel in der Mitte des Bauteils (ANN-871: gespeichert wird kein Punkt). */
+  /** Ohne Punkt sitzt die Nadel in der Mitte des Bauteils (ANN-870: gespeichert wird kein Punkt). */
   point: ModelPoint | null;
   severity: Severity;
   /** Nummer an der Nadel, in der Liste und in der Unterlage für die Werkstatt. */

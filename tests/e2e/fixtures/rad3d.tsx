@@ -11,13 +11,12 @@ import {
 import { CHECK_ITEMS, zonesOfCheckItem } from '@/features/fleet/zones';
 
 /**
- * Prüfseite des 3D-Rads: drei Stellen aus dem Entwurf „Stellen am Rad“
- * (Handoff Lastenrad 3D, Abschnitt 4), das letzte Antippen als Text.
- * `?hoehe=` setzt die Höhe des Betrachters, `?zeige=a,b` leuchtet und zeigt
- * Bauteile, `?punkt=` die Bauteile eines Prüfpunkts aus dessen Blickwinkel.
+ * Prüfseite des 3D-Rads: drei Stellen aus dem Entwurf, das letzte Antippen als Text. `?hoehe=`
+ * setzt die Höhe des Betrachters, `?zeige=a,b` leuchtet und zeigt Bauteile, `?punkt=` die
+ * Bauteile eines Prüfpunkts aus dessen Blickwinkel.
  */
 
-// Ohne Punkt: Gespeichert wird nur das Bauteil, die Nadel steht in dessen Mitte (ANN-871).
+// Ohne Punkt: Gespeichert wird nur das Bauteil, die Nadel steht in dessen Mitte (ANN-870).
 const STELLEN: BikeMarker[] = [
   { id: 's1', zone: 'riemen', point: null, severity: 'problem', number: 1 },
   { id: 's2', zone: 'bremse-vorne', point: null, severity: 'problem', number: 2 },

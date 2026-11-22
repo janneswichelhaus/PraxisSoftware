@@ -66,13 +66,15 @@ describe('three.js nur auf Abruf', () => {
 
   it('findet vom Einstieg aus den Baustein, sonst prüfte der Test einen leeren Graphen', () => {
     expect(dateien.size).toBeGreaterThan(200);
-    expect(dateien.has(join(quelle, 'components/ui/Lastenrad3D.tsx'))).toBe(true);
+    expect(dateien.has(join(quelle, 'features/fleet/bike3d/BikeModel3D.tsx'))).toBe(true);
   });
 
   it('erreicht keine Datei, die three statisch importiert', () => {
     expect(mitThree).toEqual([]);
-    expect(dateien.has(join(quelle, 'components/ui/lastenrad3d/viewer.ts'))).toBe(false);
-    expect(dateien.has(join(quelle, 'components/ui/lastenrad3d/build.ts'))).toBe(false);
+    expect(dateien.has(join(quelle, 'features/fleet/bike3d/viewer.ts'))).toBe(false);
+    expect(dateien.has(join(quelle, 'features/fleet/bike3d/model.ts'))).toBe(false);
+    expect(dateien.has(join(quelle, 'features/fleet/bike3d/lastenrad-build.ts'))).toBe(false);
+    expect(dateien.has(join(quelle, 'features/fleet/bike3d/werkstattbilder.ts'))).toBe(false);
   });
 
   it('würde einen statischen Import von three finden (Gegenprobe)', () => {
@@ -80,7 +82,7 @@ describe('three.js nur auf Abruf', () => {
     expect(statischeImporte("export { Mesh } from 'three';")).toEqual(['three']);
     expect(statischeImporte("import type { Mesh } from 'three';")).toEqual([]);
     expect(statischeImporte("const m = await import('./viewer');")).toEqual([]);
-    const viewer = readFileSync(join(quelle, 'components/ui/lastenrad3d/viewer.ts'), 'utf8');
+    const viewer = readFileSync(join(quelle, 'features/fleet/bike3d/viewer.ts'), 'utf8');
     expect(statischeImporte(viewer)).toContain('three');
   });
 });

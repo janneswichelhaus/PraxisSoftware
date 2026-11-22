@@ -38,18 +38,9 @@ import {
 import { kopfUeberSpitze, naechsteNadel, type Nadelkopf } from './nadeltreffer';
 
 /**
- * Betrachter: Kamera um das Rad, Antippen wählt ein Bauteil, Nadeln für
- * markierte Stellen. Gezeichnet wird nur bei einer Änderung.
- *
- * Portiert aus `LrViewer` im Entwurf (Handoff Lastenrad 3D, Abschnitt 5):
- * Kamera mit 30° Öffnung, Einpassen über `fitRadius`, Antippen mit höchstens
- * 6 px Bewegung und unter 700 ms, der Strahl trifft zuerst Nadeln, dann
- * Bauteile. Ziehen dreht (am Telefon nur waagrecht, senkrecht scrollt die
- * Seite), zwei Finger und Strg mit Mausrad zoomen. Bei
- * reduzierter Bewegung kein Kameraflug und kein Pulsieren (AC 10).
- *
- * Die Lichtstärken sind gegenüber r149 mit π multipliziert: three.js rechnet
- * seit r155 physikalisch, der Entwurf noch im alten Maß.
+ * Betrachter, portiert aus `LrViewer` im Entwurf; gezeichnet wird nur bei einer Änderung. Am
+ * Telefon dreht nur waagrechtes Ziehen, senkrecht scrollt die Seite. Lichtstärken mal π gegenüber
+ * r149: three.js rechnet seit r155 physikalisch, der Entwurf noch im alten Maß.
  */
 
 const DEG = Math.PI / 180;
@@ -586,7 +577,7 @@ export class BikeViewer {
     this.flyTo(to, 700);
   }
 
-  /** Der Rand ändert sich mit dem Ansichtswechsel, etwa auf „Weitere Stelle“ (FLT-005). */
+  /** Der Rand ändert sich mit dem Ansichtswechsel, etwa auf „Weitere Stelle“. */
   setRand(rand: number): void {
     if (rand === this.rand) return;
     this.rand = rand;
@@ -605,7 +596,7 @@ export class BikeViewer {
   }
 
   private zoneCenter(zone: string): ModelPoint | null {
-    const c = this.bike.zones[zone]?.center;
+    const c = this.bike.zones[zone]?.anker;
     return c ? [c.x, c.y, c.z] : null;
   }
 

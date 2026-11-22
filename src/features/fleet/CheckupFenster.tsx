@@ -515,7 +515,7 @@ export function CheckupFenster({
         <BikeModel3D
           hoehe="100%"
           ansichten={seite.art === 'abschluss' || seite.art === 'weitere'}
-          ersatz="Alle Schritte gehen auch über die Knöpfe."
+          ersatz="Alle Schritte auch über die Knöpfe"
           markers={markers}
           draft={draft}
           activeMarkerId={entwurf?.key ?? null}

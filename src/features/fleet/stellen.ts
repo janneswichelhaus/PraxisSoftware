@@ -117,7 +117,7 @@ export function nummerDerStelle(index: number, bestehend: number): number {
 /**
  * Was das 3D-Rad zu einer Meldung zeigt: die schon offenen Stellen mit ihrer Nummer, die neuen
  * dahinter, die offene Stelle als neue Nadel. Jede Nadel steht in der Mitte ihres Bauteils, weil
- * nur das Bauteil gespeichert wird (ANN-871).
+ * nur das Bauteil gespeichert wird (ANN-870).
  */
 export function radBild(
   zustand: Pick<Stellenzustand, 'stellen' | 'entwurf'>,

@@ -15,18 +15,9 @@ import {
 import type { BikeViewer } from './viewer';
 
 /**
- * Das 3D-Rad als Baustein: Betrachter mit Nadeln, Hinweiszeile, Zoom und
- * festen Ansichten (Handoff Lastenrad 3D, Abschnitt 4 und 5).
- *
- * three.js lädt erst hier, per dynamischem Import von `./viewer` - nie im
- * Einstiegsbundle (AC 8, ANN-556; `einstieg.test.ts` wacht). Ohne WebGL steht
- * eine Meldung da, und das Markieren geht über die Bauteil-Liste weiter, die
- * jede Seite neben dem Rad anbietet (AC 7). Das Rad ist deshalb nie der
- * einzige Weg: Bedienung ohne Ziehen und ohne Tippen auf kleine Flächen.
- *
- * Am Telefon scrollt senkrechtes Wischen die Seite, auch über dem Rad; nur
- * waagrechtes Ziehen dreht es (`touch-pan-y`). Sonst finge eine Fläche fast
- * so breit wie der Bildschirm den Daumen ab (Praxis-Review FLT-EPIC-001).
+ * Das 3D-Rad als Baustein (ANN-868); three.js lädt erst hier, nie im Einstiegsbundle (ANN-556).
+ * Ohne WebGL geht das Markieren über die Bauteil-Liste weiter: Das Rad ist nie der einzige Weg.
+ * Nur waagrechtes Ziehen dreht (`touch-pan-y`), sonst finge das Rad am Telefon den Daumen ab.
  */
 
 /** Höhe von Hinweiszeile (oben) und Ansichtswechsel (unten) samt Abstand, in px. */
@@ -46,10 +37,9 @@ export interface BikeFocus {
 }
 
 /**
- * Warum es kein 3D-Rad gibt (FLT-006, BEF-172): Das Modul kam nicht an -
- * ohne Netz oder weil eine vor der Auslieferung geöffnete Seite eine Datei
- * sucht, die es nicht mehr gibt -, oder der Browser hat kein WebGL 2. Nur
- * im zweiten Fall liegt es am Browser; im ersten hilft Neuladen.
+ * Das Modul kam nicht an (ohne Netz oder weil eine vor der Auslieferung geöffnete Seite eine
+ * Datei sucht, die es nicht mehr gibt), oder der Browser hat kein WebGL 2. Nur im zweiten Fall
+ * liegt es am Browser; im ersten hilft Neuladen.
  */
 type Zustand = 'laden' | 'bereit' | 'nichtGeladen' | 'ohneWebgl';
 
@@ -62,7 +52,7 @@ export function BikeModel3D({
   focus = null,
   hinweis = 'Ziehen dreht das Rad · Antippen wählt ein Bauteil',
   ansichten = true,
-  ersatz = 'Bauteile können Sie weiter über die Liste wählen.',
+  ersatz = 'Bauteile weiter über die Liste',
   onPick,
   onUnavailable,
 }: {
@@ -78,8 +68,8 @@ export function BikeModel3D({
   focus?: BikeFocus | null;
   hinweis?: string;
   /**
-   * Die festen Ansichten unten im Bild. Im geführten Check-Up (FLT-005) führt
-   * die Kamera selbst; ohne den Wechsel bleibt mehr vom Rad zu sehen.
+   * Die festen Ansichten unten im Bild. Im geführten Check-Up führt die Kamera selbst; ohne
+   * den Wechsel bleibt mehr vom Rad zu sehen.
    */
   ansichten?: boolean;
   /**
@@ -218,16 +208,15 @@ export function BikeModel3D({
         aria-label={`3D-Modell des Lastenrads Load 60 mit Riemen und Transportbox. ${stellen}`}
         className="absolute inset-0 block h-full w-full cursor-grab touch-pan-y"
       />
-      {/* Ohne 3D-Rad die Zustände als Bausteine (Design-Review FLT-005, B10):
-          fehlt WebGL, ist das kein Fehler, sondern ein Leerzustand; kam das
-          Modul nicht an, ist es einer - mit dem Weg hinaus. */}
+      {/* Ohne 3D-Rad die Zustände als Bausteine: Fehlt WebGL, ist das ein Leerzustand; kam
+          das Modul nicht an, ein Fehler mit dem Weg hinaus. */}
       {zustand === 'ohneWebgl' ? (
         <div className="bg-surface-sunken absolute inset-0 flex items-center justify-center p-4">
-          <EmptyState title="Dieser Browser zeigt kein 3D (WebGL 2 fehlt)." description={ersatz} />
+          <EmptyState title="Kein 3D in diesem Browser (WebGL 2 fehlt)" description={ersatz} />
         </div>
       ) : zustand === 'nichtGeladen' ? (
         <div className="bg-surface-sunken absolute inset-0 flex flex-col justify-center gap-3 p-4">
-          <ErrorState title="Das 3D-Modell ließ sich nicht laden." description={ersatz} />
+          <ErrorState title="3D-Modell nicht geladen" description={ersatz} />
           {/* Neu laden holt den aktuellen Stand; ungespeicherte Eingaben
               schützt die Seite selbst (Textverlustschutz). */}
           <div>

@@ -1,11 +1,9 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type ConsoleMessage, type Page } from '@playwright/test';
 
 /**
- * Das 3D-Rad im echten Browser (Handoff Lastenrad 3D, Abschnitt 5; AC 1, 7
- * und 9): Antippen trifft ein Bauteil, die Nadeln sind gezeichnet, „Am Rad
- * zeigen“ hebt das Bauteil hervor, und ohne WebGL oder ohne ladbares Modul
- * steht je eine eigene Meldung da, während die Seite weiter bedienbar bleibt. WebGL kommt aus SwiftShader,
- * wie auf einem Rechner ohne Grafikkarte.
+ * Das 3D-Rad im echten Browser: Antippen trifft ein Bauteil, die Nadeln sind gezeichnet, und ohne
+ * WebGL oder ohne ladbares Modul steht je eine eigene Meldung da, die Seite bleibt bedienbar.
+ * WebGL kommt aus SwiftShader, wie auf einem Rechner ohne Grafikkarte.
  */
 const PRUEFSEITE = '/tests/e2e/fixtures/rad3d.html';
 
@@ -34,6 +32,34 @@ async function bereit(page: Page) {
     timeout: 20_000,
   });
 }
+
+// Ohne Grafikkarte liest Chromium jedes WebGL-Bild zurück und meldet das als Treiberhinweis, auch
+// bei der Karte. Der Seitencode liest nie zurück; alles andere an Warnungen zählt.
+const SOFTWARE_GRAFIK = /GL Driver Message \(OpenGL, Performance.*GPU stall due to ReadPixels/;
+
+test('zeichnet das Rad mit Wortmarke, ohne Konsolenmeldung und ohne fremde Server', async ({
+  page,
+  baseURL,
+}) => {
+  const meldungen: string[] = [];
+  page.on('console', (meldung: ConsoleMessage) => {
+    if (meldung.type() !== 'warning' && meldung.type() !== 'error') return;
+    if (!SOFTWARE_GRAFIK.test(meldung.text())) meldungen.push(meldung.text());
+  });
+  page.on('pageerror', (fehler) => meldungen.push(fehler.message));
+  const anfragen: string[] = [];
+  page.on('request', (anfrage) => anfragen.push(anfrage.url()));
+  const wortmarke = page.waitForResponse(/\/marke\/own-motion-block-unterzeile-farbig\.svg$/);
+  await bereit(page);
+  expect((await wortmarke).status()).toBe(200);
+  // Am Bauteil zeigen, antippen, drehen: der ganze Weg einmal, dann zählen die Meldungen.
+  await page.getByRole('button', { name: 'Bremse vorne zeigen' }).click();
+  await page.waitForTimeout(1000);
+  expect(meldungen).toEqual([]);
+  const herkunft = new URL(baseURL!).origin;
+  const fremd = anfragen.filter((url) => !url.startsWith(herkunft) && !/^(data|blob):/.test(url));
+  expect(fremd).toEqual([]);
+});
 
 test('Antippen trifft das Bauteil unter dem Finger (AC 1)', async ({ page }) => {
   await bereit(page);
@@ -190,7 +216,7 @@ test('ohne WebGL eine Meldung, und die Seite bleibt bedienbar (AC 7)', async ({ 
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto(PRUEFSEITE);
   await expect(
-    page.getByText('Dieser Browser zeigt kein 3D (WebGL 2 fehlt).', { exact: false }),
+    page.getByText('Kein 3D in diesem Browser (WebGL 2 fehlt)', { exact: false }),
   ).toBeVisible({ timeout: 20_000 });
   // Am Browser liegt es hier; Neuladen hilft nicht und steht nicht da.
   await expect(page.getByRole('button', { name: 'Neu laden' })).toHaveCount(0);
@@ -205,9 +231,9 @@ test('ohne ladbares Modul „nicht laden“ mit Neu laden, nicht der Browser (FL
   await page.route('**/bike3d/viewer.ts*', (route) => route.fulfill({ status: 404, body: '' }));
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto(PRUEFSEITE);
-  await expect(
-    page.getByText('Das 3D-Modell ließ sich nicht laden.', { exact: false }),
-  ).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText('3D-Modell nicht geladen', { exact: false })).toBeVisible({
+    timeout: 20_000,
+  });
   await expect(page.getByText(/WebGL/)).toHaveCount(0);
   await mindestens44(page.getByRole('button', { name: 'Neu laden' }));
   await expect(page.getByRole('button', { name: 'Bremse vorne zeigen' })).toBeEnabled();

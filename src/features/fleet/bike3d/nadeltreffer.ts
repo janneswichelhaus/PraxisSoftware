@@ -1,8 +1,7 @@
 /**
- * Wann ein Antippen eine Nadel trifft. Eine Nadel ist 32 px breit gezeichnet
- * (aktiv 40), ein Ziel unter dem Finger braucht aber 44 px (DESIGN.md
- * Grundsatz 3, Handoff Lastenrad 3D AC 9): Getroffen ist die Nadel, deren
- * Kopf dem Finger am nächsten liegt, höchstens 22 px entfernt.
+ * Eine Nadel ist 32 px breit gezeichnet (aktiv 40), ein Ziel unter dem Finger braucht aber 44 px
+ * (DESIGN.md Grundsatz 3): Getroffen ist die Nadel, deren Kopf dem Finger am nächsten liegt,
+ * höchstens 22 px entfernt.
  */
 export const NADEL_TREFFERRADIUS = 22;
 

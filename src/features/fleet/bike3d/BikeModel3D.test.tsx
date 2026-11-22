@@ -2,10 +2,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
 /**
- * Warum es kein 3D-Rad gibt (FLT-006, BEF-172): Ein Modul, das nicht ankommt,
- * ist kein Mangel des Browsers - nach einer Auslieferung sucht eine schon
- * offene Seite eine Datei, die es nicht mehr gibt, und Neuladen hilft. Nur
- * ohne WebGL liegt es am Browser.
+ * Ein Modul, das nicht ankommt, ist kein Mangel des Browsers: Nach einer Auslieferung sucht eine
+ * schon offene Seite eine Datei, die es nicht mehr gibt, und Neuladen hilft. Nur ohne WebGL liegt
+ * es am Browser.
  */
 afterEach(() => {
   vi.doUnmock('./viewer');
@@ -32,9 +31,9 @@ describe('BikeModel3D ohne 3D-Rad', () => {
       throw new TypeError('Failed to fetch dynamically imported module');
     });
     const onUnavailable = await zeige();
-    // Ein Fehler mit dem Weg hinaus, als `ErrorState` (Design-Review FLT-005).
+    // Ein Fehler mit dem Weg hinaus, als `ErrorState`.
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Das 3D-Modell ließ sich nicht laden.Bauteile können Sie weiter über die Liste wählen.',
+      '3D-Modell nicht geladenBauteile weiter über die Liste',
     );
     expect(screen.getByRole('button', { name: 'Neu laden' })).toBeInTheDocument();
     expect(screen.queryByText(/WebGL/)).not.toBeInTheDocument();
@@ -47,13 +46,13 @@ describe('BikeModel3D ohne 3D-Rad', () => {
         create: () => Promise.reject(new Error('Error creating WebGL context.')),
       },
     }));
-    const onUnavailable = await zeige('Alle Schritte gehen auch über die Knöpfe.');
+    const onUnavailable = await zeige('Alle Schritte auch über die Knöpfe');
     expect(
-      await screen.findByText(/Dieser Browser zeigt kein 3D \(WebGL 2 fehlt\)\./),
+      await screen.findByText(/Kein 3D in diesem Browser \(WebGL 2 fehlt\)/),
     ).toBeInTheDocument();
     // Kein Fehler der Anwendung - und der Weg hinaus, wie die Seite ihn nennt.
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    expect(screen.getByText('Alle Schritte gehen auch über die Knöpfe.')).toBeInTheDocument();
+    expect(screen.getByText('Alle Schritte auch über die Knöpfe')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Neu laden' })).not.toBeInTheDocument();
     expect(onUnavailable).toHaveBeenCalledTimes(1);
   });

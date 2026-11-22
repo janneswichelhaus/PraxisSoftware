@@ -1548,6 +1548,6 @@ Technik · offen · 2026-11-14 · — · — · Wiedervorlage: Sichtung Kalender
 | ANN-865 | Automatisch buchen: nur Hausbesuch ab morgen, ein Termin je Tag, Fahrzeit mal Faktor, sonst kein Platz; Patient:innen erst nach dem ADR | Praxisprozess · offen | `app.auto_booking_fits` |
 | ANN-866 | Terminhonorar 2027: 150 € Endpreis je 60 Minuten samt Anfahrt, bis zur Steuerberatung (B4 Frage 9) | Praxisprozess · entschieden (Jannes) | `HONORARUMFANG` in `src/features/billing/CatalogPage.tsx` |
 | ANN-867 | Entwurf 2027: KG und MT 55 €, doppelt 110 €, Hausbesuch 40 €; Ausfallhonorar 150 €; ohne Personal Training | Praxisprozess · entschieden (Jannes) | `HONORARUMFANG` in `src/features/billing/CatalogPage.tsx` |
-| ANN-868 | 3D-Rad in „Angaben“ mit offenen Stellen, nur Anzeige | Technik · offen | `RadAngaben` in `src/features/fleet/RadAngaben.tsx` |
-| ANN-869 | Bühne des 3D-Lastenrads neutral statt #d7d8d2 (Grundton B) | Technik · offen | `--color-radbuehne` in `src/index.css` |
-| ANN-870 | 3D-Rad: Wahl je Bauteil, ohne Punkt; im Check-Up auf jeder Prüfpunktseite | Technik · offen | `src/features/fleet/radteile.ts` |
+| ANN-868 | 3D-Rad an den Orten von cc3ebbbb (Übergabe 2) | Technik · entschieden (Jannes) | `BikeModel3D` in `src/features/fleet/bike3d/BikeModel3D.tsx` |
+| ANN-870 | 3D-Rad: Bauteil statt Punkt, Nadel in Bauteilmitte | Technik · offen | `radBild` in `src/features/fleet/stellen.ts` |
+| ANN-871 | Wortmarke auf der Box farbig (Box ist Papier) | Technik · offen | `WORTMARKE_URL` in `src/features/fleet/bike3d/model.ts` |
