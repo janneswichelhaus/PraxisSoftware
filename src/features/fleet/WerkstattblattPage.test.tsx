@@ -112,7 +112,7 @@ describe('Unterlage für die Werkstatt', () => {
     expect(
       within(links.parentElement!).getByRole('img', { name: 'Stelle 1, Problem' }),
     ).toBeInTheDocument();
-    // Ohne gespeicherte Punkte zeichnet das Modell die Mitte des Bauteils (ANN-870).
+    // Ohne gespeicherte Punkte sucht das Modell selbst einen Punkt am Bauteil (ANN-870).
     expect(zeichneWerkstattbilder).toHaveBeenCalledWith([
       { id: 's1', zone: 'bremse-vorne', point: null },
       { id: 's2', zone: 'reifen-hinten', point: null },

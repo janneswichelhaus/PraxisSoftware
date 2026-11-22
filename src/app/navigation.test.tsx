@@ -6,6 +6,7 @@ import {
   type Ansicht,
   aktiverBereich,
   arbeitsbereiche,
+  bereichsPfad,
   canSeeBilling,
   leistenvorrang,
   tableiste,
@@ -250,6 +251,21 @@ describe('Arbeitsbereiche je Rolle', () => {
     const bereiche = bereicheFuer(['owner']);
     expect(bereiche.find((bereich) => bereich.id === 'termine')?.unterpunkte).toEqual([]);
     expect(aktiverBereich(bereiche, '/touren')?.id).toBe('termine');
+  });
+
+  it('laesst die Schreibseite im Bereich, aus dem man kam (Jannes 2026-11-22)', () => {
+    const bereiche = bereicheFuer(['owner']);
+    const ausDerUebersicht = bereichsPfad('/termine/t1/abschluss', '?zurueck=%2F');
+    expect(aktiverBereich(bereiche, ausDerUebersicht)?.id).toBe('heute');
+    const ausDemKalender = bereichsPfad('/termine/t1/abschluss', '?zurueck=%2Fkalender%3Fv%3Dtag');
+    expect(aktiverBereich(bereiche, ausDemKalender)?.id).toBe('termine');
+    // Ohne Rückweg oder mit fremdem Ziel bleibt der Kalender.
+    expect(aktiverBereich(bereiche, bereichsPfad('/termine/t1/abschluss', ''))?.id).toBe('termine');
+    expect(bereichsPfad('/termine/t1/abschluss', '?zurueck=%2F%2Fboese.example')).toBe(
+      '/termine/t1/abschluss',
+    );
+    // Andere Seiten richten sich nie nach dem Rückweg.
+    expect(bereichsPfad('/patienten/p1', '?zurueck=%2F')).toBe('/patienten/p1');
   });
 
   it('oeffnet Organisation auf dem Eingang (ORG-004)', () => {

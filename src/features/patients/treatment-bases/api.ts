@@ -950,12 +950,12 @@ function freigabefehler(error: unknown, standard: string): Error {
       : '';
   if (meldung.includes('open appointments')) {
     return new Error(
-      'Es sind noch Termine offen: Jeder Termin der Verordnung braucht Haken und festgeschriebene Doku.',
+      'Es sind noch Termine offen: Jeder Termin der Verordnung braucht Haken und eingetragene Doku.',
     );
   }
   if (meldung.includes('draft documentation')) {
     return new Error(
-      'An einem Termin hängt noch ein Entwurf: erst festschreiben oder verwerfen, dann in die Abrechnung stellen.',
+      'An einem Termin hängt noch ein Entwurf: erst eintragen oder verwerfen, dann in die Abrechnung stellen.',
     );
   }
   if (meldung.includes('already in billing')) {

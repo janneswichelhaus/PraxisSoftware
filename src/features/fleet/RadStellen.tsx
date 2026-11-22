@@ -64,7 +64,7 @@ export function RadStellen({
     },
   });
 
-  // Ohne gespeicherten Punkt steht jede Nadel in der Mitte ihres Bauteils (ANN-870).
+  // Ohne gespeicherten Punkt steht jede Nadel am Anker ihres Bauteils (ANN-870).
   const markers: BikeMarker[] = offen.map((spot) => ({
     id: spot.id,
     zone: spot.zone,

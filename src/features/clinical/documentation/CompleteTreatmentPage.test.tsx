@@ -181,7 +181,7 @@ vi.mock('@/lib/ki/ordnen', async (importOriginal) => ({
 const { CompleteTreatmentPage } = await import('./CompleteTreatmentPage');
 
 // B4 (BEF-154): Festschreiben hakt nicht ab - die Meldung sagt nur, was geschah.
-const FESTGESCHRIEBEN = 'Eintrag als Version 1 festgeschrieben.';
+const FESTGESCHRIEBEN = 'In die Akte eingetragen.';
 
 /**
  * Nach dem Festschreiben bleibt die Seite stehen und zeigt „Danach"
@@ -261,7 +261,7 @@ describe('CompleteTreatmentPage', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Max Mustermann' })).toBeVisible();
     expect(screen.getByText(/^Dokumentation · \S+ \d{2}\.\d{2}\. · /)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Entwurf' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Festschreiben' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Eintragen' })).toBeInTheDocument();
     // Keine Hinweise, keine Folgen-Kästen, kein „Abbrechen" neben dem Pfeil.
     expect(screen.queryByText(/geschieht zweierlei/)).toBeNull();
     expect(screen.queryByRole('link', { name: 'Abbrechen' })).toBeNull();
@@ -345,7 +345,7 @@ describe('CompleteTreatmentPage', () => {
     rendern();
 
     await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Heute geübt.');
-    await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
+    await user.click(screen.getByRole('button', { name: 'Eintragen' }));
 
     await waitFor(() => expect(completeTreatment).toHaveBeenCalledTimes(1));
     expect(completeTreatment).toHaveBeenCalledWith(
@@ -374,7 +374,7 @@ describe('CompleteTreatmentPage', () => {
     await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Heute geübt.');
     expect(screen.getByRole('link', { name: 'Zurück' })).toHaveAttribute('href', '/');
 
-    await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
+    await user.click(screen.getByRole('button', { name: 'Eintragen' }));
     await fertigNachDanach(user);
     expect(navigate).toHaveBeenCalledWith('/', { state: { meldung: FESTGESCHRIEBEN } });
   });
@@ -439,7 +439,7 @@ describe('CompleteTreatmentPage', () => {
       rendern(['therapist'], '?zurueck=%2F');
 
       await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Heute geübt.');
-      await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
+      await user.click(screen.getByRole('button', { name: 'Eintragen' }));
       expect(await screen.findByText(FESTGESCHRIEBEN)).toBeInTheDocument();
       // Kein Feld mehr: Festgeschrieben ist festgeschrieben.
       expect(screen.queryByLabelText('Eintrag zur Behandlung')).toBeNull();
@@ -507,7 +507,7 @@ describe('CompleteTreatmentPage', () => {
       fetchAbrechnungslage.mockResolvedValue(lage());
       rendern();
       await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Heute geübt.');
-      await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
+      await user.click(screen.getByRole('button', { name: 'Eintragen' }));
       expect(await screen.findByText(FESTGESCHRIEBEN)).toBeInTheDocument();
       expect(screen.queryByRole('heading', { name: 'Leistung' })).toBeNull();
       expect(fetchLeistungenAmTermin).not.toHaveBeenCalled();
@@ -530,7 +530,7 @@ describe('CompleteTreatmentPage', () => {
       ]);
       rendern();
       await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Heute geübt.');
-      await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
+      await user.click(screen.getByRole('button', { name: 'Eintragen' }));
       expect(
         await screen.findByText(/Nächster Termin: Mi 19\.05\., 10:00 Uhr/),
       ).toBeInTheDocument();
@@ -545,7 +545,7 @@ describe('CompleteTreatmentPage', () => {
       const user = userEvent.setup();
       rendern();
       await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Heute geübt.');
-      await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
+      await user.click(screen.getByRole('button', { name: 'Eintragen' }));
       const link = await screen.findByRole('link', { name: 'Plan mitgeben' });
       // Die Sprungmarke steht hinter dem Rückweg - sonst wäre sie Teil von ihm.
       expect(link).toHaveAttribute(
@@ -576,9 +576,9 @@ describe('CompleteTreatmentPage', () => {
   it('verbindet die Folge mit dem Knopf, damit sie auch vorgelesen wird (DOK-20)', async () => {
     rendern();
 
-    expect(
-      await screen.findByRole('button', { name: 'Festschreiben' }),
-    ).toHaveAccessibleDescription(/als Version 1 fest; abgehakt wird der Termin getrennt/);
+    expect(await screen.findByRole('button', { name: 'Eintragen' })).toHaveAccessibleDescription(
+      /als Version 1 in die Akte ein; abgehakt wird der Termin getrennt/,
+    );
   });
 
   it('uebergibt den Stand eines vorhandenen Entwurfs zur Konflikterkennung', async () => {
@@ -591,7 +591,7 @@ describe('CompleteTreatmentPage', () => {
 
     await user.clear(feld);
     await user.type(feld, 'Neuer Text');
-    await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
+    await user.click(screen.getByRole('button', { name: 'Eintragen' }));
 
     await waitFor(() =>
       expect(completeTreatment).toHaveBeenCalledWith(
@@ -609,7 +609,7 @@ describe('CompleteTreatmentPage', () => {
     const user = userEvent.setup();
     rendern();
 
-    await user.click(await screen.findByRole('button', { name: 'Festschreiben' }));
+    await user.click(await screen.findByRole('button', { name: 'Eintragen' }));
 
     expect(
       await screen.findByText('Die Behandlungsdokumentation darf nicht leer sein.'),
@@ -677,7 +677,7 @@ describe('CompleteTreatmentPage', () => {
     const user = userEvent.setup();
     rendern();
     await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Nachgetragen.');
-    await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
+    await user.click(screen.getByRole('button', { name: 'Eintragen' }));
     await waitFor(() => expect(completeTreatment).toHaveBeenCalledTimes(1));
   });
 
@@ -759,7 +759,7 @@ describe('CompleteTreatmentPage', () => {
         });
         return Promise.resolve();
       });
-      await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
+      await user.click(screen.getByRole('button', { name: 'Eintragen' }));
 
       await fertigNachDanach(user);
       expect(navigate).toHaveBeenCalled();
@@ -809,7 +809,7 @@ describe('CompleteTreatmentPage', () => {
 
       // Angepasst wird von Hand, festgeschrieben wird ausdrücklich.
       await user.type(feld, ' Heute Treppe.');
-      await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
+      await user.click(screen.getByRole('button', { name: 'Eintragen' }));
       await waitFor(() =>
         expect(completeTreatment).toHaveBeenCalledWith(
           TERMIN_ID,
@@ -932,16 +932,18 @@ describe('CompleteTreatmentPage', () => {
       expect(befund.compareDocumentPosition(bausteine)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     });
 
-    it('stellt ohne eigene Bausteine den Link hinter „+ Befund“ (B5)', async () => {
+    it('zeigt ohne eigene Bausteine keinen Weg zur Bausteinseite (Jannes 2026-11-22)', async () => {
       fetchTextSnippets.mockResolvedValue([]);
       rendern();
 
-      const link = await screen.findByRole('link', { name: 'Eigene Bausteine anlegen' });
-      const befund = screen.getByRole('button', { name: /^\+ Befund/ });
+      const befund = await screen.findByRole('button', { name: /^\+ Befund/ });
       expect(
         screen.getByRole('button', { name: 'Wie zuletzt' }).compareDocumentPosition(befund),
       ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
-      expect(befund.compareDocumentPosition(link)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+      await waitFor(() =>
+        expect(screen.queryByTestId('bausteine-platzhalter')).not.toBeInTheDocument(),
+      );
+      expect(screen.queryByRole('link', { name: 'Eigene Bausteine anlegen' })).toBeNull();
     });
 
     it('blockiert die Dokumentation nicht, wenn die Bausteine nicht laden', async () => {
@@ -1052,7 +1054,7 @@ describe('CompleteTreatmentPage', () => {
       await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Mobilisation LWS.');
       await user.click(screen.getByRole('button', { name: '+ Skalen' }));
       await user.click(screen.getByRole('radio', { name: '7' }));
-      await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
+      await user.click(screen.getByRole('button', { name: 'Eintragen' }));
       expect(
         await screen.findByText('Die Skalen stehen noch nicht im Eintrag.'),
       ).toBeInTheDocument();
@@ -1132,7 +1134,7 @@ describe('CompleteTreatmentPage', () => {
         await screen.findByLabelText('Eintrag zur Behandlung'),
         'Tuer geoeffnet, Behandlung abgelehnt.',
       );
-      await user.click(screen.getByRole('button', { name: 'Mit Vermerk festschreiben' }));
+      await user.click(screen.getByRole('button', { name: 'Mit Vermerk eintragen' }));
 
       await waitFor(() =>
         expect(completeTreatment).toHaveBeenCalledWith(
@@ -1150,7 +1152,7 @@ describe('CompleteTreatmentPage', () => {
       const user = userEvent.setup();
       rendern(['therapist'], '?ohne-behandlung=1');
 
-      await user.click(await screen.findByRole('button', { name: 'Mit Vermerk festschreiben' }));
+      await user.click(await screen.findByRole('button', { name: 'Mit Vermerk eintragen' }));
 
       await waitFor(() =>
         expect(completeTreatment).toHaveBeenCalledWith(
@@ -1169,7 +1171,7 @@ describe('CompleteTreatmentPage', () => {
       const user = userEvent.setup();
       rendern(['therapist']);
 
-      await user.click(await screen.findByRole('button', { name: 'Festschreiben' }));
+      await user.click(await screen.findByRole('button', { name: 'Eintragen' }));
 
       expect(await screen.findByText(/darf nicht leer sein/)).toBeInTheDocument();
       expect(completeTreatment).not.toHaveBeenCalled();
@@ -1191,7 +1193,7 @@ describe('CompleteTreatmentPage', () => {
 
       await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Behandelt.');
       // Ohne den Vermerk heisst die Schaltflaeche wieder wie sonst.
-      await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
+      await user.click(screen.getByRole('button', { name: 'Eintragen' }));
 
       await waitFor(() =>
         expect(completeTreatment).toHaveBeenCalledWith(
@@ -1234,7 +1236,7 @@ describe('CompleteTreatmentPage', () => {
 
       const erwartet = `Befund:\n\n${VORSCHLAG}`;
       expect(screen.getByLabelText('Eintrag zur Behandlung')).toHaveValue(erwartet);
-      await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
+      await user.click(screen.getByRole('button', { name: 'Eintragen' }));
       await waitFor(() =>
         expect(completeTreatment).toHaveBeenCalledWith(
           TERMIN_ID,
@@ -1252,7 +1254,7 @@ describe('CompleteTreatmentPage', () => {
       rendern();
       await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Befund:');
       await lachmannPositiv(user);
-      await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
+      await user.click(screen.getByRole('button', { name: 'Eintragen' }));
 
       expect(await screen.findByRole('alert')).toHaveTextContent(
         'Der Vorschlag steht noch nicht im Text.',
@@ -1326,14 +1328,14 @@ describe('CompleteTreatmentPage', () => {
       rendern();
       await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Befund:');
       await lachmannPositiv(user);
-      await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
+      await user.click(screen.getByRole('button', { name: 'Eintragen' }));
       await screen.findByRole('alert');
       // Verwerfen fragt seit UXR-009 nach (BEF-01).
       await user.click(screen.getByRole('button', { name: 'Verwerfen' }));
       await user.click(screen.getByRole('button', { name: 'Ja, alle Angaben verwerfen' }));
       expect(screen.queryByRole('alert')).toBeNull();
 
-      await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
+      await user.click(screen.getByRole('button', { name: 'Eintragen' }));
       await waitFor(() =>
         expect(completeTreatment).toHaveBeenCalledWith(
           TERMIN_ID,
@@ -1353,7 +1355,7 @@ describe('CompleteTreatmentPage', () => {
       rendern();
       await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Befund:');
       await user.click(screen.getByRole('button', { name: /^\+ Befund/ }));
-      await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
+      await user.click(screen.getByRole('button', { name: 'Eintragen' }));
 
       await waitFor(() => expect(completeTreatment).toHaveBeenCalledTimes(1));
       expect(screen.getByRole('group', { name: 'Befund aus Bausteinen' })).toBeDisabled();
@@ -1474,7 +1476,7 @@ describe('CompleteTreatmentPage', () => {
       const user = userEvent.setup();
       rendern();
       const sprechen = await screen.findByRole('button', { name: 'Sprechen' });
-      const festschreiben = screen.getByRole('button', { name: 'Festschreiben' });
+      const festschreiben = screen.getByRole('button', { name: 'Eintragen' });
       expect(sprechen).toHaveClass('bg-accent', 'h-12');
       expect(festschreiben).not.toHaveClass('bg-accent');
       // Gesprochen wird nur auf Tipp: Beim Öffnen fragt niemand das Mikrofon.
@@ -1507,8 +1509,8 @@ describe('CompleteTreatmentPage', () => {
         expect(screen.getByText('0:02')).toBeInTheDocument();
 
         expect(screen.getByRole('button', { name: 'Fertig' })).toHaveClass('bg-accent');
-        expect(screen.getByRole('button', { name: 'Festschreiben' })).toBeDisabled();
-        expect(screen.getByRole('button', { name: 'Festschreiben' })).not.toHaveClass('bg-accent');
+        expect(screen.getByRole('button', { name: 'Eintragen' })).toBeDisabled();
+        expect(screen.getByRole('button', { name: 'Eintragen' })).not.toHaveClass('bg-accent');
         // Verwerfen nur mit Rückfrage; „Fertig“ steht allein (Praxis-Review).
         expect(screen.getByRole('button', { name: 'Verwerfen' })).toBeEnabled();
         expect(screen.queryByRole('button', { name: 'Abbrechen' })).toBeNull();
@@ -1610,18 +1612,18 @@ describe('CompleteTreatmentPage', () => {
       // Das Feld bleibt leer, bis jemand übernimmt.
       expect(screen.getByLabelText('Eintrag zur Behandlung')).toHaveValue('');
       // Mit unverständlicher Stelle geht der Vorschlag erst ins Feld (ANN-840).
-      expect(screen.queryByRole('button', { name: 'Übernehmen und festschreiben' })).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Übernehmen und eintragen' })).toBeNull();
       expect(screen.getByRole('button', { name: 'In die Doku übernehmen' })).toHaveClass(
         'bg-accent',
       );
-      expect(screen.getByRole('button', { name: 'Festschreiben' })).not.toHaveClass('bg-accent');
+      expect(screen.getByRole('button', { name: 'Eintragen' })).not.toHaveClass('bg-accent');
 
       // Korrigiert man die Stelle, zählt die Zeile mit - und am leeren Feld trägt
-      // „Übernehmen und festschreiben“ den Hauptknopf.
+      // „Übernehmen und eintragen“ den Hauptknopf.
       await user.clear(vorschlag);
       await user.type(vorschlag, 'Plan{Enter}Treppe üben.');
       expect(screen.queryByText(/Stelle unverständlich/)).toBeNull();
-      expect(screen.getByRole('button', { name: 'Übernehmen und festschreiben' })).toHaveClass(
+      expect(screen.getByRole('button', { name: 'Übernehmen und eintragen' })).toHaveClass(
         'bg-accent',
       );
       expect(screen.getByRole('button', { name: 'Nur übernehmen' })).not.toHaveClass('bg-accent');
@@ -1633,9 +1635,9 @@ describe('CompleteTreatmentPage', () => {
       const vorschlag = await diktieren(user);
       await user.clear(vorschlag);
       await user.type(vorschlag, 'Plan{Enter}Treppe üben.');
-      const beide = screen.getByRole('button', { name: 'Übernehmen und festschreiben' });
+      const beide = screen.getByRole('button', { name: 'Übernehmen und eintragen' });
       // Die Folge hört man mit wie am Festschreiben selbst.
-      expect(beide).toHaveAccessibleDescription(/Schreibt den Eintrag als Version 1 fest/);
+      expect(beide).toHaveAccessibleDescription(/Trägt den Text als Version 1 in die Akte ein/);
       await user.click(beide);
 
       await waitFor(() =>
@@ -1652,12 +1654,12 @@ describe('CompleteTreatmentPage', () => {
       expect(createTreatmentNote).not.toHaveBeenCalled();
     });
 
-    it('bietet „Übernehmen und festschreiben“ nicht an, wenn schon Text im Feld steht', async () => {
+    it('bietet „Übernehmen und eintragen“ nicht an, wenn schon Text im Feld steht', async () => {
       const user = userEvent.setup();
       rendern();
       await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Heute geübt.');
       await diktieren(user);
-      expect(screen.queryByRole('button', { name: 'Übernehmen und festschreiben' })).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Übernehmen und eintragen' })).toBeNull();
       expect(screen.getByRole('button', { name: 'In die Doku übernehmen' })).toHaveClass(
         'bg-accent',
       );
@@ -1670,13 +1672,13 @@ describe('CompleteTreatmentPage', () => {
       const vorschlag = await diktieren(user);
       await user.clear(vorschlag);
       await user.type(vorschlag, 'Plan{Enter}Treppe üben.');
-      await user.click(screen.getByRole('button', { name: 'Übernehmen und festschreiben' }));
+      await user.click(screen.getByRole('button', { name: 'Übernehmen und eintragen' }));
 
       await waitFor(() => expect(completeTreatment).toHaveBeenCalledTimes(1));
       expect(await screen.findByRole('alert')).toHaveTextContent('Keine Verbindung.');
       expect(screen.getByLabelText('Eintrag zur Behandlung')).toHaveValue('Plan\nTreppe üben.');
       expect(screen.queryByLabelText('Text des Vorschlags')).toBeNull();
-      expect(screen.getByRole('button', { name: 'Festschreiben' })).toBeEnabled();
+      expect(screen.getByRole('button', { name: 'Eintragen' })).toBeEnabled();
     });
 
     it('hängt den Vorschlag ans Ende und holt ihn mit „Rückgängig“ zurück', async () => {
@@ -1699,7 +1701,7 @@ describe('CompleteTreatmentPage', () => {
       await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Heute geübt.');
       await diktieren(user);
       await user.click(screen.getByRole('button', { name: 'In die Doku übernehmen' }));
-      await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
+      await user.click(screen.getByRole('button', { name: 'Eintragen' }));
 
       await waitFor(() =>
         expect(completeTreatment).toHaveBeenCalledWith(
@@ -1723,7 +1725,7 @@ describe('CompleteTreatmentPage', () => {
       await user.click(screen.getByRole('button', { name: 'Verwerfen' }));
       const frage = screen.getByRole('group', { name: 'Vorschlag aus der Aufnahme verwerfen' });
       await user.click(within(frage).getByRole('button', { name: 'Ja, verwerfen' }));
-      await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
+      await user.click(screen.getByRole('button', { name: 'Eintragen' }));
 
       await waitFor(() =>
         expect(completeTreatment).toHaveBeenCalledWith(
@@ -1757,7 +1759,7 @@ describe('CompleteTreatmentPage', () => {
       await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Heute geübt.');
       await diktieren(user);
 
-      await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
+      await user.click(screen.getByRole('button', { name: 'Eintragen' }));
       expect(screen.getByText(DIKTAT_OFFEN)).toBeInTheDocument();
       await user.click(screen.getByRole('button', { name: 'Entwurf' }));
       expect(completeTreatment).not.toHaveBeenCalled();
@@ -1780,7 +1782,7 @@ describe('CompleteTreatmentPage', () => {
       expect(screen.queryByLabelText('Text des Vorschlags')).toBeNull();
       expect(screen.queryByRole('button', { name: 'Erneut senden' })).toBeNull();
       await user.type(screen.getByLabelText('Eintrag zur Behandlung'), 'Getippt.');
-      await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
+      await user.click(screen.getByRole('button', { name: 'Eintragen' }));
       await waitFor(() => expect(completeTreatment).toHaveBeenCalledTimes(1));
     });
 
@@ -1816,7 +1818,7 @@ describe('CompleteTreatmentPage', () => {
       await user.click(await screen.findByRole('button', { name: 'Fertig' }));
 
       expect(await screen.findByText(/Die Aufnahme ist noch da/)).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Festschreiben' })).not.toHaveClass('bg-accent');
+      expect(screen.getByRole('button', { name: 'Eintragen' })).not.toHaveClass('bg-accent');
       await user.click(screen.getByRole('button', { name: 'Erneut senden' }));
 
       expect(await screen.findByLabelText('Text des Vorschlags')).toHaveValue(VORSCHLAGSTEXT);
@@ -1961,7 +1963,7 @@ describe('CompleteTreatmentPage', () => {
       // Nochmals möglich, aber nicht mehr als Hauptknopf: Der führte gerade ins Leere.
       expect(screen.getByRole('button', { name: 'Sprechen' })).toBeEnabled();
       expect(screen.getByRole('button', { name: 'Sprechen' })).not.toHaveClass('bg-accent');
-      expect(screen.getByRole('button', { name: 'Festschreiben' })).toHaveClass('bg-accent');
+      expect(screen.getByRole('button', { name: 'Eintragen' })).toHaveClass('bg-accent');
     });
 
     it('ist ohne Netz aus und lässt Festschreiben Hauptknopf', async () => {
@@ -1972,7 +1974,7 @@ describe('CompleteTreatmentPage', () => {
         const sprechen = await screen.findByRole('button', { name: 'Sprechen' });
         expect(sprechen).toBeDisabled();
         expect(screen.getByText('Ohne Netz nicht verfügbar.')).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: 'Festschreiben' })).toHaveClass('bg-accent');
+        expect(screen.getByRole('button', { name: 'Eintragen' })).toHaveClass('bg-accent');
       } finally {
         delete (navigator as { onLine?: boolean }).onLine;
         if (verbunden) expect(navigator.onLine).toBe(true);
@@ -1982,7 +1984,7 @@ describe('CompleteTreatmentPage', () => {
     it('bietet „Sprechen“ nicht an, solange der Gateway das Diktat nicht meldet', async () => {
       diktatVerfuegbar.mockResolvedValue(false);
       rendern();
-      const festschreiben = await screen.findByRole('button', { name: 'Festschreiben' });
+      const festschreiben = await screen.findByRole('button', { name: 'Eintragen' });
       await waitFor(() => expect(diktatVerfuegbar).toHaveBeenCalledTimes(1));
       // Kein Knopf, der ins Leere führt - und „Festschreiben“ bleibt Hauptknopf.
       expect(screen.queryByRole('button', { name: 'Sprechen' })).toBeNull();
@@ -1998,7 +2000,7 @@ describe('CompleteTreatmentPage', () => {
       });
       try {
         rendern();
-        const festschreiben = await screen.findByRole('button', { name: 'Festschreiben' });
+        const festschreiben = await screen.findByRole('button', { name: 'Eintragen' });
         expect(screen.queryByRole('button', { name: 'Sprechen' })).toBeNull();
         expect(festschreiben).toHaveClass('bg-accent');
         // Gefragt wird der Gateway dann gar nicht erst.
@@ -2013,14 +2015,12 @@ describe('CompleteTreatmentPage', () => {
       rendern();
       expect(await screen.findByRole('button', { name: 'Sprechen' })).toBeDisabled();
       expect(screen.getByText('Auf diesem Gerät nicht verfügbar.')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Festschreiben' })).toHaveClass('bg-accent');
+      expect(screen.getByRole('button', { name: 'Eintragen' })).toHaveClass('bg-accent');
     });
 
     it('bietet am Vermerk „ohne Behandlung“ kein Sprechen an', async () => {
       rendern(['therapist'], '?ohne-behandlung=1');
-      expect(
-        await screen.findByRole('button', { name: 'Mit Vermerk festschreiben' }),
-      ).toBeVisible();
+      expect(await screen.findByRole('button', { name: 'Mit Vermerk eintragen' })).toBeVisible();
       expect(screen.queryByRole('button', { name: 'Sprechen' })).toBeNull();
     });
 
@@ -2102,7 +2102,7 @@ describe('CompleteTreatmentPage', () => {
       expect(feld).toHaveValue(NOTIZEN);
       // Ein Hauptknopf je Ansicht: jetzt „Übernehmen“.
       expect(screen.getByRole('button', { name: 'Übernehmen' })).toHaveClass('bg-accent');
-      expect(screen.getByRole('button', { name: 'Festschreiben' })).not.toHaveClass('bg-accent');
+      expect(screen.getByRole('button', { name: 'Eintragen' })).not.toHaveClass('bg-accent');
       expect(screen.queryByRole('button', { name: 'Ordnen' })).toBeNull();
     });
 
@@ -2116,7 +2116,7 @@ describe('CompleteTreatmentPage', () => {
       expect(feld).toHaveValue(GEORDNET);
       expect(screen.queryByRole('heading', { name: 'Geordnet – bitte prüfen' })).toBeNull();
       expect(screen.getByText(GEORDNET_MELDUNG)).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Festschreiben' })).toHaveClass('bg-accent');
+      expect(screen.getByRole('button', { name: 'Eintragen' })).toHaveClass('bg-accent');
 
       await user.click(screen.getByRole('button', { name: 'Rückgängig' }));
       expect(feld).toHaveValue(NOTIZEN);
@@ -2128,7 +2128,7 @@ describe('CompleteTreatmentPage', () => {
       await tippen(user);
       await user.click(await screen.findByRole('button', { name: 'Ordnen' }));
       await user.click(await screen.findByRole('button', { name: 'Übernehmen' }));
-      await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
+      await user.click(screen.getByRole('button', { name: 'Eintragen' }));
 
       await waitFor(() => expect(completeTreatment).toHaveBeenCalledTimes(1));
       const [terminId, text, , , ohneBehandlung, diktiert] = completeTreatment.mock
@@ -2147,14 +2147,14 @@ describe('CompleteTreatmentPage', () => {
       await tippen(user);
       await user.click(await screen.findByRole('button', { name: 'Ordnen' }));
       await screen.findByRole('heading', { name: 'Geordnet – bitte prüfen' });
-      await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
+      await user.click(screen.getByRole('button', { name: 'Eintragen' }));
 
       expect(await screen.findByText(VORSCHLAG_OFFEN)).toBeInTheDocument();
       expect(completeTreatment).not.toHaveBeenCalled();
 
       await user.click(screen.getByRole('button', { name: 'Übernehmen' }));
       expect(screen.queryByText(VORSCHLAG_OFFEN)).toBeNull();
-      await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
+      await user.click(screen.getByRole('button', { name: 'Eintragen' }));
       await waitFor(() => expect(completeTreatment).toHaveBeenCalledTimes(1));
     });
 

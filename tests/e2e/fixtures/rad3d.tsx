@@ -16,7 +16,7 @@ import { CHECK_ITEMS, zonesOfCheckItem } from '@/features/fleet/zones';
  * Bauteile eines Prüfpunkts aus dessen Blickwinkel.
  */
 
-// Ohne Punkt: Gespeichert wird nur das Bauteil, die Nadel steht in dessen Mitte (ANN-870).
+// Ohne Punkt: Gespeichert wird nur das Bauteil, die Nadel steht an dessen Anker (ANN-870).
 const STELLEN: BikeMarker[] = [
   { id: 's1', zone: 'riemen', point: null, severity: 'problem', number: 1 },
   { id: 's2', zone: 'bremse-vorne', point: null, severity: 'problem', number: 2 },

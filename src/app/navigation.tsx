@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import type { SubNavEintrag } from '@/components/ui/SubNav';
 import { BEGRIFFE, BEREICHE } from '@/lib/begriffe';
+import { leseRueckweg } from '@/lib/rueckweg';
 import {
   canCounselNutrition,
   canManageAppointments,
@@ -641,6 +642,17 @@ const AKTE_PFAD = /^\/patienten\/(?!neu(?:\/|$))[^/]+(?:\/|$)/;
 
 export function zeigtUnterleiste(pathname: string): boolean {
   return !AKTE_PFAD.test(pathname);
+}
+
+/**
+ * Der Pfad, nach dem sich der aktive Bereich richtet: Doku und Abschluss eines
+ * Termins gehören zu dem Bereich, aus dem man kam (Jannes 2026-11-22) - aus
+ * der Übersicht bleibt „Übersicht“ markiert, statt in den Kalender zu springen.
+ */
+export function bereichsPfad(pathname: string, search: string): string {
+  if (!pathname.startsWith('/termine/')) return pathname;
+  const rueckweg = leseRueckweg(new URLSearchParams(search), '');
+  return rueckweg ? (rueckweg.split(/[?#]/)[0] ?? pathname) : pathname;
 }
 
 export function aktiverBereich(

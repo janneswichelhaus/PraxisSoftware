@@ -43,4 +43,4 @@ nennen die Steuerberatung.
 
 ## Letzte Session
 
-19.11.: Bauteil am 3D-Rad antippen.
+22.11.: Doku aus der Übersicht.

@@ -46,6 +46,7 @@ import { Nachzuholen, NochOffen } from './NochOffen';
 import { TagesplanDruck } from './TagesplanDruck';
 import { CheckupErinnerung } from '@/features/fleet';
 import { Zeitstrahl } from './Zeitstrahl';
+import { useStelleInDerUebersicht } from './stelle';
 import { Wochenleiste } from './Wochenleiste';
 import { fensterTage, kopfDatum, terminAnzahl } from './wochenfenster';
 import { Tageskacheln, type Abfahrt } from './Tageskacheln';
@@ -66,6 +67,7 @@ import {
   naechsterWeg,
   nichtAbgeschlossen,
   stehtAus,
+  tagLaeuft,
   tagesfortschritt,
   terminName,
   VERALTET_TEXT,
@@ -365,6 +367,7 @@ function MeinTag({
   praxis: string;
 }) {
   const { data: termine, isPending, isError, isFetching, dataUpdatedAt, refetch } = abfrage;
+  useStelleInDerUebersicht(datum, !isPending && termine !== undefined, fokus?.termin.id ?? null);
 
   // Eine spätere Zeile klappt in der Übersicht auf, statt in den Kalender zu
   // springen (Auftrag C1). Eine zur Zeit; der Fokus folgt dem Knopf, der an
@@ -406,7 +409,7 @@ function MeinTag({
     beschriftung?: string,
     variante: 'primary' | 'secondary' = 'secondary',
   ): ReactNode {
-    // B4: auch eine festgeschriebene Doku wartet noch auf ihren Haken.
+    // B4: auch eine eingetragene Doku wartet noch auf ihren Haken.
     if (
       !darfTermine ||
       // ERN-012: Die Ernährungsberatung wird abgehakt, auch im Training.
@@ -474,11 +477,8 @@ function MeinTag({
   }
 
   /**
-   * Die Knöpfe einer Zeile (Leitfaden L3, Jannes 2026-10-06): „Doku" an jedem
-   * Behandlungstermin, auch nach dem Abschließen und Festschreiben - erledigt
-   * heißt nicht unerreichbar. Daneben der Haken, solange ein vorbeigegangener
-   * Besuch nicht abgehakt ist; sonst der Anruf (Auftrag C1). Einen späteren
-   * Besuch hakt niemand vorab ab - an seiner Zeile steht deshalb das Telefon.
+   * Die Knöpfe einer Zeile (L3; Jannes 2026-11-22): „Doku" an jedem Behandlungstermin,
+   * daneben nur der fällige Haken; der Anruf steht an der aufgeklappten Karte.
    */
   function zeilenAktionen(termin: DayPlanEntry): ReactNode {
     const doku = dokuFuer(termin);
@@ -488,11 +488,9 @@ function MeinTag({
     const hakenDa =
       nichtAbgeschlossen(termin, jetzt) ||
       (termin.kind === 'therapy' && dokumentiertOhneHaken(termin.status, termin.checked_at));
-    const zweites = hakenDa ? (
-      haken(termin)
-    ) : termin.kind === 'internal' ? null : (
-      <AnrufKnopf termin={termin} />
-    );
+    // Weniger Auswahl an der Zeile (Jannes 2026-11-22): der Anruf steht an
+    // der aufgeklappten Karte, an der Zeile nur Doku und der fällige Haken.
+    const zweites = hakenDa ? haken(termin) : null;
     if (!doku && !vorbereiten && !zweites) return null;
     return (
       <>
@@ -697,6 +695,9 @@ function MeinTag({
   const hausbesuche = hausbesucheDesTages(sortiert);
   const stehtBesuchAus = fokus?.art === 'besuch';
   const ohneBesuch = besuche.length === 0 && !stehtBesuchAus;
+  // Bis jeder Termin abgehakt oder anders bearbeitet ist, bleibt die Seite in
+  // Uhrzeitfolge stehen, die offene Karte an ihrer Stelle (Jannes 2026-11-22).
+  const imTag = stehtBesuchAus || (istHeute && !ohneBesuch && tagLaeuft(sortiert));
   // Der Wegbalken rechnet von jetzt (ANN-196) - an einem anderen Tag gibt es
   // kein Jetzt, nur die Anfahrten am Zeitstrahl (ANN-234).
   const weg = istHeute ? naechsterWeg(sortiert, fokus, fahrzeiten.anfahrten, jetzt) : null;
@@ -788,7 +789,7 @@ function MeinTag({
     // liegen bleibt, beginnt hier, nicht drei Tipps entfernt in der Radflotte
     // (BEF-176). Das Rad wählt die Seite danach, das eigene vorbelegt.
     const nebenaktionen =
-      fokus.art !== 'besuch' || !istHeute ? null : phase === 'wartet' ? (
+      fokus.art === 'besuch' && !istHeute ? null : fokus.art === 'besuch' && phase === 'wartet' ? (
         <>
           <SpaeterDa termin={termin} praxis={praxis} />
           {termin.appointment_type === 'home_visit' ? (
@@ -802,6 +803,7 @@ function MeinTag({
           ) : null}
         </>
       ) : (
+        // Auch an der Karte eines liegengebliebenen Besuchs (Jannes 2026-11-22).
         ausfall(termin, 'tuer')
       );
 
@@ -829,7 +831,7 @@ function MeinTag({
   const strahl =
     sortiert.length > 0 ? (
       <Zeitstrahl
-        {...(istHeute && !stehtBesuchAus
+        {...(istHeute && !imTag
           ? { titel: `Heute · ${kopfDatum(heute)}`, titelSichtbar: true }
           : {})}
         erstaufnahmeOffen={(termin) =>
@@ -839,8 +841,7 @@ function MeinTag({
         plan={sortiert}
         // Steht kein Besuch mehr aus, sagt „noch offen“ darüber, was fehlt;
         // der Strahl zeigt dann nur noch den Tag.
-        fokusId={stehtBesuchAus ? (fokus?.termin.id ?? null) : null}
-        fruehereZusammenfassen={istHeute && stehtBesuchAus}
+        fokusId={imTag ? (fokus?.termin.id ?? null) : null}
         jetzt={jetzt}
         jetztMarke={istHeute}
         zeitzone={zeitzone}
@@ -933,7 +934,7 @@ function MeinTag({
           inKarte
           title={`${TagesWort(datum, heute)} sind Ihnen keine Besuche zugeordnet`}
         />
-      ) : stehtBesuchAus ? (
+      ) : imTag ? (
         // Liege, Abfahrt und der Strahl mit der Karte des nächsten Besuchs
         // sind ein Abschnitt.
         <div className="flex flex-col gap-3 sm:gap-4">
@@ -968,7 +969,7 @@ function MeinTag({
           2026-10-15, ANN-546). Erst, was heute noch offen ist - Haken und
           Doku -, dann was liegen geblieben ist, dann morgen (Auftrag C1,
           Analyse Rang 13). */}
-      {!stehtBesuchAus ? (
+      {!imTag ? (
         <NochOffen
           plan={sortiert}
           tagWort={TagesWort(datum, heute)}
@@ -980,7 +981,7 @@ function MeinTag({
           zurueckgewiesen={zurueckgewiesen}
         />
       ) : null}
-      {istHeute && !stehtBesuchAus && darfDokumentieren ? (
+      {istHeute && !imTag && darfDokumentieren ? (
         <Nachzuholen
           heute={heute}
           staffMemberId={staffMemberId}
@@ -991,7 +992,7 @@ function MeinTag({
 
       {/* Steht heute kein Weg mehr aus, ist morgen das Nächste (Jannes,
           2026-10-11). */}
-      {istHeute && !stehtBesuchAus ? (
+      {istHeute && !imTag ? (
         <MorgenVorschau
           morgen={morgen}
           heute={heute}
@@ -1001,12 +1002,12 @@ function MeinTag({
         />
       ) : null}
 
-      {ohneBesuch || stehtBesuchAus ? null : strahl}
+      {ohneBesuch || imTag ? null : strahl}
 
       {/* Steht ein Besuch aus, bleibt „noch offen“ für die Besuche weg; ein
           zurückgewiesener Freizeitausgleich steht trotzdem da - unter dem
           Strahl, der nächste Weg bleibt auf dem ersten Bildschirm (BEF-179). */}
-      {istHeute && stehtBesuchAus ? (
+      {istHeute && imTag ? (
         <NochOffen
           plan={[]}
           tagWort={TagesWort(datum, heute)}
@@ -1020,7 +1021,7 @@ function MeinTag({
 
       {/* Liegengebliebenes der letzten Tage, unter dem eigenen Tag: Der
           nächste Weg bleibt auf dem ersten Bildschirm (Auftrag C1). */}
-      {istHeute && stehtBesuchAus && darfDokumentieren ? (
+      {istHeute && imTag && darfDokumentieren ? (
         <Nachzuholen
           heute={heute}
           staffMemberId={staffMemberId}

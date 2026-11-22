@@ -89,7 +89,7 @@ describe('Formularfuss (Design-Fundament, Lücke 9.5)', () => {
   it('setzt auf Wunsch eine Linie darüber und einen Satz über die Knöpfe', () => {
     renderWithProviders(
       <Formularfuss trenner zusatz="Schreibt den Bogen fest.">
-        <Button type="submit">Festschreiben</Button>
+        <Button type="submit">Eintragen</Button>
       </Formularfuss>,
     );
     const satz = screen.getByText('Schreibt den Bogen fest.');
@@ -119,10 +119,10 @@ describe('Aktionsleiste (Design-Fundament, aus der Schreibseite)', () => {
         <Button type="button" variant="quiet">
           Entwurf
         </Button>
-        <Button type="submit">Festschreiben</Button>
+        <Button type="submit">Eintragen</Button>
       </Aktionsleiste>,
     );
-    const knopf = screen.getByRole('button', { name: 'Festschreiben' });
+    const knopf = screen.getByRole('button', { name: 'Eintragen' });
     const reihe = knopf.parentElement!;
     const leiste = reihe.parentElement!;
     expect(klassenVon(leiste)).toEqual(

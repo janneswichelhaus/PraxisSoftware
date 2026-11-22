@@ -29,7 +29,7 @@ import { FREITEXT } from '@/components/ui/textStile';
 /** Das Abzeichen eines Eintrags: festgeschrieben mit Version, sonst Entwurf mit Frist. */
 function zustandsAbzeichen(note: TreatmentNote, frist: string | null) {
   return note.status === 'final' ? (
-    <Badge ton="positiv">{`Festgeschrieben · Version ${note.version_count}`}</Badge>
+    <Badge ton="positiv">{`Eingetragen · Version ${note.version_count}`}</Badge>
   ) : (
     <Badge ton="warnung">{frist ? `Entwurf · Frist ${frist}` : 'Entwurf'}</Badge>
   );
@@ -149,8 +149,8 @@ function Eintrag({
       {note.status === 'draft' ? (
         <p className="text-warnung text-[13px] leading-relaxed">
           {frist
-            ? `Wird am ${frist} automatisch festgeschrieben, wenn niemand vorher finalisiert.`
-            : 'Wird automatisch festgeschrieben, wenn niemand vorher finalisiert.'}
+            ? `Wird am ${frist} automatisch eingetragen, wenn niemand vorher finalisiert.`
+            : 'Wird automatisch eingetragen, wenn niemand vorher finalisiert.'}
         </p>
       ) : null}
 

@@ -98,8 +98,8 @@ export async function zeichneWerkstattbilder(
 
     /**
      * Trifft der Strahl von der Kamera vor dem Punkt auf ein anderes Bauteil?
-     * Das eigene zählt nicht: Ohne gespeicherten Punkt steht die Nadel in der
-     * Mitte des Bauteils, also in ihm.
+     * Das eigene zählt nicht: Ohne gespeicherten Punkt steht die Nadel auf
+     * dem Bauteil, seine Fläche läge sonst immer davor.
      */
     function verdeckt(punkt: Vector3, zone: string): boolean {
       const richtung = punkt.clone().sub(camera.position);

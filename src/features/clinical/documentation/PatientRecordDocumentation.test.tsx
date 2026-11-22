@@ -164,7 +164,7 @@ describe('PatientRecordDocumentation (DOK-003, ROL-001)', () => {
       expect(fenster).not.toHaveTextContent('Verfasst von');
       expect(fenster).toHaveTextContent('Nachtrag');
       expect(fenster).toHaveTextContent(NACHTRAG_INHALT);
-      expect(fenster).toHaveTextContent('wird am 13.05. automatisch festgeschrieben');
+      expect(fenster).toHaveTextContent('wird am 13.05. automatisch eingetragen');
       expect(fenster).toHaveTextContent('Zuletzt geändert 13.05.2027, 08:15 von Tim Teamleitung');
 
       expect(fetchPatientTreatmentNotesPage).toHaveBeenCalledWith(PATIENT_ID, null);

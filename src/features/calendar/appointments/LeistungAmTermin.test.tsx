@@ -120,10 +120,10 @@ describe('Leistung am Termin (B7, BEF-157)', () => {
     fetchAbrechnungslage.mockResolvedValue(lage({ checked_at: '2027-05-12T08:00:00Z' }));
     rendern({ status: 'completed', completed_at: '2027-05-12T08:00:00Z' });
     expect(await screen.findByText('Erbracht')).toBeInTheDocument();
-    expect(screen.getByText('Abrechenbar mit festgeschriebener Doku')).toBeInTheDocument();
+    expect(screen.getByText('Abrechenbar mit eingetragener Doku')).toBeInTheDocument();
   });
 
-  it('nennt eine festgeschriebene Doku ohne Haken nicht erbracht (B4)', async () => {
+  it('nennt eine eingetragene Doku ohne Haken nicht erbracht (B4)', async () => {
     fetchAbrechnungslage.mockResolvedValue(lage({ checked_at: null }));
     rendern({ status: 'documented', completed_at: null });
     expect(await screen.findByText('Haken fehlt')).toBeInTheDocument();

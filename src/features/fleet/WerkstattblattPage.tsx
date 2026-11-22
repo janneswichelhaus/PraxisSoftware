@@ -97,7 +97,7 @@ function Unterlage({
     ],
     queryFn: async (): Promise<Werkstattbilder> => {
       const { zeichneWerkstattbilder } = await import('./bike3d/werkstattbilder');
-      // Ohne gespeicherten Punkt steht die Nadel in der Mitte ihres Bauteils (ANN-870).
+      // Ohne gespeicherten Punkt steht die Nadel an einem freien Punkt ihres Bauteils (ANN-870).
       return zeichneWerkstattbilder(
         blatt.spots.map((spot) => ({ id: spot.id, zone: spot.zone, point: null })),
       );

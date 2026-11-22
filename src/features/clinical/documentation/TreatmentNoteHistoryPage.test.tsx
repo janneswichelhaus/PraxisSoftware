@@ -122,7 +122,7 @@ describe('TreatmentNoteHistoryPage', () => {
     rendern();
 
     expect(await screen.findByText(/Zahlendreher bei der Stufenzahl\./)).toBeInTheDocument();
-    expect(screen.getByText('Bei der Finalisierung festgeschrieben.')).toBeInTheDocument();
+    expect(screen.getByText('Bei der Finalisierung eingetragen.')).toBeInTheDocument();
   });
 
   it('zeigt einen Entwurf ohne festgeschriebene Versionen als Leerzustand', async () => {

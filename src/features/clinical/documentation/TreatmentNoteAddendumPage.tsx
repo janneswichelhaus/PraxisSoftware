@@ -176,11 +176,11 @@ function Formular({
         await nachtragFestschreiben(queryClient, appointment.id, angelegtIdRef.current!);
         return true;
       },
-      fehlertitel: 'Nicht festgeschrieben',
+      fehlertitel: 'Nicht eingetragen',
       danach: () => {
         freigeben();
         void navigate(zumTermin, {
-          state: { meldung: 'Nachtrag als Version 1 festgeschrieben.' },
+          state: { meldung: 'Nachtrag in die Akte eingetragen.' },
         });
       },
     }).finally(() => setSchreibtFest(false));
@@ -241,8 +241,8 @@ function Formular({
             Schreibseite: Der Knopf heißt nach dem, was er tut (ADR-016
             Punkt 4, BEF-056, DOK-20). */}
         <p id={folgeId} className="sr-only">
-          Festschreiben macht den Nachtrag als Version 1 zum Teil der Akte. Danach ist er nur noch
-          mit Begründung änderbar.
+          Eintragen macht den Nachtrag als Version 1 zum Teil der Akte. Danach ist er nur noch mit
+          Begründung änderbar.
         </p>
 
         {/* Fehler, Stand der Sicherung und Rückfrage stehen als Zeile über
@@ -273,7 +273,7 @@ function Formular({
             aria-describedby={folgeId}
             onClick={festschreiben}
           >
-            {schreibtFest ? 'Wird festgeschrieben …' : 'Festschreiben'}
+            {schreibtFest ? 'Wird eingetragen …' : 'Eintragen'}
           </Button>
         </Aktionsleiste>
       </form>

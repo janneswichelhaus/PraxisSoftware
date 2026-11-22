@@ -326,8 +326,8 @@ function AkteEintrag({
         {/* DOK-02: Der Entwurf sagt, dass er von selbst festgeschrieben wird. */}
         {note.status === 'draft'
           ? frist
-            ? ` · wird am ${frist} automatisch festgeschrieben`
-            : ' · wird automatisch festgeschrieben'
+            ? ` · wird am ${frist} automatisch eingetragen`
+            : ' · wird automatisch eingetragen'
           : null}
       </p>
 

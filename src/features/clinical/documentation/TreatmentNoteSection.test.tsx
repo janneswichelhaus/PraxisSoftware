@@ -325,7 +325,7 @@ describe('TreatmentNoteSection', () => {
 
     expect(
       await screen.findByText(
-        'Wird am 13.05. automatisch festgeschrieben, wenn niemand vorher finalisiert.',
+        'Wird am 13.05. automatisch eingetragen, wenn niemand vorher finalisiert.',
       ),
     ).toBeInTheDocument();
   });
@@ -532,7 +532,7 @@ describe('TreatmentNoteSection: Finalisierung (DOK-002)', () => {
     fetchTreatmentDocumentation.mockResolvedValue({ primary: finalisiert, addenda: [] });
     rendern(['therapist']);
 
-    const etikett = await screen.findByText('Festgeschrieben · Version 1');
+    const etikett = await screen.findByText('Eingetragen · Version 1');
     expect(etikett).toHaveTextContent('✓');
   });
 
@@ -554,7 +554,7 @@ describe('TreatmentNoteSection: finalisierter Eintrag (DOK-002)', () => {
   it('zeigt Zustand und Finalisierung statt der letzten Aenderung', async () => {
     rendern(['therapist']);
 
-    expect(await screen.findByText('Festgeschrieben · Version 1')).toBeInTheDocument();
+    expect(await screen.findByText('Eingetragen · Version 1')).toBeInTheDocument();
     expect(
       screen.getByText(/Finalisiert am Mittwoch, 12\. Mai 2027, 11:00 Uhr von Tim Teamleitung\./),
     ).toBeInTheDocument();

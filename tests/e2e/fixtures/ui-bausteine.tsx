@@ -643,7 +643,7 @@ function Fundament() {
           <Button type="button" variant="quiet" className="ml-auto">
             Entwurf
           </Button>
-          <Button type="button">Festschreiben</Button>
+          <Button type="button">Eintragen</Button>
         </Aktionsleiste>
       </Abschnitt>
     </div>

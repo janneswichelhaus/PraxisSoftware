@@ -102,7 +102,7 @@ function Verlauf({
                     </p>
                   ) : (
                     <p className="text-ink-muted mt-2 text-sm">
-                      Bei der Finalisierung festgeschrieben.
+                      Bei der Finalisierung eingetragen.
                     </p>
                   )}
 

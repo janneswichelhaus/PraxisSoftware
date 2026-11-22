@@ -71,7 +71,9 @@ export function TextbausteinLeiste({
   const bausteine: TextSnippet[] = data.filter((baustein) => !baustein.shared);
 
   if (bausteine.length === 0) {
-    // In der Chipzeile hinter „+ Befund“ (B5); 44 px hoch.
+    // Auf der Schreibseite zählt nur der Ablauf (Jannes 2026-11-22): Ohne
+    // eigene Bausteine bleibt die Chipzeile leer, angelegt wird unter „Praxis“.
+    if (alsChips) return null;
     const link = (
       <Textlink
         alleinstehend
@@ -81,7 +83,7 @@ export function TextbausteinLeiste({
         Eigene Bausteine anlegen
       </Textlink>
     );
-    return alsChips ? link : <div className="nicht-drucken mb-3">{link}</div>;
+    return <div className="nicht-drucken mb-3">{link}</div>;
   }
 
   if (alsChips) {

@@ -115,7 +115,7 @@ describe('Zu tun (ORG-003)', () => {
         abzeichen: 'Frist vorbei',
         ziel: '/rueckfragen/m1',
       },
-      expect.objectContaining({ titel: 'Doku festschreiben', ziel: '/termine/t1/abschluss' }),
+      expect.objectContaining({ titel: 'Doku eintragen', ziel: '/termine/t1/abschluss' }),
       expect.objectContaining({
         titel: 'Übungsplan endet bald',
         ziel: '/patienten/p1/doku#uebungsplaene',

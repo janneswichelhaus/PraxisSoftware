@@ -177,7 +177,7 @@ export function nachMonat(eintraege: readonly Zeitstrahleintrag[]): Monat[] {
   return monate;
 }
 
-/** Ab so vielen Terminen ohne festgeschriebene Doku steht eine Sammelzeile. */
+/** Ab so vielen Terminen ohne eingetragene Doku steht eine Sammelzeile. */
 export const DOKU_ZUSAMMENFASSEN = 3;
 
 export interface Aufgabe {
@@ -222,7 +222,7 @@ export function aufgaben(
   for (const d of doku.length >= DOKU_ZUSAMMENFASSEN ? [] : doku) {
     liste.push({
       schluessel: `d-${d.id}`,
-      titel: d.note_status === 'draft' ? 'Doku festschreiben' : 'Doku schreiben',
+      titel: d.note_status === 'draft' ? 'Doku eintragen' : 'Doku schreiben',
       meta: `Termin am ${formatLocalDate(d.starts_at, v.time_zone)}`,
       abzeichen: null,
       ziel: `/termine/${d.id}/abschluss`,

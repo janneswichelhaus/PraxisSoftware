@@ -121,42 +121,22 @@ test.describe('Textbausteine in der Chipzeile (B5)', () => {
     expect(befundBox.x + befundBox.width).toBeLessThanOrEqual(leisteBox.x);
   });
 
-  test('führt ohne eigene Bausteine mit einem leisen Link zur Bausteinseite (375 px)', async ({
+  test('lässt die Chipzeile ohne eigene Bausteine bei „Wie zuletzt“ und „+ Befund“ (375 px)', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 375, height: 667 });
     await page.goto(`${SCHREIBSEITE}&bausteine=keine`);
-    const link = page.getByRole('link', { name: 'Eigene Bausteine anlegen' });
     const befund = page.getByRole('button', { name: /^\+ Befund/ });
-    const querrollen = () =>
-      page.evaluate(
-        () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
-      );
 
-    // „+ Befund“ ohne Wischen ganz im Bild; der Link mit 44 px Tippziel
-    // dahinter in derselben Zeile.
+    // Weniger Auswahl auf der Schreibseite (Jannes 2026-11-22): kein Weg zur
+    // Bausteinseite, keine Gruppe, die Seite rollt nicht quer.
     await expect(befund).toBeInViewport({ ratio: 1 });
-    await expect(link).toBeVisible();
-    const linkBox = (await link.boundingBox())!;
-    const befundBox = (await befund.boundingBox())!;
-    expect(linkBox.height).toBeGreaterThanOrEqual(44);
-    expect(Math.abs(linkBox.y + linkBox.height / 2 - (befundBox.y + befundBox.height / 2))).toBe(0);
-    expect(befundBox.x + befundBox.width).toBeLessThanOrEqual(linkBox.x);
+    await expect(page.getByRole('link', { name: 'Eigene Bausteine anlegen' })).toHaveCount(0);
     await expect(page.getByRole('group', { name: 'Textbausteine' })).toHaveCount(0);
-    await expect(page.getByText('Eigenuebungen besprochen')).toHaveCount(0);
-    expect(await querrollen()).toBe(false);
-
-    // Mit „Wie zuletzt“ und „+ Befund“ vorn (K6, ANN-502) ist die Zeile bei
-    // 375 px breiter als das Bild und läuft waagerecht wie mit eigenen
-    // Bausteinen: Der Link ist mit einem Wischen in der Zeile ganz
-    // erreichbar, die Seite rollt dabei nicht quer.
-    await befund.hover();
-    await page.mouse.wheel(400, 0);
-    await expect(link).toBeInViewport({ ratio: 1 });
-    expect(await querrollen()).toBe(false);
-
-    await expect(link).toHaveAttribute('href', /^\/praxis\/textbausteine\?zurueck=%2Ftermine%2F/);
-    await link.click();
-    await expect(page.getByText('Ende der Prüfseite.')).toBeVisible();
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      ),
+    ).toBe(false);
   });
 });
