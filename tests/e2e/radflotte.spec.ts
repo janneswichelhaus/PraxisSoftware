@@ -32,6 +32,9 @@ test.use({
     ],
   },
   permissions: ['camera'],
+  // Gezählt werden Tipps und Wege, nicht Bewegung: Puls und Flug des Rads prüft rad3d.spec.ts. Ohne
+  // Grafikkarte zeichnet die CI jedes Bild in Software, die Abläufe liefen sonst ins Zeitlimit.
+  reducedMotion: 'reduce',
 });
 
 function nachbildung(rolle: 'therapie' | 'teamleitung' = 'therapie', weitere: Bike[] = []) {
