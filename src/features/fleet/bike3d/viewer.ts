@@ -223,6 +223,8 @@ interface Press {
   y: number;
   t: number;
   moved: number;
+  /** Begann, während die Kamera flog: Unter dem Finger zog das Rad vorbei, das ist keine Wahl. */
+  imFlug: boolean;
 }
 
 export class BikeViewer {
@@ -466,7 +468,14 @@ export class BikeViewer {
     }
     this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (this.pointers.size === 1) {
-      this.press = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now(), moved: 0 };
+      this.press = {
+        id: e.pointerId,
+        x: e.clientX,
+        y: e.clientY,
+        t: performance.now(),
+        moved: 0,
+        imFlug: this.anim !== null,
+      };
     } else if (this.pointers.size === 2) {
       this.press = null;
       this.pinch = { d: this.pinchDistance(), r: this.orbit.radius };
@@ -516,7 +525,7 @@ export class BikeViewer {
   private readonly onUp = (e: PointerEvent) => {
     const pr = this.press;
     const tap = Boolean(
-      pr && pr.id === e.pointerId && pr.moved <= 6 && performance.now() - pr.t < 700,
+      pr && pr.id === e.pointerId && !pr.imFlug && pr.moved <= 6 && performance.now() - pr.t < 700,
     );
     this.pointers.delete(e.pointerId);
     if (this.pointers.size < 2) this.pinch = null;

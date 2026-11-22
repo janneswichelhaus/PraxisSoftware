@@ -53,6 +53,7 @@ export function BikeModel3D({
   hinweis = 'Ziehen dreht das Rad · Antippen wählt ein Bauteil',
   ansichten = true,
   ersatz = 'Bauteile weiter über die Liste',
+  neuLaden = true,
   onPick,
   onUnavailable,
 }: {
@@ -77,6 +78,8 @@ export function BikeModel3D({
    * Bauteil-Liste; der geführte Check-Up geht über seine Knöpfe weiter.
    */
   ersatz?: string;
+  /** „Neu laden“ anbieten; nicht mitten in einem Ablauf, den es ohne Netz verlöre. */
+  neuLaden?: boolean;
   onPick?: (hit: BikePick | null) => void;
   /** Meldet, dass es kein 3D-Rad gibt - die Seite stellt dann die Liste nach vorn. */
   onUnavailable?: () => void;
@@ -219,21 +222,30 @@ export function BikeModel3D({
           <ErrorState title="3D-Modell nicht geladen" description={ersatz} />
           {/* Neu laden holt den aktuellen Stand; ungespeicherte Eingaben
               schützt die Seite selbst (Textverlustschutz). */}
-          <div>
-            <Button variant="secondary" groesse="kompakt" onClick={() => window.location.reload()}>
-              Neu laden
-            </Button>
-          </div>
+          {neuLaden ? (
+            <div>
+              <Button
+                variant="secondary"
+                groesse="kompakt"
+                onClick={() => window.location.reload()}
+              >
+                Neu laden
+              </Button>
+            </div>
+          ) : null}
         </div>
       ) : (
         <>
-          <p
-            className={`rounded-pill pointer-events-none absolute top-3 left-3 max-w-[calc(100%-5.5rem)] px-3 py-1.5 text-sm font-semibold ${
-              zone ? 'bg-accent text-surface' : 'bg-surface/95 text-ink-muted'
-            }`}
-          >
-            {zustand === 'laden' ? '3D-Rad wird geladen …' : info}
-          </p>
+          {/* Links neben den Zoomknöpfen (44 px und Rand), in Tinte: Unterwegs liest man in der Sonne. */}
+          <div className="pointer-events-none absolute top-3 right-16 left-3">
+            <p
+              className={`rounded-pill inline-block px-3 py-1.5 text-sm font-semibold ${
+                zone ? 'bg-accent text-surface' : 'bg-surface/95 text-ink'
+              }`}
+            >
+              {zustand === 'laden' ? '3D-Rad wird geladen …' : info}
+            </p>
+          </div>
           <div
             role="group"
             aria-label="Zoom"

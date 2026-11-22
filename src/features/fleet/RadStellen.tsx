@@ -43,6 +43,7 @@ export function RadStellen({
   const [aktiv, setAktiv] = useState<string | null>(null);
   const [fokus, setFokus] = useState<BikeFocus | null>(null);
   const zaehler = useRef(0);
+  const buehne = useRef<HTMLDivElement>(null);
   // Telefon 320 px, Rechner 520 px (Handoff Lastenrad 3D, Abschnitt 4).
   const [breit] = useState(
     () =>
@@ -76,6 +77,8 @@ export function RadStellen({
     zaehler.current += 1;
     setAktiv(spot.id);
     setFokus({ zones: [spot.zone], token: zaehler.current });
+    // Am Telefon steht das Rad über der Liste: Der Flug soll zu sehen sein.
+    buehne.current?.scrollIntoView?.({ block: 'nearest' });
   }
 
   function getroffen(treffer: BikePick | null) {
@@ -166,14 +169,16 @@ export function RadStellen({
   return (
     <>
       <Zweispalter kontext={liste}>
-        <BikeModel3D
-          hoehe={breit ? 520 : 320}
-          markers={markers}
-          activeMarkerId={aktiv}
-          focus={fokus}
-          hinweis="Nadel antippen wählt die Stelle"
-          onPick={getroffen}
-        />
+        <div ref={buehne} className="scroll-mt-24">
+          <BikeModel3D
+            hoehe={breit ? 520 : 320}
+            markers={markers}
+            activeMarkerId={aktiv}
+            focus={fokus}
+            hinweis="Nadel antippen wählt die Stelle"
+            onPick={getroffen}
+          />
+        </div>
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
           <span className="inline-flex items-center gap-2">
             <Nadelform einstufung="problem" />

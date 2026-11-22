@@ -329,9 +329,10 @@ export function GefuehrterAblauf({
   if (buehne) {
     // Bühne und Frage teilen sich die Höhe; die Bühne liegt außerhalb der wechselnden Seite, damit
     // das Rad stehen bleibt und die Kamera zum nächsten Bauteil fliegt (Stand cc3ebbbb).
+    // Die Antworten im Fuß stehen fest unter der Frage; rollen darf nur, was darüber steht.
     const flaeche = abschluss
       ? 'flex min-h-0 flex-1 flex-col lg:flex-none'
-      : `overflow-y-auto px-4 pt-2 pb-4 lg:pt-4 ${ROLLFLAECHE} ${
+      : `flex flex-col ${
           flaecheKnapp ? 'max-h-ablauf-knapp shrink-0 lg:max-h-none' : 'shrink-0'
         } ${buehneAmTelefon ? '' : 'max-lg:min-h-0 max-lg:flex-1'}`;
     return (
@@ -359,7 +360,6 @@ export function GefuehrterAblauf({
             key={seite}
             ref={schritt}
             className={`lg:border-line lg:w-ablaufspalte lg:shrink-0 lg:border-l ${flaeche} ${sperre}`.trim()}
-            {...(abschluss ? {} : rollflaeche)}
           >
             {abschluss ? (
               <>
@@ -376,12 +376,17 @@ export function GefuehrterAblauf({
               </>
             ) : (
               <>
-                {/* Die Frage unter der Bühne, direkt über den Antworten: dort, wo der Daumen ist. */}
-                <div className="mb-3">
-                  <Fenstertitel stufe={titelStufe} />
+                <div
+                  className={`min-h-0 overflow-y-auto px-4 pt-2 pb-4 lg:pt-4 ${ROLLFLAECHE}`}
+                  {...rollflaeche}
+                >
+                  {/* Die Frage unter der Bühne, direkt über den Antworten: dort, wo der Daumen ist. */}
+                  <div className="mb-3">
+                    <Fenstertitel stufe={titelStufe} />
+                  </div>
+                  <div className="flex flex-col gap-4">{children}</div>
                 </div>
-                <div className="flex flex-col gap-4">{children}</div>
-                {mitFuss ? <div className="pt-4">{fuss}</div> : null}
+                {fussLeiste}
               </>
             )}
           </div>

@@ -61,6 +61,7 @@ export function Stellenbuehne({
       highlight={zone ? [zone] : []}
       focus={fokus}
       hinweis={entwurf ? 'Antippen versetzt die Nadel' : 'Ziehen dreht · Antippen markiert'}
+      neuLaden={false}
       onPick={tippen}
     />
   );

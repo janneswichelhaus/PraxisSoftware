@@ -516,6 +516,7 @@ export function CheckupFenster({
           hoehe="100%"
           ansichten={seite.art === 'abschluss' || seite.art === 'weitere'}
           ersatz="Alle Schritte auch über die Knöpfe"
+          neuLaden={false}
           markers={markers}
           draft={draft}
           activeMarkerId={entwurf?.key ?? null}
