@@ -114,7 +114,7 @@ describe('TreatmentNoteRevisionPage', () => {
     await user.type(feld(), ' Korrigiert.');
     await user.type(grundfeld(), 'Zahlendreher.');
     // „Festschreiben“, weil „Speichern“ in der Dokumentation Entwurf heißt (DOK-08).
-    await user.click(screen.getByRole('button', { name: 'Korrektur festschreiben' }));
+    await user.click(screen.getByRole('button', { name: 'Korrektur eintragen' }));
 
     await waitFor(() => {
       expect(reviseTreatmentNote).toHaveBeenCalledWith(
@@ -129,7 +129,7 @@ describe('TreatmentNoteRevisionPage', () => {
     // Der Termin erfährt, welche Version entstanden ist (DOK-15).
     await waitFor(() =>
       expect(navigate).toHaveBeenCalledWith(`/kalender?termin=${TERMIN_ID}`, {
-        state: { meldung: 'Korrektur als Version 2 festgeschrieben.' },
+        state: { meldung: 'Korrektur als Version 2 eingetragen.' },
       }),
     );
   });
@@ -151,7 +151,7 @@ describe('TreatmentNoteRevisionPage', () => {
 
     await waitFor(() => expect(feld()).toHaveValue('Synthetisch: Text aus der Aufnahme.'));
     await user.type(grundfeld(), 'Ergänzt.');
-    await user.click(screen.getByRole('button', { name: 'Korrektur festschreiben' }));
+    await user.click(screen.getByRole('button', { name: 'Korrektur eintragen' }));
     await waitFor(() =>
       expect(reviseTreatmentNote).toHaveBeenCalledWith(
         DOKU_ID,
@@ -177,10 +177,10 @@ describe('TreatmentNoteRevisionPage', () => {
 
     await user.type(feld(), ' Korrigiert.');
     await user.type(grundfeld(), 'Zahlendreher.');
-    await user.click(screen.getByRole('button', { name: 'Korrektur festschreiben' }));
+    await user.click(screen.getByRole('button', { name: 'Korrektur eintragen' }));
     await waitFor(() =>
       expect(navigate).toHaveBeenCalledWith('/', {
-        state: { meldung: 'Korrektur als Version 2 festgeschrieben.' },
+        state: { meldung: 'Korrektur als Version 2 eingetragen.' },
       }),
     );
   });
@@ -189,9 +189,9 @@ describe('TreatmentNoteRevisionPage', () => {
     rendern();
 
     await waitFor(() => expect(feld()).toHaveValue(INHALT));
-    expect(
-      screen.getByRole('button', { name: 'Korrektur festschreiben' }),
-    ).toHaveAccessibleDescription(/Jede Korrektur wird als neue Version festgeschrieben/);
+    expect(screen.getByRole('button', { name: 'Korrektur eintragen' })).toHaveAccessibleDescription(
+      /Jede Korrektur wird als neue Version eingetragen/,
+    );
   });
 
   it('sagt beim Verlassen, dass eine Korrektur nicht zwischengespeichert wird (DOK-05)', async () => {
@@ -204,7 +204,7 @@ describe('TreatmentNoteRevisionPage', () => {
 
     const kasten = await screen.findByRole('group', { name: 'Ungespeicherte Dokumentation' });
     expect(kasten).toHaveTextContent(
-      'Eine Korrektur lässt sich nicht zwischenspeichern: Sie wird erst mit „Korrektur festschreiben“ Teil der Akte. Zum Festschreiben hier bleiben; beim Weitergehen gehen Text und Begründung verloren.',
+      'Eine Korrektur lässt sich nicht zwischenspeichern: Sie wird erst mit „Korrektur eintragen“ Teil der Akte. Zum Eintragen hier bleiben; beim Weitergehen gehen Text und Begründung verloren.',
     );
     // Ohne Entwurf gibt es kein „Speichern“ aus der Rückfrage (ANN-046).
     expect(within(kasten).queryByRole('button', { name: /Speichern/ })).toBeNull();
@@ -216,7 +216,7 @@ describe('TreatmentNoteRevisionPage', () => {
 
     await waitFor(() => expect(feld()).toHaveValue(INHALT));
     await user.type(feld(), ' Korrigiert.');
-    await user.click(screen.getByRole('button', { name: 'Korrektur festschreiben' }));
+    await user.click(screen.getByRole('button', { name: 'Korrektur eintragen' }));
 
     expect(
       await screen.findByText('Bitte kurz begründen, was korrigiert wird.'),
@@ -228,7 +228,7 @@ describe('TreatmentNoteRevisionPage', () => {
     rendern();
 
     await waitFor(() => expect(feld()).toHaveValue(INHALT));
-    expect(screen.getByRole('button', { name: 'Korrektur festschreiben' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Korrektur eintragen' })).toBeDisabled();
   });
 
   it('verweist auf den Nachtrag als Regelfall', async () => {
@@ -248,9 +248,9 @@ describe('TreatmentNoteRevisionPage', () => {
     await waitFor(() => expect(feld()).toHaveValue(INHALT));
     await user.type(feld(), ' Eigener Zusatz.');
     await user.type(grundfeld(), 'Begruendung.');
-    await user.click(screen.getByRole('button', { name: 'Korrektur festschreiben' }));
+    await user.click(screen.getByRole('button', { name: 'Korrektur eintragen' }));
 
-    expect(await screen.findByText('Nicht festgeschrieben')).toBeInTheDocument();
+    expect(await screen.findByText('Nicht eingetragen')).toBeInTheDocument();
     expect(feld()).toHaveValue(`${INHALT} Eigener Zusatz.`);
     expect(navigate).not.toHaveBeenCalled();
   });

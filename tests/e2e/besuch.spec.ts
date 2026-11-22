@@ -547,10 +547,8 @@ test('ein Besuch in einem Zug: höchstens 6 Tipps und 2 Wechsel bis zur Navigati
 
   // 2. Festschreiben - die Seite bleibt stehen und zeigt „Danach". Es hakt
   // nicht ab (B4), und Heilmittel bestätigt niemand (B7).
-  await tippe(page.getByRole('button', { name: 'Festschreiben' }));
-  await expect(
-    page.getByText('Eintrag als Version 1 festgeschrieben.', { exact: false }),
-  ).toBeVisible();
+  await tippe(page.getByRole('button', { name: 'Eintragen' }));
+  await expect(page.getByText('In die Akte eingetragen.', { exact: false })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Heilmittel bestätigen' })).toHaveCount(0);
   await expect(page.getByRole('checkbox')).toHaveCount(0);
 
@@ -636,12 +634,10 @@ test('K5 mit Diktat am Stück: höchstens 6 Tipps bis „Fertig“, die Übernah
   // Prüfen und korrigieren ohne Tipp-Zählung (Text), dann ausdrücklich übernehmen
   // und festschreiben in einem Tipp.
   await page.getByLabel('Text des Vorschlags').fill('Plan\nTreppe üben.');
-  const beide = page.getByRole('button', { name: 'Übernehmen und festschreiben' });
+  const beide = page.getByRole('button', { name: 'Übernehmen und eintragen' });
   await expect(beide).toBeInViewport();
   await tippe(beide);
-  await expect(
-    page.getByText('Eintrag als Version 1 festgeschrieben.', { exact: false }),
-  ).toBeVisible();
+  await expect(page.getByText('In die Akte eingetragen.', { exact: false })).toBeVisible();
 
   await tippe(page.getByRole('button', { name: /^Folgetermin anlegen: .*gleiche Zeit/ }));
   await expect(page.getByText(/Folgetermin angelegt: /)).toBeVisible();
@@ -726,10 +722,8 @@ test('K6: letzten Eintrag übernehmen und festschreiben in drei Tipps plus Text 
   await expect(feld).toHaveValue(LETZTER_EINTRAG);
   await feld.press('End');
   await feld.pressSequentially(' Heute 3 Stockwerke.');
-  await t.tippe(page.getByRole('button', { name: 'Festschreiben' }));
-  await expect(
-    page.getByText('Eintrag als Version 1 festgeschrieben.', { exact: false }),
-  ).toBeVisible();
+  await t.tippe(page.getByRole('button', { name: 'Eintragen' }));
+  await expect(page.getByText('In die Akte eingetragen.', { exact: false })).toBeVisible();
 
   test
     .info()
@@ -810,7 +804,7 @@ test('sucht den Folgetermin nach einem Funkloch mit „Erneut versuchen" noch ei
   await page.goto(PRUEFSEITE);
   await page.getByRole('article').getByRole('link', { name: 'Doku zu diesem Termin' }).click();
   await page.getByLabel('Eintrag zur Behandlung').fill('Synthetisch: Hausbesuch durchgeführt.');
-  await page.getByRole('button', { name: 'Festschreiben' }).click();
+  await page.getByRole('button', { name: 'Eintragen' }).click();
 
   const fehler = page.getByText('Die freien Zeiten konnten nicht gesucht werden.');
   await expect(fehler).toBeVisible();
@@ -846,7 +840,7 @@ test('zeigt Folgetermine als Zeilen mit Therapeut:in, Nachbarn und Wegen (B8)', 
   await page.goto(PRUEFSEITE);
   await page.getByRole('article').getByRole('link', { name: 'Doku zu diesem Termin' }).click();
   await page.getByLabel('Eintrag zur Behandlung').fill('Synthetisch: Hausbesuch durchgeführt.');
-  await page.getByRole('button', { name: 'Festschreiben' }).click();
+  await page.getByRole('button', { name: 'Eintragen' }).click();
 
   const zeilen = page.getByRole('button', { name: /^Folgetermin anlegen:/ });
   await expect(zeilen).toHaveCount(3);
@@ -890,7 +884,7 @@ test('nimmt einen eben angelegten Folgetermin mit „Rückgängig" zurück (B8)'
   await page.goto(PRUEFSEITE);
   await page.getByRole('article').getByRole('link', { name: 'Doku zu diesem Termin' }).click();
   await page.getByLabel('Eintrag zur Behandlung').fill('Synthetisch: Hausbesuch durchgeführt.');
-  await page.getByRole('button', { name: 'Festschreiben' }).click();
+  await page.getByRole('button', { name: 'Eintragen' }).click();
 
   await page
     .getByRole('button', { name: /^Folgetermin anlegen: .*09:00–10:00.*gleiche Zeit/ })
@@ -960,7 +954,7 @@ test('fragt vor dem Absagen, wenn die Person den Folgetermin auf der Plattform s
   await page.goto(PRUEFSEITE);
   await page.getByRole('article').getByRole('link', { name: 'Doku zu diesem Termin' }).click();
   await page.getByLabel('Eintrag zur Behandlung').fill('Synthetisch: Hausbesuch durchgeführt.');
-  await page.getByRole('button', { name: 'Festschreiben' }).click();
+  await page.getByRole('button', { name: 'Eintragen' }).click();
   await page
     .getByRole('button', { name: /^Folgetermin anlegen: .*09:00–10:00.*gleiche Zeit/ })
     .click();
@@ -1025,7 +1019,7 @@ for (const [breite, hoehe] of [
     await page.goto(PRUEFSEITE);
     await page.getByRole('article').getByRole('link', { name: 'Doku zu diesem Termin' }).click();
     await page.getByLabel('Eintrag zur Behandlung').fill('Synthetisch: Hausbesuch durchgeführt.');
-    await page.getByRole('button', { name: 'Festschreiben' }).click();
+    await page.getByRole('button', { name: 'Eintragen' }).click();
     await expect(page.getByRole('button', { name: /gleiche Zeit/ })).toBeVisible();
 
     // „Fertig" bleibt im Bild, am Telefon über der Tableiste.

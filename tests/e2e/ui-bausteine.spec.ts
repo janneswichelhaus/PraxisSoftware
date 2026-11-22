@@ -332,7 +332,7 @@ test('Formularfuß: am Telefon volle Breite untereinander, am Rechner nebeneinan
 test('Aktionsleiste klebt am Telefon über der Tableiste', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 800 });
   await page.goto(PRUEFSEITE);
-  const knopf = page.getByRole('button', { name: 'Festschreiben' });
+  const knopf = page.getByRole('button', { name: 'Eintragen' });
   const leiste = knopf.locator('xpath=../..');
   expect(await leiste.evaluate((element) => getComputedStyle(element).position)).toBe('sticky');
   // Der Abschnitt oben im Bild: Ohne Kleben stünde die Leiste unter dem Rand.

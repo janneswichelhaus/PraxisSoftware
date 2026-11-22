@@ -219,7 +219,7 @@ function kachelFlaeche(eintrag: CalendarEntry): string {
 function statusLinie(eintrag: CalendarEntry): string {
   const status = eintrag.status;
   if (status === 'confirmed') return 'border-l-accent';
-  // Abgeschlossen ohne festgeschriebene Doku: Warnfarbe (Zyklen 2-4, ANN-201).
+  // Abgeschlossen ohne eingetragene Doku: Warnfarbe (Zyklen 2-4, ANN-201).
   if (status === 'no_show' || dokuOffen(eintrag)) return 'border-l-warnung';
   if (status === 'cancelled') return 'border-l-danger';
   return 'border-l-line-strong';

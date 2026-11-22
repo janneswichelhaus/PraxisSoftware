@@ -66,7 +66,7 @@ describe('TextbausteinLeiste', () => {
     expect(onEinfuegen).toHaveBeenCalledWith(EIGEN.body, EIGEN.title);
   });
 
-  it.each([true, false])(
+  it.each([false])(
     'führt ohne eigene Bausteine zur Bausteinseite, mit dem Rückweg hierher (Chips: %s)',
     async (alsChips) => {
       fetchTextSnippets.mockResolvedValue([PRAXIS]);
@@ -88,13 +88,16 @@ describe('TextbausteinLeiste', () => {
     },
   );
 
-  it('führt auch ganz ohne Bausteine zur Bausteinseite', async () => {
+  it('lässt die Chipzeile ohne eigene Bausteine leer (Jannes 2026-11-22)', async () => {
     fetchTextSnippets.mockResolvedValue([]);
-    renderWithProviders(<TextbausteinLeiste alsChips onEinfuegen={() => {}} />, SCHREIBSEITE);
+    const { container } = renderWithProviders(
+      <TextbausteinLeiste alsChips onEinfuegen={() => {}} />,
+      SCHREIBSEITE,
+    );
 
-    expect(
-      await screen.findByRole('link', { name: 'Eigene Bausteine anlegen' }),
-    ).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByTestId('bausteine-platzhalter')).toBeNull());
+    expect(screen.queryByRole('link', { name: 'Eigene Bausteine anlegen' })).toBeNull();
+    expect(container).toBeEmptyDOMElement();
   });
 
   it('bleibt bei einem Ladefehler still und blockiert nichts', async () => {

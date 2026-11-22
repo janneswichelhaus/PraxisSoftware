@@ -97,7 +97,7 @@ describe('Abrechnung einer Verordnung in der Akte (B1, B7)', () => {
   it('meldet, was der Server abweist', async () => {
     releaseTreatmentBasisForBilling.mockRejectedValue(
       new Error(
-        'Es sind noch Termine offen: Jeder Termin der Verordnung braucht Haken und festgeschriebene Doku.',
+        'Es sind noch Termine offen: Jeder Termin der Verordnung braucht Haken und eingetragene Doku.',
       ),
     );
     const user = userEvent.setup();

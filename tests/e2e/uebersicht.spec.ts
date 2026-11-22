@@ -172,20 +172,23 @@ for (const breite of [375, 1280]) {
   });
 }
 
-test('fasst am Telefon das Erledigte vor dem nächsten Besuch in einer Zeile zusammen', async ({
+test('lässt Erledigtes an seiner Stelle und rollt zur Karte des nächsten Wegs (ANN-871)', async ({
   page,
 }) => {
   await oeffne(page, '11:05', 375, '?ansicht=dritter', 667);
   const strahl = page.getByRole('heading', { name: 'Tagesablauf' }).locator('..');
-  const zusammen = strahl.getByRole('button', { name: /^Erledigt \(2\)/ });
-  await expect(zusammen).toBeVisible();
-  await expect(strahl.getByText('Erika Beispiel')).toBeHidden();
-  await zusammen.click();
-  await expect(strahl.getByText('Erika Beispiel')).toBeVisible();
-  // Ab 640 px stehen sie immer da.
-  await oeffne(page, '11:05', 1280, '?ansicht=dritter');
-  await expect(strahl.getByRole('button', { name: /^Erledigt/ })).toBeHidden();
-  await expect(strahl.getByText('Erika Beispiel')).toBeVisible();
+  // Nichts klappt zusammen: Die Uhrzeitfolge bleibt, bis alles abgehakt ist.
+  await expect(strahl.getByRole('button', { name: /^Erledigt/ })).toHaveCount(0);
+  await expect(strahl.getByText('Erika Beispiel')).toBeAttached();
+  const eintraege = strahl.locator('li[data-termin]');
+  const namen = await eintraege.allInnerTexts();
+  expect(namen.findIndex((t) => t.includes('Erika Beispiel'))).toBeLessThan(
+    namen.findIndex((t) => t.includes('Navigation starten')),
+  );
+  // Die Seite rollt so weit, dass die Karte mit dem Hauptknopf im Bild steht.
+  const knopf = page.getByRole('article').getByRole('button', { name: 'Navigation starten' });
+  await expect(knopf).toBeInViewport({ ratio: 1 });
+  expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
 });
 
 test('klappt eine spätere Zeile mit Navigation, Anruf und Doku auf (Auftrag C1)', async ({
@@ -333,10 +336,9 @@ test('stellt den Tag als Zeitstrahl dar: Jetzt-Marke, Karte, Zeilen mit Uebergae
   ]) {
     expect((await zeile.boundingBox())!.height).toBeGreaterThanOrEqual(44);
   }
-  // Am späteren Besuch steht statt des Hakens das Telefon (Auftrag C1).
-  const anruf = zweite.getByRole('link', { name: 'Anrufen: Max Mustermann' });
-  await expect(anruf).toHaveAttribute('href', 'tel:+491600000005');
-  expect((await anruf.boundingBox())!.width).toBeGreaterThanOrEqual(44);
+  // Am späteren Besuch nur „Doku“: kein Haken, das Telefon steht in der
+  // aufgeklappten Karte (weniger Auswahl, Jannes 2026-11-22).
+  await expect(zweite.getByRole('link', { name: /^Anrufen/ })).toHaveCount(0);
   await expect(zweite.getByRole('button', { name: /^Termin abschließen/ })).toHaveCount(0);
 
   // Punkt der Marke und Punkte der Termine liegen auf einer Achse.
@@ -529,26 +531,16 @@ test('laesst das Rad bei reduzierter Bewegung weg (ANN-547)', async ({ page }) =
   await expect(page.locator('[data-rad]')).toBeHidden();
 });
 
-test('listet am Tagesende erst, was heute offen ist, dann morgen (Auftrag C1)', async ({
-  page,
-}) => {
+test('bleibt am Tagesende in Uhrzeitfolge, solange ein Haken fehlt (ANN-871)', async ({ page }) => {
   await oeffne(page, '17:00', 375, '?ansicht=doku');
-  // B4: Solange ein Haken fehlt, ist der Tag nicht „erledigt“; was fehlt,
-  // steht zuoberst (ANN-546: ohne Abschlusskarte darüber).
-  await expect(page.getByText('Kein Weg mehr offen')).toHaveCount(0);
-  const offen = page.getByRole('heading', { name: 'Heute noch offen (2)' }).locator('../..');
-  await expect(offen).toBeVisible();
-  const zeilen = offen.getByRole('listitem');
-  // B4/B7: festgeschrieben, aber noch ohne Haken - Heilmittel bestätigt niemand mehr.
-  await expect(zeilen.filter({ hasText: 'Max Mustermann' })).toContainText('Haken fehlt');
-  await expect(zeilen.filter({ hasText: 'Petra Platzhalter' })).toContainText('Doku im Entwurf');
-  for (const knopf of await offen.getByRole('link').all()) {
-    expect((await knopf.boundingBox())!.height).toBeGreaterThanOrEqual(44);
-  }
-  // Vor der Vorschau auf morgen - und ohne zweite Karte dafür.
-  const morgen = page.getByRole('heading', { name: /^Morgen · / });
-  expect((await offen.boundingBox())!.y).toBeLessThan((await morgen.boundingBox())!.y);
-  await expect(page.getByRole('article')).toHaveCount(0);
+  // B4: Solange ein Haken fehlt, ist der Tag nicht „erledigt“: kein Umbau zu
+  // „Heute noch offen“ und Morgen, die Karte steht an ihrer Uhrzeit.
+  await expect(page.getByRole('heading', { name: /^Heute noch offen/ })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: /^Morgen · / })).toHaveCount(0);
+  const karte = page.getByRole('article');
+  await expect(karte).toHaveCount(1);
+  await expect(karte).toContainText('Max Mustermann');
+  await expect(karte.getByRole('button', { name: /^Termin abschließen/ })).toBeVisible();
   // Darunter „Nachzuholen" aus den Tagen davor, zugeklappt.
   await expect(page.getByText('Nachzuholen', { exact: true })).toBeVisible();
   await ohneUeberlauf(page);

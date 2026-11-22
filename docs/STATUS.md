@@ -1,4 +1,4 @@
-# Status · Stand 2026-11-19
+# Status · Stand 2026-11-22
 
 Livestand in höchstens 4 KB (`pnpm docs:check`). Reihenfolge: `development/ROADMAP.md`; Verlauf
 steht in den PRs und in Git. Abgelegte Dokumente zeigt `git show eb43569:<pfad>` (Archiv,
@@ -43,4 +43,4 @@ nennen die Steuerberatung.
 
 ## Letzte Session
 
-19.11.: Bauteil am 3D-Rad antippen.
+22.11.: Doku aus der Übersicht.

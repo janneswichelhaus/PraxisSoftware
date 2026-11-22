@@ -189,7 +189,7 @@ test.describe('CAL-008d: Dokumentiert kommt aus der Finalisierung', () => {
     // (Design-Handoff 2026-10-01, Abschnitt 6a).
     await page.getByRole('link', { name: 'Doku schreiben' }).click();
     await page.getByLabel('Eintrag zur Behandlung').fill('Synthetischer Behandlungstext, E2E.');
-    await page.getByRole('button', { name: 'Festschreiben' }).click();
+    await page.getByRole('button', { name: 'Eintragen' }).click();
 
     await terminOeffnen(page, terminId);
     await expect(detailWert(page, 'Status')).toContainText('Dokumentiert');

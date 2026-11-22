@@ -181,7 +181,7 @@ const lage: Abrechnungslage = {
 };
 
 const bestaetigt = ansicht === 'bestaetigt';
-// B7 (ANN-513): Mit Haken und festgeschriebener Doku ist die Leistung erfasst.
+// B7 (ANN-513): Mit Haken und eingetragener Doku ist die Leistung erfasst.
 const erfasst = !offen && !abgesagt;
 const leistungen: LeistungenAmTermin = {
   appointment_id: TERMIN,

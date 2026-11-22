@@ -582,7 +582,7 @@ describe('TreatmentNotePage', () => {
     expect(ursprung.closest('details')!.open).toBe(false);
 
     await user.type(nachtragsfeld, ' Ergaenzt.');
-    await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
+    await user.click(screen.getByRole('button', { name: 'Eintragen' }));
 
     // Erst sichern, dann auf dem neuen Stand finalisieren.
     await waitFor(() =>
@@ -595,7 +595,7 @@ describe('TreatmentNotePage', () => {
     );
     await waitFor(() =>
       expect(navigate).toHaveBeenCalledWith(`/kalender?termin=${TERMIN_ID}`, {
-        state: { meldung: 'Nachtrag als Version 1 festgeschrieben.' },
+        state: { meldung: 'Nachtrag in die Akte eingetragen.' },
       }),
     );
   });

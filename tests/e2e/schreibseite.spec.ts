@@ -29,7 +29,7 @@ async function ohneUeberlauf(page: Page) {
 for (const breite of [375, 1280]) {
   test(`füllt die Höhe und hält Festschreiben im Bild (${breite} px)`, async ({ page }) => {
     await oeffne(page, breite);
-    const fest = page.getByRole('button', { name: 'Festschreiben' });
+    const fest = page.getByRole('button', { name: 'Eintragen' });
     await expect(fest).toBeInViewport();
     const knopf = (await fest.boundingBox())!;
     // Kompakt, aber nie unter dem Tippziel (ANN-199).
@@ -98,9 +98,9 @@ test('beginnt das Feld am kleinen Telefon in der oberen Hälfte (BEF-001)', asyn
 // stehen in derselben Hülle wie die Schreibseite - Pfeil und Name im Kopf,
 // die Knöpfe in der Aktionsleiste über der Tableiste.
 for (const [ansicht, knopf] of [
-  ['nachtrag', 'Festschreiben'],
-  ['nachtrag-entwurf', 'Festschreiben'],
-  ['korrektur', 'Korrektur festschreiben'],
+  ['nachtrag', 'Eintragen'],
+  ['nachtrag-entwurf', 'Eintragen'],
+  ['korrektur', 'Korrektur eintragen'],
 ] as const) {
   for (const breite of [375, 1280]) {
     test(`hält in der Hülle (${ansicht}) den Hauptknopf im Bild (${breite} px)`, async ({
@@ -168,7 +168,7 @@ test('spricht am Telefon: Sprechen im Daumenbereich, Aufnahme, Vorschlag, Übern
   await expect(fertig).toBeInViewport();
   await expect(page.getByText(/^Aufnahme\s*0:0\d$/)).toBeVisible();
   expect((await fertig.boundingBox())!.height).toBeGreaterThanOrEqual(48);
-  await expect(page.getByRole('button', { name: 'Festschreiben' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Eintragen' })).toBeDisabled();
   await ohneUeberlauf(page);
 
   await fertig.click();
@@ -186,9 +186,9 @@ test('spricht am Telefon: Sprechen im Daumenbereich, Aufnahme, Vorschlag, Übern
   await ohneUeberlauf(page);
 
   // Mit unverständlicher Stelle geht der Vorschlag erst ins Feld (ANN-840).
-  await expect(page.getByRole('button', { name: 'Übernehmen und festschreiben' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Übernehmen und eintragen' })).toHaveCount(0);
   await page.getByRole('button', { name: 'In die Doku übernehmen' }).click();
   await expect(page.getByLabel('Eintrag zur Behandlung')).toHaveValue(/^Angaben der Patient:in\n/);
-  await expect(page.getByRole('button', { name: 'Festschreiben' })).toBeInViewport();
+  await expect(page.getByRole('button', { name: 'Eintragen' })).toBeInViewport();
   await ohneUeberlauf(page);
 });

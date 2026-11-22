@@ -1,5 +1,5 @@
 # Annahmenregister
-Zuletzt aktualisiert: 2026-11-19.
+Zuletzt aktualisiert: 2026-11-22.
 
 Begründete, **vorläufige** Festlegungen, die weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
 Spezifikation trifft (§15.1, Rang 4). Eine Annahme füllt eine Lücke und überschreibt nichts; sie
@@ -1551,3 +1551,4 @@ Technik · offen · 2026-11-14 · — · — · Wiedervorlage: Sichtung Kalender
 | ANN-868 | 3D-Rad in „Angaben“ mit offenen Stellen, nur Anzeige | Technik · offen | `RadAngaben` in `src/features/fleet/RadAngaben.tsx` |
 | ANN-869 | Bühne des 3D-Lastenrads neutral statt #d7d8d2 (Grundton B) | Technik · offen | `--color-radbuehne` in `src/index.css` |
 | ANN-870 | 3D-Rad: Wahl je Bauteil, ohne Punkt; im Check-Up auf jeder Prüfpunktseite | Technik · offen | `src/features/fleet/radteile.ts` |
+| ANN-871 | Tag stabil bis alles abgehakt | Praxisprozess · offen | `tagLaeuft` |

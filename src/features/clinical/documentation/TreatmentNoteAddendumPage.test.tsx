@@ -277,7 +277,7 @@ describe('TreatmentNoteAddendumPage', () => {
     rendern();
 
     await user.type(await screen.findByLabelText('Nachtrag'), nachtrag.content);
-    const knopf = screen.getByRole('button', { name: 'Festschreiben' });
+    const knopf = screen.getByRole('button', { name: 'Eintragen' });
     // Die Folge steht über dem Knopf und ist mit ihm verbunden (ADR-016 Punkt 4).
     expect(knopf).toHaveAccessibleDescription(/als Version 1 zum Teil der Akte/);
     await user.click(knopf);
@@ -288,7 +288,7 @@ describe('TreatmentNoteAddendumPage', () => {
     expect(createTreatmentNoteAddendum).toHaveBeenCalledTimes(1);
     await waitFor(() =>
       expect(navigate).toHaveBeenCalledWith(`/kalender?termin=${TERMIN_ID}`, {
-        state: { meldung: 'Nachtrag als Version 1 festgeschrieben.' },
+        state: { meldung: 'Nachtrag in die Akte eingetragen.' },
       }),
     );
   });
@@ -299,9 +299,9 @@ describe('TreatmentNoteAddendumPage', () => {
     rendern();
 
     await user.type(await screen.findByLabelText('Nachtrag'), 'Synthetisch: nachgereicht.');
-    await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
+    await user.click(screen.getByRole('button', { name: 'Eintragen' }));
 
-    expect(await screen.findByText(/^Nicht festgeschrieben:/)).toBeInTheDocument();
+    expect(await screen.findByText(/^Nicht eingetragen:/)).toBeInTheDocument();
     expect(finalizeTreatmentNote).not.toHaveBeenCalled();
     expect(feld()).toHaveValue('Synthetisch: nachgereicht.');
   });

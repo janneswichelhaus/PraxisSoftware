@@ -85,7 +85,7 @@ export const AUSKUNFT_KATEGORIEN: Record<string, KategorieTexte> = {
   treatment_draft_findings: {
     label: 'Gesicherte Befundangaben',
     beschreibung:
-      'Angaben aus den Untersuchungsbausteinen, die noch nicht in die Dokumentation übernommen sind; sie fallen beim Festschreiben weg.',
+      'Angaben aus den Untersuchungsbausteinen, die noch nicht in die Dokumentation übernommen sind; sie fallen beim Eintragen weg.',
   },
   therapy_reports: {
     label: 'Therapieberichte',
@@ -136,7 +136,7 @@ export const AUSKUNFT_KATEGORIEN: Record<string, KategorieTexte> = {
   },
   session_fees: {
     label: 'Terminhonorare',
-    beschreibung: 'Das je Behandlungstermin festgeschriebene Honorar und woher es kam.',
+    beschreibung: 'Das je Behandlungstermin festgehaltene Honorar und woher es kam.',
   },
   fee_agreements: {
     label: 'Honorarvereinbarungen',
