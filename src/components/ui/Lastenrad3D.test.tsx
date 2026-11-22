@@ -102,7 +102,12 @@ describe('Lastenrad3D', () => {
     const gruppeVon = (teil: string) => (teil === 'vorderrad_reifen' ? 'reifen-vorne' : null);
     function aufbau() {
       const fertig = ansicht();
-      const wahl = { setze: vi.fn(), punkt: vi.fn(), dispose: vi.fn() } satisfies Auswahl;
+      const wahl = {
+        setze: vi.fn(),
+        punkt: vi.fn(),
+        umziehen: vi.fn(),
+        dispose: vi.fn(),
+      } satisfies Auswahl;
       mount.mockResolvedValue(fertig);
       einrichten.mockReturnValue(wahl);
       return { fertig, wahl };

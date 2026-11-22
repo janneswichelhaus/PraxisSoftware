@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import type { Auswahl } from './lastenrad3d/auswahl';
+import { useEffect, useRef, useState, type RefObject } from 'react';
+import type { Auswahl, Blick } from './lastenrad3d/auswahl';
 import type { LastenradAnsicht } from './lastenrad3d/viewer';
 
 /** Was eine markierte Gruppe bedeutet; die Farbe dazu kommt aus den Tokens. */
@@ -13,13 +13,26 @@ const TON_TOKEN: Record<Markenton, string> = {
 export interface Radauswahl {
   /** Die Gruppe, zu der ein Teil des Modells gehört; ohne Gruppe ist es nicht wählbar. */
   gruppeVon: (teil: string) => string | null;
-  /** Nur diese Gruppen sind wählbar, der Rest tritt zurück; ohne Angabe alle. */
+  /** Nur diese Gruppen sind wählbar; sie leuchten, die Kamera fliegt zu ihnen. Ohne Angabe alle. */
   waehlbar?: readonly string[] | undefined;
+  /** Aus welchem Blick eine Gruppe am besten zu sehen ist; ohne Blick zählt das ganze Rad. */
+  blickVon?: ((gruppe: string) => Blick | undefined) | undefined;
   /** Markierte Gruppen in der Farbe ihrer Bedeutung. */
   marken?: readonly { gruppe: string; ton: Markenton }[] | undefined;
   /** Die Gruppen unter dem Finger, die getroffene zuerst; nie leer. Ohne Rückruf nur Marken. */
   onWahl?: ((gruppen: readonly string[]) => void) | undefined;
 }
+
+/** Eine verlassene Ansicht, die eine Bühne mit derselben Kennung gleich danach übernimmt. */
+interface Geparkt {
+  ansicht: LastenradAnsicht;
+  wahl: Auswahl | null;
+  bindung: { aktuell: RefObject<Radauswahl | undefined> };
+  art: string;
+  frist: ReturnType<typeof setTimeout>;
+}
+const parkplatz = new Map<string, Geparkt>();
+const PARKZEIT = 2000; // Millisekunden
 
 /**
  * Das Own Motion Lastenrad als 3D-Ansicht zum Drehen. three.js lädt erst, wenn die Bühne ins Bild
@@ -30,12 +43,18 @@ export function Lastenrad3D({
   className = 'h-64',
   label,
   auswahl,
+  fortsetzen,
 }: {
   /** Die Höhe der Bühne, dazu Abstände; ohne Höhe bleibt die Ansicht leer. */
   className?: string;
   /** Beschreibung für Vorlesesoftware, wenn die Ansicht mehr ist als ein Bild des Rads. */
   label?: string | undefined;
   auswahl?: Radauswahl | undefined;
+  /**
+   * Kennung, unter der die nächste Bühne die Ansicht samt Kamera übernimmt, etwa die nächste Seite
+   * eines geführten Ablaufs: Das Rad lädt nicht neu, die Kamera fliegt weiter.
+   */
+  fortsetzen?: string | undefined;
 }) {
   const buehne = useRef<HTMLDivElement>(null);
   const [ohneAnsicht, setOhneAnsicht] = useState(false);
@@ -71,67 +90,102 @@ export function Lastenrad3D({
     if (!container) return undefined;
     let verlassen = false;
     let ansicht: LastenradAnsicht | null = null;
-
-    const starten = () => {
-      // Ohne Zoom: Mausrad und senkrechtes Wischen gehören der Seite, gedreht wird waagerecht.
-      // Zum Wählen steht das Rad still und behält seine Teile einzeln.
-      const optionen = {
-        zoom: false,
-        ...(label ? { label } : {}),
-        ...(mitAuswahl ? { merge: false, autoRotate: false } : {}),
-      };
-      Promise.all([
-        import('./lastenrad3d/viewer').then(({ mountLastenrad }) =>
-          mountLastenrad(container, optionen),
-        ),
-        mitAuswahl ? import('./lastenrad3d/auswahl') : null,
-      ]).then(
-        ([fertig, modul]) => {
-          // Verlassen, bevor die Ansicht stand: Sie gibt Speicher und Grafikkontext gleich frei.
-          if (verlassen) {
-            fertig.dispose();
-            return;
-          }
-          ansicht = fertig;
-          if (!modul) return;
-          wahl.current = modul.richteAuswahlEin(
-            fertig,
-            container,
-            (teil) => aktuell.current?.gruppeVon(teil) ?? null,
-            (gruppen) => aktuell.current?.onWahl?.(gruppen),
-          );
-          uebertragen.current();
-        },
-        // Kein WebGL oder das Modul kam nicht an: Der Hinweis steht da, die Seite trägt ohne Bild.
-        () => {
-          if (!verlassen) setOhneAnsicht(true);
-        },
-      );
-    };
-
+    // Die Rückrufe lesen über die Bindung: Übernimmt eine neue Bühne die Ansicht, zeigt sie auf deren Angaben.
+    let bindung: Geparkt['bindung'] = { aktuell };
+    const art = JSON.stringify([label ?? null, mitAuswahl]);
     let blickfeld: IntersectionObserver | null = null;
-    if (typeof IntersectionObserver === 'undefined') starten();
-    else {
-      blickfeld = new IntersectionObserver(
-        (eintraege) => {
-          if (!eintraege.some((eintrag) => eintrag.isIntersecting)) return;
-          blickfeld?.disconnect();
-          starten();
-        },
-        { rootMargin: '200px' },
-      );
-      blickfeld.observe(container);
+
+    const geparkt = fortsetzen ? parkplatz.get(fortsetzen) : undefined;
+    if (fortsetzen && geparkt?.art === art) {
+      parkplatz.delete(fortsetzen);
+      clearTimeout(geparkt.frist);
+      ansicht = geparkt.ansicht;
+      ansicht.umziehen(container);
+      wahl.current = geparkt.wahl;
+      wahl.current?.umziehen(container);
+      bindung = geparkt.bindung;
+      bindung.aktuell = aktuell;
+      uebertragen.current();
+    } else {
+      const starten = () => {
+        // Ohne Zoom: Mausrad und senkrechtes Wischen gehören der Seite, gedreht wird waagerecht.
+        // Zum Wählen steht das Rad still und behält seine Teile einzeln.
+        const optionen = {
+          zoom: false,
+          ...(label ? { label } : {}),
+          ...(mitAuswahl ? { merge: false, autoRotate: false } : {}),
+        };
+        Promise.all([
+          import('./lastenrad3d/viewer').then(({ mountLastenrad }) =>
+            mountLastenrad(container, optionen),
+          ),
+          mitAuswahl ? import('./lastenrad3d/auswahl') : null,
+        ]).then(
+          ([fertig, modul]) => {
+            // Verlassen, bevor die Ansicht stand: Sie gibt Speicher und Grafikkontext gleich frei.
+            if (verlassen) {
+              fertig.dispose();
+              return;
+            }
+            ansicht = fertig;
+            if (!modul) return;
+            wahl.current = modul.richteAuswahlEin(
+              fertig,
+              container,
+              (teil) => bindung.aktuell.current?.gruppeVon(teil) ?? null,
+              (gruppen) => bindung.aktuell.current?.onWahl?.(gruppen),
+              (gruppe) => bindung.aktuell.current?.blickVon?.(gruppe) ?? null,
+            );
+            uebertragen.current();
+          },
+          // Kein WebGL oder das Modul kam nicht an: Der Hinweis steht da, die Seite trägt ohne Bild.
+          () => {
+            if (!verlassen) setOhneAnsicht(true);
+          },
+        );
+      };
+
+      if (typeof IntersectionObserver === 'undefined') starten();
+      else {
+        blickfeld = new IntersectionObserver(
+          (eintraege) => {
+            if (!eintraege.some((eintrag) => eintrag.isIntersecting)) return;
+            blickfeld?.disconnect();
+            starten();
+          },
+          { rootMargin: '200px' },
+        );
+        blickfeld.observe(container);
+      }
     }
 
     return () => {
       verlassen = true;
       blickfeld?.disconnect();
-      // Erst die Auswahl: Sie hängt die ursprünglichen Materialien zurück, die Ansicht gibt sie frei.
-      wahl.current?.dispose();
+      const auswahlDazu = wahl.current;
       wahl.current = null;
+      if (fortsetzen && ansicht) {
+        const fertig = ansicht;
+        parkplatz.get(fortsetzen)?.ansicht.dispose();
+        parkplatz.set(fortsetzen, {
+          ansicht: fertig,
+          wahl: auswahlDazu,
+          bindung,
+          art,
+          frist: setTimeout(() => {
+            if (parkplatz.get(fortsetzen)?.ansicht !== fertig) return;
+            parkplatz.delete(fortsetzen);
+            auswahlDazu?.dispose();
+            fertig.dispose();
+          }, PARKZEIT),
+        });
+        return;
+      }
+      // Erst die Auswahl: Sie hängt die ursprünglichen Materialien zurück, die Ansicht gibt sie frei.
+      auswahlDazu?.dispose();
       ansicht?.dispose();
     };
-  }, [label, mitAuswahl]);
+  }, [label, mitAuswahl, fortsetzen]);
 
   useEffect(() => {
     uebertragen.current();
