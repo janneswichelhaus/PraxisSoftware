@@ -133,7 +133,8 @@ vi.mock('@/features/calendar/appointments/api', async (importOriginal) => {
       fetchAppointment(id) as Promise<AppointmentsApi.Appointment | null>,
     fetchUpcomingAppointments: (id: string) =>
       fetchUpcomingAppointments(id) as Promise<AppointmentsApi.UpcomingAppointment[]>,
-    completeAppointment: (id: string, stand: string) => completeAppointment(id, stand),
+    completeAppointment: (id: string, stand: string) =>
+      completeAppointment(id, stand) as Promise<void>,
   };
 });
 
