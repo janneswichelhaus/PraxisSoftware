@@ -21,7 +21,6 @@ nennen die Steuerberatung.
 ## Bei Jannes
 
 - Test-App neu installieren (#360); `auto-booking` ausliefern (PR).
-- 3D-Lastenrad: Ort nennen (ANN-868, PR).
 - Den alten Branch `ccr-544f8ce7-u1sqpf` löschen (seit 3c ist alles übertragen).
 - Bildsichtung von #352 bis #362 (`/sichtung`), für M2.
 - Spracheingabe scharfschalten: Anbieter und Mikrofon in der Testumgebung (Frage 1 im Bericht,

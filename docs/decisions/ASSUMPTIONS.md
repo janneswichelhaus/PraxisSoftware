@@ -1550,4 +1550,4 @@ Technik · offen · 2026-11-14 · — · — · Wiedervorlage: Sichtung Kalender
 | ANN-867 | Entwurf 2027: KG und MT 55 €, doppelt 110 €, Hausbesuch 40 €; Ausfallhonorar 150 €; ohne Personal Training | Praxisprozess · entschieden (Jannes) | `HONORARUMFANG` in `src/features/billing/CatalogPage.tsx` |
 | ANN-868 | 3D-Lastenrad vorläufig am Rad („Angaben“), nur Anzeige | Technik · offen | `RadAngaben` in `src/features/fleet/RadAngaben.tsx` |
 | ANN-869 | Bühne des 3D-Lastenrads neutral statt #d7d8d2 (Grundton B) | Technik · offen | `--color-radbuehne` in `src/index.css` |
-| ANN-870 | 3D-Rad: Wahl je Bauteil, ohne Punkt | Technik · offen | `src/features/fleet/radteile.ts` |
+| ANN-870 | 3D-Rad: Wahl je Bauteil, ohne Punkt; im Check-Up auf jeder Prüfpunktseite | Technik · offen | `src/features/fleet/radteile.ts` |

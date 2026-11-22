@@ -749,9 +749,11 @@ test('R4 am Rad: „Wo genau?“ zeigt die Bauteile des Punkts, ein Tipp aufs Ra
   await z.tippe(page.getByRole('link', { name: 'Check-Up', exact: true }));
   await z.tippe(page.getByRole('button', { name: 'Weiter' }));
   const reifen = checkupFenster(page, 'Reifen und Luftdruck');
-  // Bis hier lädt kein Rad: Es steht erst, wo ein Bauteil zu wählen ist.
+  // Schon auf der Frage steht das Rad mit den Bauteilen des Punkts (ANN-870).
   await expect(reifen.getByRole('button', { name: 'In Ordnung' })).toBeVisible();
-  await expect(page.locator('canvas')).toHaveCount(0);
+  await expect(rad(reifen)).toBeVisible();
+  await expect.poll(async () => (await imRad(rad(reifen), 'reifen')).zahl).toBeGreaterThan(300);
+  expect(await scrolltNicht(page), 'Frage mit Rad ohne Scrollen').toBe(true);
   await z.tippe(reifen.getByRole('button', { name: 'Problem' }));
 
   // Das Rad über der Frage, die Knöpfe bleiben als gleicher Weg darunter.
