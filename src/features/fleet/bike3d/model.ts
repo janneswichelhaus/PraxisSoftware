@@ -27,7 +27,7 @@ import { buildLastenrad, disposeLastenrad } from './lastenrad-build';
 
 /**
  * Die Wortmarke auf der Box, aus `public/marke/` (byte-gleich mit `marke/logo/`). Die Box ist
- * Papier: Die farbige Fassung, nicht die des alten tiefgrünen Aufklebers (ANN-871).
+ * Papier: Die farbige Fassung, nicht die des alten tiefgrünen Aufklebers (ANN-872).
  */
 export const WORTMARKE_URL = '/marke/own-motion-block-unterzeile-farbig.svg';
 

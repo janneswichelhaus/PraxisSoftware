@@ -43,4 +43,4 @@ nennen die Steuerberatung.
 
 ## Letzte Session
 
-22.11.: Lastenrad 2, Ansicht wie früher.
+19.11.: Bauteil am 3D-Rad antippen.

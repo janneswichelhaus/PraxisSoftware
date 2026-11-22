@@ -1550,4 +1550,4 @@ Technik · offen · 2026-11-14 · — · — · Wiedervorlage: Sichtung Kalender
 | ANN-867 | Entwurf 2027: KG und MT 55 €, doppelt 110 €, Hausbesuch 40 €; Ausfallhonorar 150 €; ohne Personal Training | Praxisprozess · entschieden (Jannes) | `HONORARUMFANG` in `src/features/billing/CatalogPage.tsx` |
 | ANN-868 | 3D-Rad an den Orten von cc3ebbbb (Übergabe 2) | Technik · entschieden (Jannes) | `BikeModel3D` in `src/features/fleet/bike3d/BikeModel3D.tsx` |
 | ANN-870 | 3D-Rad: Bauteil statt Punkt, Nadel in Bauteilmitte | Technik · offen | `radBild` in `src/features/fleet/stellen.ts` |
-| ANN-871 | Wortmarke auf der Box farbig (Box ist Papier) | Technik · offen | `WORTMARKE_URL` in `src/features/fleet/bike3d/model.ts` |
+| ANN-872 | Wortmarke auf der Box farbig (Box ist Papier) | Technik · offen | `WORTMARKE_URL` in `src/features/fleet/bike3d/model.ts` |
