@@ -19,9 +19,9 @@ Eintrag aus Schritt 10 ist geprüft (M3).
 3. **Verzeichnis der Verarbeitungstätigkeiten (VVT):** Entwurf in [`vvt.md`](vvt.md).
    Grundlage: Personenbezug je Tabelle in `public.data_registry`, Datenklasse in
    `public.retention_assignments`; Muster eines Eintrags in `kartendienst.md`.
-4. **Technische und organisatorische Maßnahmen (TOM)** mit Endgeräte-Richtlinie: offen, künftig
-   `docs/datenschutz/tom.md`. Grundlage: ADR-004 (Rollen, RLS), ADR-010 (Audit), ADR-011 (Logs),
-   ADR-012 (Sicherung), ADR-017 (Dateien), ADR-025 (Sitzungssperre).
+4. **Technische und organisatorische Maßnahmen (TOM)** mit Endgeräte-Richtlinie: Entwurf in
+   [`tom.md`](tom.md). Grundlage: ADR-004 (Rollen, RLS), ADR-010 (Audit), ADR-011 (Logs), ADR-012
+   (Sicherung), ADR-017 (Dateien), ADR-024 (Geräte), ADR-025 (Sitzungssperre).
 5. **Lösch- und Aufbewahrungskonzept:** [ADR-008](../adr/ADR-008-data-retention-and-deletion.md)
    und die Fristen aus der Datenbank (unten); zu validieren mit B3.
 6. **Auftragsverarbeiter:** [Supabase](../decisions/providerpruefung-supabase.md) und
@@ -33,8 +33,8 @@ Eintrag aus Schritt 10 ist geprüft (M3).
    `src/features/portal/platform/` die Dateien `einwilligungstexte.ts` und `vertragstexte.ts`
    (Widerruf), dazu `src/lib/vertretung.ts` (Begleitung, B5).
 8. **Betroffenenrechte:** [`betroffenenrechte.md`](betroffenenrechte.md).
-9. **Data-Breach-Prozess** nach Art. 33 und 34 DSGVO: offen, künftig
-   `docs/datenschutz/datenpanne.md`; die Erkennung kommt mit OPS-004 (G6).
+9. **Data-Breach-Prozess** nach Art. 33 und 34 DSGVO: Entwurf in
+   [`datenpanne.md`](datenpanne.md); die Erkennung kommt mit OPS-004 (G6).
 10. **Einzelfragen:** das Prüfpaket des Annahmenregisters, je Eintrag Annahme, Grundlage, Anker und
     Rücknahme; die Wiedervorlage nennt, wer prüft:
     `grep -n "· Prüfpaket ·" docs/decisions/ASSUMPTIONS.md`. Dazu die Nachweistabelle MUSS → Test

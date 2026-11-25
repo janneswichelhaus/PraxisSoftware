@@ -922,6 +922,10 @@ Datenschutz · entschieden (Jannes) · 2026-11-10 · Jannes · Prüfpaket · Wie
 Datenschutz · offen · 2026-11-25 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, DSFA)\
 **Annahme.** Plattform (Muss-Liste Nr. 16) und KI-Assistenz (drei Kriterien aus WP 248) lösen die Pflicht aus; § 38 Abs. 1 Satz 2 BDSG verlangt dann die Benennung. **Grundlage.** Art. 35 DSGVO; ADR-007 Punkte 3, 4. **Anker.** `docs/datenschutz/schwellwertpruefung.md`; `datenschutzinformation` in `patienteninformation.ts`. **Rücknahme.** Ergebnis dort ändern · Aufwand `klein`.
 
+### ANN-874 — Datenpanne: Patientendaten in Betriebslogs zählen als mögliche Verletzung
+Datenschutz · offen · 2026-11-25 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, DSFA)\
+**Annahme.** Versagt die Filterung und stehen Patientendaten in Betriebslogs, wird das nach `datenpanne.md` bewertet. Die 72 Stunden rechnet die Praxis ohne Ausnahme für Wochenenden. **Grundlage.** Art. 33 DSGVO; Folgefrage in ADR-011. **Anker.** `redigiere` in `src/lib/protokoll.ts`. **Rücknahme.** Beispiel und Satz in `datenpanne.md` ändern · Aufwand `klein`.
+
 ## Fachregeln
 ### ANN-840 — Diktat am leeren Feld: übernehmen und festschreiben in einem Tipp
 Praxisprozess · offen · 2026-11-07 · — · — · Wiedervorlage: Sichtung K5\

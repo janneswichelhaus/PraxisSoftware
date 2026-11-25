@@ -11,13 +11,14 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 ## Danach
 
 Bis M2 (Jannes 2026-11-01, voller Umfang; MAP-007 zurückgestellt 2026-11-10): Leinwände, sobald
-sie da sind; DATEV erst nach B4. **G14 parallel**: Schwellwertprüfung im Entwurf (DSFA Pflicht); weiter mit TOM und Datenpannen, Auftragsverarbeiter, DSFA, zuletzt die Nachweistabelle;
+sie da sind; DATEV erst nach B4. **G14 parallel**: Schwellwertprüfung (DSFA Pflicht), TOM und
+Datenpannen-Prozess im Entwurf; weiter mit Auftragsverarbeitern, DSFA, zuletzt der Nachweistabelle;
 die Datenschutzinformationen nennen die Steuerberatung.
 
 ## Bei Jannes
 
 - G14: datenschutzbeauftragte Person extern suchen, jetzt Pflicht (ANN-873); Sitz der Praxis
-  nennen (zuständige Aufsichtsbehörde).
+  nennen (zuständige Aufsichtsbehörde); Telefon und Vertretung für Datenpannen festlegen.
 - Test-App neu installieren (#360); `auto-booking` ausliefern (PR).
 - Den alten Branch `ccr-544f8ce7-u1sqpf` löschen (seit 3c ist alles übertragen).
 - Bildsichtung von #352 bis #362 (`/sichtung`), für M2.
@@ -41,4 +42,4 @@ die Datenschutzinformationen nennen die Steuerberatung.
 
 ## Letzte Session
 
-25.11.: Schwellwertprüfung (G14).
+25.11.: Schwellwertprüfung, TOM, Datenpannen (G14).
