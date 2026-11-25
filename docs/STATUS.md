@@ -16,8 +16,8 @@ die Datenschutzinformationen nennen die Steuerberatung.
 
 ## Bei Jannes
 
-- G14: Doku-Gate ist voll (Optionen in der PR); datenschutzbeauftragte Person extern suchen, jetzt
-  Pflicht (ANN-873).
+- G14: datenschutzbeauftragte Person extern suchen, jetzt Pflicht (ANN-873); Sitz der Praxis
+  nennen (zuständige Aufsichtsbehörde).
 - Test-App neu installieren (#360); `auto-booking` ausliefern (PR).
 - Den alten Branch `ccr-544f8ce7-u1sqpf` löschen (seit 3c ist alles übertragen).
 - Bildsichtung von #352 bis #362 (`/sichtung`), für M2.

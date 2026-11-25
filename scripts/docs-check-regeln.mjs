@@ -272,9 +272,10 @@ export function dateigrenzen(pfade) {
     .map((pfad) => ({ pfad, ...(DATEIGRENZEN.get(pfad) ?? STANDARDGRENZE) }));
 }
 
-// Alle Markdown-Dateien zusammen (Aufraeumen 5, Auftrag Jannes 2026-10-27). Gesenkt, nie gehoben:
-// Eine Gesamtgrenze traegt nur, wenn Wachstum nach Git abfliesst statt in die Dateien.
-export const GESAMTGRENZE = { zeilen: 10_000, bytes: 900 * 1024 };
+// Alle Markdown-Dateien zusammen (Aufraeumen 5, Auftrag Jannes 2026-10-27). Gesenkt, nie still
+// gehoben: Die Grenze traegt nur, wenn Wachstum nach Git abfliesst. Einmal gehoben am 2026-11-25
+// (Jannes) um 1.000 Zeilen und 64 KiB, damit das Datenschutzpaket G14 Platz hat.
+export const GESAMTGRENZE = { zeilen: 11_000, bytes: 964 * 1024 };
 
 /** Prueft die Summe ueber `[{ pfad, text }]` gegen die Gesamtgrenze. */
 export function pruefeGesamtgrenze(dateien, grenze = GESAMTGRENZE) {

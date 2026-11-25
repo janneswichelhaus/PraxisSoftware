@@ -452,7 +452,7 @@ describe('Obergrenzen in Bytes (Regel E, 2026-10-12)', () => {
       ['marke/README.md', { zeilen: 260, bytes: 24576 }],
       ['quellen/bausteine/mt-untersuchung-quelldaten.md', { zeilen: 430, bytes: 13312 }],
     ]);
-    expect(GESAMTGRENZE).toEqual({ zeilen: 10000, bytes: 921600 });
+    expect(GESAMTGRENZE).toEqual({ zeilen: 11000, bytes: 987136 });
   });
 
   it('gibt jeder Markdown-Datei eine Grenze, groesseren ihre eigene', () => {
