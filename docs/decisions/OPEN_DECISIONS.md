@@ -1,5 +1,5 @@
 # Offene Entscheidungen
-Zuletzt aktualisiert: 2026-11-10 · Struktur 5.0
+Zuletzt aktualisiert: 2026-11-25 · Struktur 5.0
 
 Was offen ist, warum, und was daran hängt. **Ohne Rang** (§21): Entschiedenes steht mit Fundstelle
 in ADR, Prinzipien oder Annahmenregister. Ein offener Punkt blockiert kein Bauen (§15.2); was eine
@@ -28,9 +28,9 @@ fachlichen Datenmodell des Bereichs, **P2** vor dem Feature, **P3** später.
   Prüfung offen (§17, ADR-006 Punkt 7, G15) mit B10, Cut-off-Anzeige und Pflege der Zweckbestimmung
   (ADR-006, Folgefragen); bis dahin bleibt `MDR_REVIEW_REQUIRED` gesperrt (`src/app/mdr.ts`). ANN-014.
 - **B2 — DSFA, Datenschutzbeauftragter, VVT, TOM, Meldeprozess** · Prozess entschieden (ADR-007) ·
-  DSB vorläufig entschieden 2026-09-08 (Jannes): ja, extern, auch ohne Pflicht nach Art. 37 DSGVO
-  und §38 Abs. 1 BDSG, weil Gesundheitsdaten die Kerntätigkeit sind; Rücknahme `klein` · offen:
-  Schwellwertprüfung, DSFA, Unterlagen aus ADR-007 Punkt 5, Nachweistabelle MUSS → Test (D); G14.
+  DSB vorläufig entschieden 2026-09-08 (Jannes): ja, extern; laut Schwellwertprüfung Pflicht
+  (ANN-873, Entwurf) · offen: DSFA, Unterlagen aus ADR-007 Punkt 5, Nachweistabelle MUSS → Test
+  (D); G14.
 - **B3 — Fristen der Aufbewahrung** · Modell entschieden (ADR-008), gebaut in LOE-EPIC-001 · offen:
   Validierung mit B2, Belegfristen mit B4. Fristen stehen nur in `public.retention_classes`, jede
   interne mit ihrer Annahme im `assumption_key` (Abfrage im Index der Datenschutzprüfung); ANN-001.

@@ -46,6 +46,8 @@ export function datenschutzinformation(absender: PraxisAbsender): Abschnitt[] {
   return [
     {
       titel: 'Wer für Ihre Daten verantwortlich ist',
+      // Der Kontakt der datenschutzbeauftragten Person gehört hierher, sobald sie benannt ist
+      // (Art. 13 Abs. 1 lit. b DSGVO, ANN-873).
       absaetze: [
         `Verantwortlich ist ${verantwortlich}.${kontakt ? ` ${kontakt}.` : ''} Bei Fragen zum Datenschutz wenden Sie sich bitte direkt an die Praxis — persönlich, telefonisch oder schriftlich.`,
       ],

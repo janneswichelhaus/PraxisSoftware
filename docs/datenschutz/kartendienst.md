@@ -13,19 +13,20 @@ gehört in die Datenschutzprüfung (B2, G14).
 Kartendienst erst nach dem Gate aus ADR-019 Punkt 9 — technisch verriegelt durch den Schalter
 `LOCATION_DATA_GATE` (ANN-094, unten).
 
-## Eintrag für das Verzeichnis der Verarbeitungstätigkeiten
+## Einzelheiten zu Abschnitt 2 des Verzeichnisses ([`vvt.md`](vvt.md))
 
-| Feld                 | Inhalt                                                                                                                                                                                                                                                  |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Bezeichnung          | Tourenplanung der Hausbesuche: Kartenposition der Adresse, Tagesroute, Fahrzeit, Navigation                                                                                                                                                             |
-| Zweck                | Hausbesuche erreichen; prüfen, ob zwei Termine mit der Fahrzeit vereinbar sind (§8.1, §9)                                                                                                                                                               |
-| Betroffene           | Patient:innen mit Hausbesuch; mittelbar Therapeut:innen (wessen Tour)                                                                                                                                                                                   |
-| Datenkategorien      | Anschrift (Straße, Hausnummer, PLZ, Ort) und daraus abgeleitete Koordinate mit Genauigkeit (ANN-016); Termine des Tages (Zeit, Reihenfolge) nur innerhalb der Anwendung                                                                                 |
-| Empfänger            | Kartendienst (Kandidat PTV Developer, Auftragsverarbeitung nach Gate): beim Geocoding die Anschrift ohne Namen, bei Route und Matrix nur Koordinaten; Navigations-App des Geräts beim Handoff: nur die Koordinate bzw. Anschrift ohne Namen, auf Tippen |
-| Nicht übermittelt    | Namen, Patienten- und Terminkennungen, Uhrzeiten, Diagnosen, Zugangshinweise (ADR-019 Punkt 12)                                                                                                                                                         |
-| Speicherung          | Koordinate bei der Adresse und im Hausbesuchs-Snapshot; **keine** Fahrzeiten, Routen oder Rohantworten (ADR-019 Punkt 16)                                                                                                                               |
-| Frist                | Koordinate wie die Adresse, die sie trägt (unten)                                                                                                                                                                                                       |
-| Technische Maßnahmen | Aufrufe nur über die eigene Edge Function mit Sitzungsprüfung; Serverschlüssel als Secret; Logs ohne Adresse und Koordinate (ADR-011); Schalter `LOCATION_DATA_GATE`; Audit `patient.address_geocoded` ohne Koordinate                                  |
+- **Datenkategorien:** Anschrift (Straße, Hausnummer, PLZ, Ort) und daraus abgeleitete Koordinate
+  mit Genauigkeit (ANN-016); Termine des Tages (Zeit, Reihenfolge) nur innerhalb der Anwendung
+- **Empfänger:** Kartendienst (Kandidat PTV Developer, Auftragsverarbeitung nach Gate): beim
+  Geocoding die Anschrift ohne Namen, bei Route und Matrix nur Koordinaten; Navigations-App des
+  Geräts beim Handoff: nur die Koordinate bzw. Anschrift ohne Namen, auf Tippen
+- **Nicht übermittelt:** Namen, Patienten- und Terminkennungen, Uhrzeiten, Diagnosen,
+  Zugangshinweise (ADR-019 Punkt 12)
+- **Speicherung:** Koordinate bei der Adresse und im Hausbesuchs-Snapshot; **keine** Fahrzeiten,
+  Routen oder Rohantworten (ADR-019 Punkt 16)
+- **Technische Maßnahmen:** Aufrufe nur über die eigene Edge Function mit Sitzungsprüfung;
+  Serverschlüssel als Secret; Logs ohne Adresse und Koordinate (ADR-011); Schalter
+  `LOCATION_DATA_GATE`; Audit `patient.address_geocoded` ohne Koordinate
 
 ## DSFA-Wiedervorlage je Datenweg (ADR-019 Punkt 26)
 
@@ -55,14 +56,6 @@ Wiedervorlage betrachtet vier Wege getrennt:
    beim Aufklappen. Abschaltbar an einer Stelle (`FAHRZEITEN_BEIM_OEFFNEN`).
 4. **Handoff vom Gerät.** Seit MAP-006d die Koordinate statt der Anschrift (ANN-018); B2 bleibt
    offen (ADR-019 Punkt 23).
-5. ~~**Kilometer für den Ladestrom (BEF-181, ADR-019 Fassung 6).** Beim Beantragen eines
-   abgeschlossenen Monats rechnet die Edge Function `electricity-distance` die geplanten Touren der
-   antragstellenden Person neu: je Tag eine Route über dieselben Koordinaten wie Weg 3, in der
-   Zusammenfassung einmal zur Anzeige und beim Absenden einmal zum Eintragen. Gespeichert wird nur
-   die Monatssumme in ganzen Kilometern am Antrag (`staff_reimbursements.tour_km`); sie sehen die
-   Person und owner, das Büro nicht (ANN-616). Neu ist die **Menge** je Aufruf (bis zu einem
-   Monat), nicht die Art der Daten.~~ _Entfallen 2026-10-26 (ADR-019 Fassung 7): Ladestrom wird wie
-   ein Einkauf mit Beleg beantragt; ältere Anträge behalten ihre Monatssumme._
 
 Beschäftigtendatenschutz (§20): Es entsteht keine Fahrtenhistorie, keine gespeicherte Fahrzeit,
 keine Auswertung je Person. Der Startort ist die Praxis oder der erste Besuch; ein persönlicher
@@ -70,13 +63,14 @@ Startort ist bewusst nicht gebaut (ANN-096).
 
 ## Aufbewahrung (ADR-008)
 
-| Daten                                   | Datenklasse und Frist                                                                              |
-| --------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| Koordinate an `patient_contact_details` | wie die Adresse: Patientenakte; verfällt zusätzlich bei jeder Adressänderung (Trigger)             |
-| Koordinate im Termin (`visit_lat/lon`)  | wie der Termin (ANN-003); bei abgesagten Terminen dieselbe offene Frage wie für die Adresse selbst |
-| Koordinate des Standorts                | Betriebsdatum der Praxis, keine Personenangabe                                                     |
-| Routing-Rohdaten (ADR-008, 30 Tage)     | **leer** — es wird nichts gespeichert                                                              |
-| Monatssumme `tour_km` am Antrag         | wie der Antrag auf Erstattung (Datenklasse der Erstattungen, ANN-602)                              |
+- **Koordinate an `patient_contact_details`:** wie die Adresse: Patientenakte; verfällt zusätzlich
+  bei jeder Adressänderung (Trigger)
+- **Koordinate im Termin (`visit_lat/lon`):** wie der Termin (ANN-003); bei abgesagten Terminen
+  dieselbe offene Frage wie für die Adresse selbst
+- **Koordinate des Standorts:** Betriebsdatum der Praxis, keine Personenangabe
+- **Routing-Rohdaten (ADR-008, 30 Tage):** **leer** — es wird nichts gespeichert
+- **Monatssumme `tour_km` an Anträgen auf Ladestrom bis 2026-10-26:** wie der
+  Antrag auf Erstattung (Datenklasse der Erstattungen, ANN-602)
 
 Die Koordinate liegt in bestehenden Tabellen; der Retention Schedule ordnet Tabellen zu und
 braucht deshalb keinen neuen Eintrag. Die Auskunft nach Art. 15 enthält die Koordinate.
@@ -87,10 +81,8 @@ Ohne den Wert `synthetic` oder `released` antwortet die Function mit „nicht ei
 wenn ein Schlüssel vorliegt. Für die Produktion gilt:
 
 - `released` wird erst gesetzt, wenn alle elf Punkte des Gates aus ADR-019 Punkt 9 und 34
-  positiv abgeschlossen und in den DSFA-Unterlagen abgelegt sind (Vertrag mit Nennung der
-  OSM-APIs, §203-Verpflichtung, Subprozessoren, Retention und Zweitnutzung, EU-Region, Paid Plan,
-  Prüfung der Edge Runtime nach OPS-001, DSFA-Wiedervorlage, Kachelweg, Kennzeichen von
-  Schätzungen).
+  positiv abgeschlossen und in den DSFA-Unterlagen abgelegt sind (Liste in
+  [`providerpruefung-kartendienst.md`](../decisions/providerpruefung-kartendienst.md), Teil 5).
 - `synthetic` ist in einer Umgebung mit echten Daten **nie** zulässig. Ab ABN-EPIC-001c ist das
   technisch erzwungen (ADR-019 Fassung 5, Punkt 36): Das Secret `APP_ENVIRONMENT`
   (`development`, `test`, `production`) steht neben dem Schalter; fehlt es oder ist es
@@ -103,7 +95,4 @@ wenn ein Schlüssel vorliegt. Für die Produktion gilt:
 ## Datenschutzinformation (PAT-006)
 
 Der Abschnitt „Hausbesuche und Kartendienst" in `src/features/privacy/datenschutz/patienteninformation.ts`
-nennt Adresse beziehungsweise Kartenposition, schließt Name, Termine, Uhrzeiten und
-Gesundheitsangaben aus und sagt, dass Fahrzeiten nicht gespeichert werden. Seit MAP-006 ergänzt
-er, dass die Kartenposition mit der Adresse gespeichert und mit ihr gelöscht wird. Der Wortlaut
-bleibt Entwurf bis B2.
+trägt den Wortlaut für Patient:innen; er bleibt Entwurf bis B2.

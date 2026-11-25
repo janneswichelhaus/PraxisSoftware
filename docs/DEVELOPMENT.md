@@ -342,8 +342,8 @@ still gehoben (`docs-check.test.mjs` hält die Werte fest):
 - **Obergrenzen (E):** Jede Markdown-Datei hat eine Zeilen- und eine Bytegrenze (Bytes, weil sich
   Zeilen mit einer langen Zeile umgehen lassen): die Standardgrenze, größere Dateien einzeln; was
   ganz gelesen wird (CLAUDE.md, STATUS, Skills, ARBEITSBEREICHE, DESIGN.md, PLATTFORM.md) eine
-  engere; alle zusammen höchstens 10.000 Zeilen und 900 KB. Wächst eine Datei, wandert Älteres nach
-  Git. In den von Hand gepflegten Dateien (`.prettierignore`) folgt der Text direkt der Überschrift. Die Werte: `STANDARDGRENZE`, `DATEIGRENZEN`, `OBERGRENZEN`, `SKILL_GRENZE_BYTES`,
+  engere; alle zusammen höchstens 11.000 Zeilen und 964 KB (am 2026-11-25 einmal gehoben für das
+  Datenschutzpaket G14, Jannes). Wächst eine Datei, wandert Älteres nach Git. In den von Hand gepflegten Dateien (`.prettierignore`) folgt der Text direkt der Überschrift. Die Werte: `STANDARDGRENZE`, `DATEIGRENZEN`, `OBERGRENZEN`, `SKILL_GRENZE_BYTES`,
   `GESAMTGRENZE`.
 - **Annahmenregister (F):** Vorspann höchstens 40 Zeilen; Einträge im Prüfpaket und bei den
   Fachregeln höchstens 5 Zeilen und 800 bzw. 600 Bytes, die übrigen als Tabellenzeile bis 240

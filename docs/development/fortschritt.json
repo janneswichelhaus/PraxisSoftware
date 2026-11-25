@@ -1,5 +1,5 @@
 {
-  "stand": "2026-11-06",
+  "stand": "2026-11-25",
   "ziel": {
     "meilenstein": "M5",
     "name": "Eröffnung — erster Behandlungstag mit der Software",
@@ -2179,7 +2179,7 @@
           "id": "g14-dsfa",
           "name": "G14 DSFA-Paket (VVT, TOM, Löschkonzept, Breach)",
           "gewicht": 3,
-          "status": "offen"
+          "status": "in_arbeit"
         },
         {
           "id": "g16-betrieb-001",

@@ -1,12 +1,11 @@
 # Verzeichnis der Verarbeitungstätigkeiten
 
-Entwurf, Stand 1. November 2026. Nach Art. 30 Abs. 1 DSGVO.
+Entwurf, Stand 25. November 2026. Nach Art. 30 Abs. 1 DSGVO.
 
 **Verantwortlicher:** [Name der Praxis, Anschrift, Telefon, E-Mail]
 **Vertreten durch:** Jannes Wichelhaus, Inhaber
-**Datenschutzbeauftragte Person:** bisher keine benannt. Unter 20 Personen wäre das nicht nötig,
-aber § 38 Abs. 1 Satz 2 BDSG verlangt eine, sobald eine DSFA Pflicht ist. Das klärt die
-Schwellwertprüfung.
+**Datenschutzbeauftragte Person:** [extern, noch zu benennen]; Pflicht nach
+`schwellwertpruefung.md`.
 
 Für alle Verarbeitungen gilt: Die Daten liegen in einer Datenbank bei Supabase in einem
 Rechenzentrum in der EU. Eine Übermittlung in Drittländer ist nicht vorgesehen. Die technischen und
@@ -46,9 +45,7 @@ in der Datenbank hinterlegt (`README.md`, „Fristen aus der Datenbank“).
 - **Empfänger:** Steuerberatung (Buchungsstapel im DATEV-Format ohne Namen und Diagnosen, die
   Rechnungen als Belege, ANN-829), Finanzamt bei einer Prüfung. Bei Kartenzahlung am Hausbesuch
   der Zahlungsdienst des Terminals, erst nach Prüfung und Vertrag; er bekommt Betrag und eine
-  zufällige Referenz, keinen Namen und keine Rechnung (ANN-837). Bis dahin läuft nichts nach außen. Die Patienteninformation nennt
-  die Steuerberatung noch nicht (Art. 13 Abs. 1 lit. e DSGVO); sie kommt mit G14 in die
-  Datenschutzinformationen (Jannes 2026-11-01).
+  zufällige Referenz, keinen Namen und keine Rechnung (ANN-837). Bis dahin läuft nichts nach außen.
 - **Frist:** 8 Jahre ab Ende des Kalenderjahres (§ 147 Abs. 3 AO).
 
 ## 4. Patientenplattform
@@ -94,16 +91,19 @@ in der Datenbank hinterlegt (`README.md`, „Fristen aus der Datenbank“).
 - **Empfänger:** Supabase als Auftragsverarbeiter.
 - **Frist:** Zugriffsprotokoll 3 Jahre, Leseprotokoll 1 Jahr, Sitzungsvermerke 1 Tag.
 
-## 8. Spracheingabe in der Dokumentation (noch abgeschaltet)
+## 8. KI-Assistenz (noch abgeschaltet)
 
-- **Zweck:** Dokumentation diktieren statt tippen; der Text ist ein Entwurf, den die Therapeutin
-  oder der Therapeut prüft.
+- **Zweck:** Dokumentation diktieren oder ordnen, Antworten ausformulieren, den Verlauf in Auszügen
+  zeigen, Felder vom Foto einer Verordnung vorschlagen; jedes Ergebnis ist ein Entwurf, den ein
+  Mensch prüft.
 - **Betroffene:** Patientinnen und Patienten, Mitarbeitende.
-- **Daten:** Tonaufnahme, nur für die Umwandlung, danach verworfen.
+- **Daten:** Tonaufnahme, Texte der Dokumentation und von Antworten, Foto der Verordnung; nur für
+  die Anfrage, dafür wird nichts gespeichert (ANN-826, ANN-862).
 - **Empfänger:** ein KI-Anbieter, erst nach Prüfung und Vertrag. Bis dahin läuft nichts nach außen.
 
 ## Offen
 
 - Anschrift und Kontakt der Praxis eintragen.
 - Anbieter für Mailversand, Spracheingabe und Kartenzahlung, sobald geprüft.
-- Ob eine datenschutzbeauftragte Person benannt werden muss (siehe oben).
+- Datenschutzbeauftragte Person benennen und der Aufsichtsbehörde melden.
+- Steuerberatung in der Patienteninformation nennen (Art. 13 Abs. 1 lit. e DSGVO).
