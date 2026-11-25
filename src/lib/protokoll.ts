@@ -131,6 +131,7 @@ function paar(schluessel: string, wert: string): string {
  * ist genau das, was das Programm verlässt.
  */
 export function redigiere(ereignis: Betriebsereignis): string {
+  // Stehen trotzdem Patientendaten im Log, ist das eine mögliche Datenpanne (ANN-874).
   const teile: string[] = [istBezeichner(ereignis.ereignis) ? ereignis.ereignis : ENTFERNT];
 
   for (const [schluessel, wert] of Object.entries(ereignis.ids ?? {})) {
