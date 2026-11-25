@@ -1,4 +1,4 @@
-# Status · Stand 2026-11-22
+# Status · Stand 2026-11-25
 
 Livestand in höchstens 4 KB (`pnpm docs:check`). Reihenfolge: `development/ROADMAP.md`; Verlauf
 steht in den PRs und in Git. Abgelegte Dokumente zeigt `git show eb43569:<pfad>` (Archiv,
@@ -8,18 +8,16 @@ Chroniken, Handoffs) oder `git show 9452575:<pfad>` (Loop-Vorgaben, Sichtung, Id
 
 **Terminplaner** (Jannes 2026-11-12): Pause ✓, Endlos-Scroll ✓, Autobuchung ✓, ADR und Online-Buchung.
 
-**Wartungsmodus** (#363): eine Ursache je Session, Regel in `CLAUDE.md`, Ablauf in
-`DEVELOPMENT.md`; Merge bei Jannes.
-
 ## Danach
 
 Bis M2 (Jannes 2026-11-01, voller Umfang; MAP-007 zurückgestellt 2026-11-10): Leinwände, sobald
-sie da sind; DATEV erst nach B4. **G14 parallel**: nach dem VVT die Schwellwertprüfung, TOM mit
-Datenpannen, Auftragsverarbeiter, DSFA, zuletzt die Nachweistabelle; die Datenschutzinformationen
-nennen die Steuerberatung.
+sie da sind; DATEV erst nach B4. **G14 parallel**: Schwellwertprüfung im Entwurf (DSFA Pflicht); weiter mit TOM und Datenpannen, Auftragsverarbeiter, DSFA, zuletzt die Nachweistabelle;
+die Datenschutzinformationen nennen die Steuerberatung.
 
 ## Bei Jannes
 
+- G14: Doku-Gate ist voll (Optionen in der PR); datenschutzbeauftragte Person extern suchen, jetzt
+  Pflicht (ANN-873).
 - Test-App neu installieren (#360); `auto-booking` ausliefern (PR).
 - Den alten Branch `ccr-544f8ce7-u1sqpf` löschen (seit 3c ist alles übertragen).
 - Bildsichtung von #352 bis #362 (`/sichtung`), für M2.
@@ -43,4 +41,4 @@ nennen die Steuerberatung.
 
 ## Letzte Session
 
-22.11.: Doku aus der Übersicht.
+25.11.: Schwellwertprüfung (G14).

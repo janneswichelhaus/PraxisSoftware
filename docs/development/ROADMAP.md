@@ -406,6 +406,7 @@ Blöcke: **A** Kernprozess, **B** V1-Ausbau, **C** Betriebsreife, **D** Eröffnu
 | C | G9 OPS-006 Betroffenenrechte (minimal) | gesichtet | 2026-09-22 | `aa321d0`, `2e3ebc7` | 2026-11-05 | — |
 | C | G11 OPS-007 Bootstrap Produktion (Runbook) | in_arbeit | 2026-09-22 | `a870992`, `f3b9497` | — | Probe gegen die Test-Umgebung offen |
 | C | G12 ADR-019 Kartendienst (Fassung 2, angenommen 2026-09-13) | gesichtet | — | — | — | — |
+| C | G14 DSFA-Paket (VVT, TOM, Löschkonzept, Breach) | in_arbeit | — | — | — | — |
 | C | G19 Dokumentationsgate erweitern | gesichtet | 2026-09-22 | `7b95c22`, PR #102 | 2026-11-05 | — |
 | C | G20 SEC-EPIC-001 Sitzungssperre (ADR-025) | gesichtet | 2026-10-06 | SEC-001 bis SEC-003 | 2026-11-05 | Auftrag Jannes (06.10.2026: nach 30/60 min automatisch sperren); W1 (a), W2 (a); W3 entschieden mit ADR-025 Fassung 2 (2026-10-10), Passkey und App-PIN in G22; Sichtung: Betriebsreife Schritt 15 |
 | C | G22 SEC-EPIC-002 Anmeldung ohne Kennwort (ADR-025 Fassung 2) | gesichtet | 2026-10-10 | SEC-004 bis SEC-009 | 2026-11-05 | Passkey und App-PIN, kein Kennwort (ADR-025 Fassung 2); scharf auf der Test-Umgebung, sobald Jannes Passkeys im Dashboard von praxis-test einschaltet; Sichtung: Betriebsreife Schritte 12, 15; Plattform Schritt 1 |

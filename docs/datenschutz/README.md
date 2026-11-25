@@ -13,9 +13,9 @@ Eintrag aus Schritt 10 ist geprüft (M3).
    echten Daten, Wiedervorlage bei wesentlicher Änderung), §3 und §3.7; Stand je B-Punkt in
    [`OPEN_DECISIONS.md`](../decisions/OPEN_DECISIONS.md) („Offene Punkte“, „Externe Prüfungen“),
    Wortlaut der Anfragen und Zweckbestimmung (B1) in [`ANFRAGEN.md`](../decisions/ANFRAGEN.md).
-2. **Schwellwertprüfung und DSFA** (ADR-007 Punkte 1 bis 3): offen, Entwurf von Claude, künftig
-   `docs/datenschutz/dsfa.md`; die Wiedervorlage zum Kartendienst steht in
-   [`kartendienst.md`](kartendienst.md).
+2. **Schwellwertprüfung und DSFA** (ADR-007 Punkte 1 bis 3): Prüfung im Entwurf in
+   [`schwellwertpruefung.md`](schwellwertpruefung.md); die DSFA ist offen, künftig `dsfa.md`; die
+   Wiedervorlage zum Kartendienst steht in [`kartendienst.md`](kartendienst.md).
 3. **Verzeichnis der Verarbeitungstätigkeiten (VVT):** Entwurf in [`vvt.md`](vvt.md).
    Grundlage: Personenbezug je Tabelle in `public.data_registry`, Datenklasse in
    `public.retention_assignments`; Muster eines Eintrags in `kartendienst.md`.

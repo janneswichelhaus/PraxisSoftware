@@ -1,5 +1,5 @@
 # Annahmenregister
-Zuletzt aktualisiert: 2026-11-22.
+Zuletzt aktualisiert: 2026-11-25.
 
 Begründete, **vorläufige** Festlegungen, die weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
 Spezifikation trifft (§15.1, Rang 4). Eine Annahme füllt eine Lücke und überschreibt nichts; sie
@@ -917,6 +917,10 @@ Datenschutz · offen · 2026-11-07 · — · Prüfpaket · Wiedervorlage: Datens
 ### ANN-862 — Hilfen ohne Ton: nichts gespeichert, keine Kennung hinaus
 Datenschutz · entschieden (Jannes) · 2026-11-10 · Jannes · Prüfpaket · Wiedervorlage: Anbieterprüfung (C6); B1\
 **Annahme.** Zum Adapter: Text oder Bild und Regeln, nie Kennung, Datum, Verfasser:in, Frage der Person; Namen im Inhalt gehen mit. Bilder nur als offener Verordnungsscan mit Prüfsumme der Ablage. Übernommenes ist Text der Person, ein Merkmal nur am Diktat (ANN-825). **Grundlage.** §6.1; ADR-005 Punkt 7; ADR-017 Punkt 39; ANN-520. **Anker.** `assistenzAnfragen` in `src/lib/ki/gateway.ts`. **Rücknahme.** Klasse oder Merkmal je Zieltabelle · Aufwand `groß`.
+
+### ANN-873 — Schwellwertprüfung: DSFA und datenschutzbeauftragte Person sind Pflicht
+Datenschutz · offen · 2026-11-25 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, DSFA)\
+**Annahme.** Plattform (Muss-Liste Nr. 16) und KI-Assistenz (drei Kriterien aus WP 248) lösen die Pflicht aus; § 38 Abs. 1 Satz 2 BDSG verlangt dann die Benennung. **Grundlage.** Art. 35 DSGVO; ADR-007 Punkte 3, 4. **Anker.** `docs/datenschutz/schwellwertpruefung.md`; `datenschutzinformation` in `patienteninformation.ts`. **Rücknahme.** Ergebnis dort ändern · Aufwand `klein`.
 
 ## Fachregeln
 ### ANN-840 — Diktat am leeren Feld: übernehmen und festschreiben in einem Tipp

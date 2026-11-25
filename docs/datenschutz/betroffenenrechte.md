@@ -1,6 +1,6 @@
 # Verfahren für Betroffenenrechte
 
-Stand: 2026-09-22 · Gebaut mit OPS-006 (minimal) · Verantwortlich: Praxisleitung (`owner`)
+Stand: 2026-11-25 · Gebaut mit OPS-006 (minimal) · Verantwortlich: Praxisleitung (`owner`)
 
 Eine der sieben Vorbedingungen des Produktivstarts aus
 [ADR-007](../adr/ADR-007-data-protection-impact-assessment.md) Punkt 5. Das Dokument beschreibt,
@@ -13,11 +13,10 @@ synthetische Daten.
 
 ## Fristen
 
-| Was                       | Frist                                                                     |
-| ------------------------- | ------------------------------------------------------------------------- |
-| Antwort auf ein Verlangen | unverzüglich, spätestens **ein Monat** ab Eingang (Art. 12 Abs. 3 DSGVO)  |
-| Verlängerung              | um **zwei Monate**, mit Begründung, innerhalb des ersten Monats mitteilen |
-| Ablehnung                 | innerhalb **eines Monats**, mit Gründen und Hinweis auf Beschwerde        |
+- **Antwort auf ein Verlangen:** unverzüglich, spätestens **ein Monat** ab Eingang (Art. 12 Abs. 3
+  DSGVO)
+- **Verlängerung:** um **zwei Monate**, mit Begründung, innerhalb des ersten Monats mitteilen
+- **Ablehnung:** innerhalb **eines Monats**, mit Gründen und Hinweis auf Beschwerde
 
 Der Monat läuft ab **Eingang**, nicht ab Kenntnisnahme. Wer das Schreiben entgegennimmt, notiert
 deshalb das Eingangsdatum.
@@ -63,8 +62,8 @@ Die Kopie nennt am Ende selbst, was sie **nicht** enthält:
   Datensatz über Beschäftigte (Art. 15 Abs. 4 DSGVO, §20) und wird nur auf ausdrückliches
   Verlangen und nach Abwägung von Hand ergänzt.
 - **Daten eines Trainingsverhältnisses.** Training ist ein eigenes Rechtsverhältnis mit eigener
-  Akte ([ADR-021](../adr/ADR-021-service-areas-and-legal-relationships.md)); die Auskunft dazu wird
-  getrennt erteilt und heute von Hand zusammengestellt.
+  Akte ([ADR-021](../adr/ADR-021-service-areas-and-legal-relationships.md)); die Kopie dazu
+  erstellt `owner` getrennt am Trainingsverhältnis (`export_training_record`).
 
 **Neben Art. 15 steht § 630g BGB**: Einsicht in die vollständige Patientenakte, unverzüglich, am
 Ort der Aufbewahrung. Die Kopie aus der Software erfüllt beides zugleich; für Abschriften dürfen
@@ -125,19 +124,12 @@ weiterleiten darf jede Rolle; beantworten nicht.
 
 ## Grenzen des heutigen Stands
 
-Ehrlich benannt, weil ein Verfahren, das mehr behauptet als die Software kann, im Ernstfall nicht
-trägt:
-
 - **Keine Vorgangsakte.** Eingang, Frist und Antwort werden außerhalb der Software geführt. Eine
   Wiedervorlage erinnert an nichts.
 - **Keine Namen im Zugriffsprotokoll auf Knopfdruck**; sie werden nur auf Verlangen von Hand
   ergänzt (ANN-092).
 - **Kein eigener Zustand für Art. 18.**
-- **Kein Selbstbedienungsweg.** Ein Patientenportal gibt es nicht (`PROJECT_PRINCIPLES.md` §4.6);
-  jedes Verlangen läuft über die Praxis.
-- **Trainingsdaten von Hand.** Bis Etappe TR gibt es keine Auskunftsfunktion für das
-  Trainingsverhältnis.
+- **Selbstbedienung nur auf der Plattform.** „Ich → Meine Daten“ gibt, was die Plattform zeigt
+  (Art. 20 DSGVO); die Kopie der Akte gibt die Praxis (ADR-023 Punkt 12).
 
-Die vollständige Funktion ist in
-[`../development/ROADMAP.md`](../development/ROADMAP.md) als Komfort eingeordnet, nicht als Mangel:
 Jeder dieser Punkte ist mit dem Verfahren oben auch von Hand zu erfüllen.
